@@ -228,12 +228,16 @@ function renderLog(g){
   const items = g.log.slice().reverse();
   return items.map(it => {
     const cls = (it.player === 0) ? "logItem redOutline" : "logItem blueOutline";
+    const shared = (it.shared && it.shared > 0)
+      ? `<div class="pts shared">-${it.shared} pts</div>`
+      : "";
     return `
       <div class="${cls}">
         <div class="left">
           <div class="word">${escapeHtml(it.word)}</div>
         </div>
         <div class="pts">+${it.pts} pts</div>
+        ${shared}
       </div>
     `;
   }).join("");

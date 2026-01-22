@@ -608,6 +608,7 @@ function handleSuccess(g, word, wordLen){
   }
 
   const finalWordPoints = roundInt(score);
+  let fountainShared = 0;
 
   const paLv = ap.skills.POINT_ABSORB;
   if (paLv > 0){
@@ -620,6 +621,7 @@ function handleSuccess(g, word, wordLen){
   const usedOpponentFountain = (op.fountainIdx != null && g.selectionSet.has(op.fountainIdx));
   if (usedOpponentFountain){
     const opponentBonus = roundInt(finalWordPoints * 0.5);
+    fountainShared = opponentBonus;
     op.score += opponentBonus;
     if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
   }
@@ -632,6 +634,7 @@ function handleSuccess(g, word, wordLen){
     word,
     player: ap.id,
     pts: finalWordPoints,
+    shared: fountainShared,
   });
 
   if (pfLv > 0){
