@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rogue Boggle Duel</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-left">
+      <div class="pill">
+        <span class="k">Turn</span>
+        <span class="v" id="turnNo">1</span>
+      </div>
+      <div class="pill big">
+        <span class="k">Active</span>
+        <span class="v" id="activePlayer">Player 1 (Red)</span>
+      </div>
+      <div class="pill">
+        <span class="k">Attempts</span>
+        <span class="v" id="attemptsLeft">1</span>
+      </div>
+      <div class="pill" id="dictPill">
+        <span class="dot wait" id="dictDot"></span>
+        <span class="k" id="dictText">Loading dictionary…</span>
+      </div>
+    </div>
+
+    <div class="top-right">
+      <button id="legendBtn" class="ghost">Legend</button>
+      <button id="newMatchBtn" class="primary" disabled>New Match</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="side card" id="p1Panel">
+      <div class="panelHead red">
+        <div class="panelTitle">Player 1</div>
+        <div class="panelSub">Theme: <b class="redText">Red</b></div>
+      </div>
+      <div class="panelBody">
+        <div class="statRow">
+          <div class="stat">
+            <div class="k">Score</div>
+            <div class="v" id="p1Score">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Combo</div>
+            <div class="v" id="p1Combo">0</div>
+          </div>
+        </div>
+        <div class="skills" id="p1Skills"></div>
+      </div>
+    </section>
+
+    <section class="center card">
+      <div class="centerHead">
+        <div class="feedback" id="feedback">
+          <span class="fbTitle" id="fbTitle">Ready</span>
+          <span class="fbSub" id="fbSub">Swipe across tiles to form a word. Release to submit.</span>
+        </div>
+
+        <div class="currentWord">
+          <div class="k">Current</div>
+          <div class="v" id="currentWord">—</div>
+        </div>
+      </div>
+
+      <div class="fieldWrap">
+        <div class="grid" id="grid" aria-label="field"></div>
+      </div>
+
+      <div class="logWrap">
+        <div class="logHead">
+          <div class="logTitle">Found Words (Match-wide)</div>
+          <div class="logHint">Duplicates are failures and won’t be added again.</div>
+        </div>
+        <div class="log" id="wordLog"></div>
+      </div>
+    </section>
+
+    <section class="side card" id="p2Panel">
+      <div class="panelHead blue">
+        <div class="panelTitle">Player 2</div>
+        <div class="panelSub">Theme: <b class="blueText">Blue</b></div>
+      </div>
+      <div class="panelBody">
+        <div class="statRow">
+          <div class="stat">
+            <div class="k">Score</div>
+            <div class="v" id="p2Score">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Combo</div>
+            <div class="v" id="p2Combo">0</div>
+          </div>
+        </div>
+        <div class="skills" id="p2Skills"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Legend Modal -->
+  <div class="modalOverlay hidden" id="legendModal">
+    <div class="modal card">
+      <div class="modalHead">
+        <div class="modalTitle">Tile Legend</div>
+        <button class="ghost" id="closeLegendBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="legendGrid">
+          <div class="legendItem">
+            <div class="legendTile demo fountainRed"></div>
+            <div>
+              <b>Fountain (Red/Blue)</b>
+              <div class="muted">Owner gets a flat bonus when used; opponent using it shares 50% of FINAL word points to the owner.</div>
+            </div>
+          </div>
+
+          <div class="legendItem">
+            <div class="legendTile demo gold"></div>
+            <div>
+              <b>Gold (Winner’s Footsteps)</b>
+              <div class="muted">If a found word uses ≥1 gold tile: add flat bonus. Spawned for the active player’s turn only.</div>
+            </div>
+          </div>
+
+          <div class="legendItem">
+            <div class="legendTile demo silver"></div>
+            <div>
+              <b>Silver (Failure into Opportunity)</b>
+              <div class="muted">If a found word uses ≥2 silver tiles: multiply score. Spawned for the active player’s turn only.</div>
+            </div>
+          </div>
+
+          <div class="legendItem">
+            <div class="legendTile demo gray"></div>
+            <div>
+              <b>Gray (Counter bonus)</b>
+              <div class="muted">Gray tiles cannot be used for words. They muddy/desaturate the entire tile.</div>
+            </div>
+          </div>
+
+          <div class="legendItem">
+            <div class="legendTile demo multi"></div>
+            <div>
+              <b>Multiple states</b>
+              <div class="muted">A tile can show multiple colored segments (fountain+gold+silver, etc.). Gray overrides usability.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skill Select Modal -->
+  <div class="modalOverlay hidden" id="skillModal">
+    <div class="modal card wide">
+      <div class="modalHead">
+        <div class="modalTitle" id="skillModalTitle">Choose a skill to upgrade</div>
+        <div class="muted" id="skillModalHint">One option per category (if available). Choose exactly one.</div>
+      </div>
+      <div class="modalBody">
+        <div class="offerRow" id="skillOffers"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Game Modal -->
+  <div class="modalOverlay hidden" id="endModal">
+    <div class="modal card">
+      <div class="modalHead">
+        <div class="modalTitle" id="endTitle">Game Over</div>
+        <button class="ghost" id="closeEndBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="endScore">
+          <div class="endLine redText" id="endP1">Player 1: 0</div>
+          <div class="endLine blueText" id="endP2">Player 2: 0</div>
+        </div>
+        <div class="endActions">
+          <button class="primary" id="restartBtn">Restart Match</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
