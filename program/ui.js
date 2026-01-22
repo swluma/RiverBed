@@ -31,6 +31,8 @@ export function bindUI(handlers){
     p2Score: document.getElementById("p2Score"),
     p1Combo: document.getElementById("p1Combo"),
     p2Combo: document.getElementById("p2Combo"),
+    p1DecayStep: document.getElementById("p1DecayStep"),
+    p2DecayStep: document.getElementById("p2DecayStep"),
     p1Bonus: document.getElementById("p1Bonus"),
     p2Bonus: document.getElementById("p2Bonus"),
     p1Skills: document.getElementById("p1Skills"),
@@ -258,6 +260,8 @@ export function renderAll(el, g){
   el.p2Score.textContent = String(g.players[1].score);
   el.p1Combo.textContent = String(g.players[0].combo);
   el.p2Combo.textContent = String(g.players[1].combo);
+  if (el.p1DecayStep) el.p1DecayStep.textContent = `${g.players[0].decayStepPct ?? 0}%`;
+  if (el.p2DecayStep) el.p2DecayStep.textContent = `${g.players[1].decayStepPct ?? 0}%`;
 
   // Skills panels (compact: only level + current effect)
   el.p1Bonus.innerHTML = renderCategoryBonuses(g.players[0]);

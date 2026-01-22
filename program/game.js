@@ -203,6 +203,8 @@ export function createNewGame(dictSet, dictWords, winScore = WIN_SCORE){
   g.embeddedWords = embedded;
   console.log("[boggle] embedded words:", embedded.join(", "));
 
+  updateDecaySteps(g);
+
   // Start-of-turn tile spawns (gold/silver/gray)
   startTurn(g);
 
@@ -216,6 +218,7 @@ function makePlayer(id){
     color: id===0 ? "RED" : "BLUE",
     score: 0,
     combo: 0,
+    decayStepPct: 0,
 
     // For Value Decay tracking (same-length success streak)
     sameLenStreak: 0,
@@ -249,6 +252,16 @@ function makePlayer(id){
     // Technical category bonus: skill destruction can happen max once per turn
     destroyedThisTurn: false,
   };
+}
+
+function updateDecaySteps(g){
+  if (!g || !g.players || g.players.length < 2) return;
+  const p1 = g.players[0];
+  const p2 = g.players[1];
+  const p1Step = DECAY_STEP[p2.skills.VALUE_DECAY] || 0;
+  const p2Step = DECAY_STEP[p1.skills.VALUE_DECAY] || 0;
+  p1.decayStepPct = Math.round(p1Step * 100);
+  p2.decayStepPct = Math.round(p2Step * 100);
 }
 
 /* ------------------------
@@ -764,6 +777,7 @@ export function applyHint(g, allocations){
   if (!hint) return { ok:false, reason:"NO_HINT_AVAILABLE" };
 
   applyHintAllocations(ap, normalized.allocations);
+  updateDecaySteps(g);
 
   // Derived state adjustments after skill reduction
   const newExtra = EXTRA_CHANCE_ADD[ap.skills.EXTRA_CHANCE];
@@ -919,6 +933,7 @@ function attemptSkillDestruction(g){
   const chosen = reducible[randInt(reducible.length)];
   const prev = op.skills[chosen];
   op.skills[chosen] -= 1;
+  updateDecaySteps(g);
   g.log.push({
     type: "SKILL_DESTROY",
     player: ap.id,
@@ -991,6 +1006,7 @@ export function upgradeSkill(g, skillId){
   if (ap.skills[skillId] >= meta.max) return false;
 
   ap.skills[skillId] += 1;
+  updateDecaySteps(g);
 
   // After the active player chooses a skill, the next turn begins.
   if (g.skillSelect && g.skillSelect.pending){

@@ -158,6 +158,19 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 .stat .k{ font-size:12px; color:var(--muted); }
 .stat .v{ font-size:22px; font-weight:1000; }
 
+.decayRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+}
+.decayRow .k{ font-size:12px; color:var(--muted); }
+.decayRow .v{ font-weight:900; }
+
 .bonusSummary{
   display:grid;
   gap:8px;
