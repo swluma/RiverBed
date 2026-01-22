@@ -194,6 +194,7 @@ export function createNewGame(dictSet, dictWords, winScore = WIN_SCORE){
   const { letters, embedded } = generateFieldWithEmbeddedTargets(dictWords);
   g.board = letters;
   g.embeddedWords = embedded;
+  console.log("[boggle] embedded words:", embedded.join(", "));
 
   // Start-of-turn tile spawns (gold/silver/gray)
   startTurn(g);

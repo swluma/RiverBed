@@ -10,8 +10,8 @@ export const MIN_WORD_LEN = 3;
 export const WIN_SCORE = 300;
 
 // Embedded-word rules
-export const EMBED_COUNT = 5;
-export const EMBED_LONG_COUNT = 2;     // exactly 2 words length >= 7
+export const EMBED_COUNT = 6;
+export const EMBED_LONG_COUNT = 3;     // exactly 3 words length >= 7
 export const EMBED_LONG_MINLEN = 7;
 
 // Generation robustness (kept local, no rule changes)
