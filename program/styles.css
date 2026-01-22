@@ -46,6 +46,7 @@ button:active{ transform:translateY(1px); }
 button.primary{ background:rgba(75,134,255,0.18); border-color:rgba(75,134,255,0.35); }
 button.primary:hover{ background:rgba(75,134,255,0.25); }
 button.ghost{ background:transparent; }
+button.small{ padding:6px 10px; font-size:12px; border-radius:10px; }
 button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 
 .card{
@@ -293,6 +294,16 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   background: rgba(20,20,25,0.75);
   z-index:1;
 }
+.tile.hint{
+  box-shadow:
+    0 8px 20px rgba(0,0,0,0.18),
+    inset 0 0 0 999px rgba(255, 243, 156, 0.45);
+  border-color: rgba(255, 236, 120, 0.8);
+}
+.tile.hint .letter{
+  color: rgba(40, 30, 0, 0.95);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
 
 /* Log */
 .logWrap{ padding:12px; border-top:1px solid rgba(255,255,255,0.10); }
@@ -347,6 +358,46 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 .modalTitle{ font-weight:1000; }
 .modalBody{ padding:12px; }
 .muted{ color:var(--muted); font-size:12px; }
+
+.hintSummary{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+.hintRemainingWrap{
+  font-weight:900;
+  padding:6px 10px;
+  border-radius:999px;
+  background: rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+}
+.hintSkillList{ display:grid; gap:8px; }
+.hintRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  gap:10px;
+}
+.hintInfo .name{ font-weight:900; font-size:13px; }
+.hintControls{ display:flex; align-items:center; gap:8px; }
+.hintCount{
+  min-width:24px;
+  text-align:center;
+  font-weight:900;
+}
+.hintActions{
+  margin-top:12px;
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
 
 .winScoreForm{ display:grid; gap:10px; }
 .winScoreLabel{ font-size:12px; color:var(--muted); font-weight:800; }

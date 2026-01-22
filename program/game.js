@@ -178,6 +178,13 @@ export function createNewGame(dictSet, dictWords, winScore = WIN_SCORE){
     silver: new Set(),
     gray: new Set(),
 
+    // Hint state (per turn)
+    hint: {
+      usedThisTurn: false,
+      tiles: new Set(),
+      word: null,
+    },
+
     // Players
     players: [
       makePlayer(0),
@@ -403,6 +410,12 @@ export function startTurn(g){
   g.selectionSet = new Set();
   g.selectionWord = "";
 
+  if (g.hint){
+    g.hint.usedThisTurn = false;
+    g.hint.tiles.clear();
+    g.hint.word = null;
+  }
+
   g.attempts = 1;
   g.gold.clear();
   g.silver.clear();
@@ -469,6 +482,11 @@ export function endTurn(g, reason){
   g.gold.clear();
   g.silver.clear();
   g.gray.clear();
+  if (g.hint){
+    g.hint.tiles.clear();
+    g.hint.word = null;
+    g.hint.usedThisTurn = false;
+  }
 
   const ap = g.players[g.active];
 
@@ -715,6 +733,132 @@ function countOverlap(setA, setB){
   let n=0;
   for (const x of setA) if (setB.has(x)) n++;
   return n;
+}
+
+export function totalSkillLevels(p){
+  let total = 0;
+  for (const v of Object.values(p.skills)) total += v;
+  return total;
+}
+
+export function canUseHint(g){
+  if (!g || g.gameOver) return false;
+  if (g.skillSelect && g.skillSelect.pending) return false;
+  if (!g.hint || g.hint.usedThisTurn) return false;
+  const ap = g.players[g.active];
+  return totalSkillLevels(ap) >= 3;
+}
+
+export function applyHint(g, allocations){
+  if (!g || g.gameOver) return { ok:false, reason:"NO_GAME" };
+  if (!g.hint) return { ok:false, reason:"NO_STATE" };
+  if (g.hint.usedThisTurn) return { ok:false, reason:"USED_THIS_TURN" };
+
+  const ap = g.players[g.active];
+  if (totalSkillLevels(ap) < 3) return { ok:false, reason:"INSUFFICIENT_SKILLS" };
+
+  const normalized = normalizeHintAllocations(ap, allocations);
+  if (!normalized.ok) return { ok:false, reason:normalized.reason };
+
+  const hint = findHintWordAndPath(g);
+  if (!hint) return { ok:false, reason:"NO_HINT_AVAILABLE" };
+
+  applyHintAllocations(ap, normalized.allocations);
+
+  // Derived state adjustments after skill reduction
+  const newExtra = EXTRA_CHANCE_ADD[ap.skills.EXTRA_CHANCE];
+  g.extraChanceLeft = Math.min(g.extraChanceLeft, newExtra);
+
+  if (ap.skills.POINT_FOUNTAIN <= 0){
+    ap.fountainIdx = null;
+  }
+
+  g.hint.usedThisTurn = true;
+  g.hint.tiles = new Set(hint.path);
+  g.hint.word = hint.word;
+
+  return { ok:true, word: hint.word, path: hint.path };
+}
+
+function normalizeHintAllocations(p, allocations){
+  if (!allocations || typeof allocations !== "object"){
+    return { ok:false, reason:"INVALID_ALLOCATIONS" };
+  }
+  let total = 0;
+  const out = {};
+
+  for (const [skillId, amountRaw] of Object.entries(allocations)){
+    if (!(skillId in p.skills)) return { ok:false, reason:"INVALID_SKILL" };
+    const amount = Number(amountRaw) || 0;
+    if (amount < 0) return { ok:false, reason:"NEGATIVE_AMOUNT" };
+    if (amount === 0) continue;
+    if (amount > p.skills[skillId]) return { ok:false, reason:"OVER_ALLOCATED" };
+    out[skillId] = amount;
+    total += amount;
+  }
+
+  if (total !== 3) return { ok:false, reason:"TOTAL_NOT_THREE" };
+  return { ok:true, allocations: out };
+}
+
+function applyHintAllocations(p, allocations){
+  for (const [skillId, amount] of Object.entries(allocations)){
+    p.skills[skillId] = Math.max(0, p.skills[skillId] - amount);
+  }
+}
+
+function findHintWordAndPath(g){
+  if (!g.dictWords || g.dictWords.length === 0) return null;
+  const start = randInt(g.dictWords.length);
+  for (let i=0; i<g.dictWords.length; i++){
+    const idx = (start + i) % g.dictWords.length;
+    const word = g.dictWords[idx];
+    if (!word || word.length < MIN_WORD_LEN) continue;
+    if (g.foundWords.has(word)) continue;
+    const path = findWordPathOnBoard(g.board, word, g.gray);
+    if (path) return { word, path };
+  }
+  return null;
+}
+
+function findWordPathOnBoard(letters, word, blocked){
+  const target = word.toUpperCase();
+  const L = target.length;
+  if (L < MIN_WORD_LEN) return null;
+
+  const used = new Set();
+  const path = [];
+
+  const dfs = (idx, pos) => {
+    if (blocked && blocked.has(idx)) return false;
+    if (letters[idx] !== target[pos]) return false;
+
+    used.add(idx);
+    path.push(idx);
+
+    if (pos === L - 1) return true;
+
+    const nextChar = target[pos + 1];
+    const neigh = neighbors8(idx);
+    for (const n of neigh){
+      if (used.has(n)) continue;
+      if (letters[n] !== nextChar) continue;
+      if (dfs(n, pos + 1)) return true;
+    }
+
+    used.delete(idx);
+    path.pop();
+    return false;
+  };
+
+  for (let i=0; i<letters.length; i++){
+    if (blocked && blocked.has(i)) continue;
+    if (letters[i] !== target[0]) continue;
+    used.clear();
+    path.length = 0;
+    if (dfs(i, 0)) return path.slice();
+  }
+  return null;
 }
 
 /* ------------------------

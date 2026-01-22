@@ -32,6 +32,7 @@
     </div>
 
     <div class="top-right">
+      <button id="hintBtn" class="ghost">Hint (-3 Lv)</button>
       <button id="winScoreBtn" class="ghost">Win Score</button>
       <button id="legendBtn" class="ghost">Legend</button>
       <button id="newMatchBtn" class="primary" disabled>New Match</button>
@@ -170,6 +171,26 @@
       </div>
       <div class="modalBody">
         <div class="offerRow" id="skillOffers"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hint Modal -->
+  <div class="modalOverlay hidden" id="hintModal">
+    <div class="modal card">
+      <div class="modalHead">
+        <div class="modalTitle">Spend 3 skill levels for a hint</div>
+        <button class="ghost" id="hintCancelBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="hintSummary">
+          <div class="muted">Choose any mix of skills to sacrifice (total 3).</div>
+          <div class="hintRemainingWrap"><span id="hintRemaining">3</span> remaining</div>
+        </div>
+        <div class="hintSkillList" id="hintSkillList"></div>
+        <div class="hintActions">
+          <button class="primary" id="hintApplyBtn" disabled>Reveal Hint</button>
+        </div>
       </div>
     </div>
   </div>

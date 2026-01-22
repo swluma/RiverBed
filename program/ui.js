@@ -1,5 +1,9 @@
 import { SIZE, FAIL_COUNTDOWN_MS } from "./config.js";
-import { SKILLS, describeSkill, describeSkillCompact, describeOffer, pointTier, counterTier, techTier } from "./game.js";
+import {
+  SKILLS, describeSkill, describeSkillCompact, describeOffer,
+  pointTier, counterTier, techTier,
+  canUseHint, totalSkillLevels
+} from "./game.js";
 
 export function bindUI(handlers){
   const el = {
@@ -54,6 +58,13 @@ export function bindUI(handlers){
     winScoreApplyBtn: document.getElementById("winScoreApplyBtn"),
     winScoreApplyNewBtn: document.getElementById("winScoreApplyNewBtn"),
     winScoreCancelBtn: document.getElementById("winScoreCancelBtn"),
+
+    hintBtn: document.getElementById("hintBtn"),
+    hintModal: document.getElementById("hintModal"),
+    hintSkillList: document.getElementById("hintSkillList"),
+    hintRemaining: document.getElementById("hintRemaining"),
+    hintApplyBtn: document.getElementById("hintApplyBtn"),
+    hintCancelBtn: document.getElementById("hintCancelBtn"),
   };
 
   // Create a full Skill Reference section right under Player 2 status (NOT under the field area)
@@ -108,6 +119,25 @@ export function bindUI(handlers){
   el.legendModal.addEventListener("click", (e) => {
     if (e.target === el.legendModal) hide(el.legendModal);
   });
+
+  // Hint modal
+  if (el.hintBtn && handlers.onHint){
+    el.hintBtn.addEventListener("click", handlers.onHint);
+  }
+  if (el.hintCancelBtn && el.hintModal){
+    el.hintCancelBtn.addEventListener("click", () => {
+      hide(el.hintModal);
+      el.hintModal.dispatchEvent(new CustomEvent("cancel-hint"));
+    });
+  }
+  if (el.hintModal){
+    el.hintModal.addEventListener("click", (e) => {
+      if (e.target === el.hintModal){
+        hide(el.hintModal);
+        el.hintModal.dispatchEvent(new CustomEvent("cancel-hint"));
+      }
+    });
+  }
 
   // Win score modal
   if (el.winScoreBtn && el.winScoreModal){
@@ -195,6 +225,18 @@ export function renderAll(el, g){
 
   // Field
   renderGrid(el.grid, g);
+
+  // Hint button
+  if (el.hintBtn){
+    const ap = g.players[g.active];
+    const total = totalSkillLevels(ap);
+    const usable = canUseHint(g);
+    el.hintBtn.disabled = !usable;
+    el.hintBtn.textContent = g.hint && g.hint.usedThisTurn ? "Hint used" : "Hint (-3 Lv)";
+    el.hintBtn.title = (total < 3)
+      ? `Need 3 total skill levels (have ${total}).`
+      : "";
+  }
 }
 
 function renderSkills(p){
@@ -334,6 +376,9 @@ function renderGrid(gridEl, g){
     // gray usability
     t.classList.toggle("gray", g.gray.has(idx));
 
+    // hint highlight
+    t.classList.toggle("hint", g.hint && g.hint.tiles && g.hint.tiles.has(idx));
+
     // segments: fountain (red/blue), gold, silver
     const segColors = [];
 
@@ -423,8 +468,107 @@ export function showSkillModal(el, g, offers){
   show(el.skillModal);
 }
 
+export function showHintModal(el, g){
+  if (!el.hintModal || !el.hintSkillList) return;
+
+  const p = g.players[g.active];
+  const skills = Object.keys(p.skills)
+    .filter(id => p.skills[id] > 0)
+    .map(id => ({ id, lv: p.skills[id], meta: SKILLS[id] }));
+
+  const allocations = {};
+  let spent = 0;
+  const rowUpdaters = [];
+
+  const updateUi = () => {
+    const remaining = Math.max(0, 3 - spent);
+    if (el.hintRemaining) el.hintRemaining.textContent = String(remaining);
+    if (el.hintApplyBtn) el.hintApplyBtn.disabled = (spent !== 3);
+    for (const fn of rowUpdaters) fn();
+  };
+
+  el.hintSkillList.innerHTML = "";
+
+  if (skills.length === 0){
+    el.hintSkillList.innerHTML = `<div class="muted">No skill levels to sacrifice.</div>`;
+    updateUi();
+    show(el.hintModal);
+    return;
+  }
+
+  for (const s of skills){
+    const row = document.createElement("div");
+    row.className = "hintRow";
+    row.innerHTML = `
+      <div class="hintInfo">
+        <div class="name">${s.meta.name}</div>
+        <div class="muted">Lv${s.lv}</div>
+      </div>
+      <div class="hintControls">
+        <button class="ghost small" type="button" data-dir="-">-</button>
+        <div class="hintCount">0</div>
+        <button class="ghost small" type="button" data-dir="+">+</button>
+      </div>
+    `;
+
+    const countEl = row.querySelector(".hintCount");
+    const decBtn = row.querySelector('button[data-dir="-"]');
+    const incBtn = row.querySelector('button[data-dir="+"]');
+
+    const updateRow = () => {
+      const current = allocations[s.id] || 0;
+      countEl.textContent = String(current);
+      decBtn.disabled = current <= 0;
+      incBtn.disabled = current >= s.lv || spent >= 3;
+    };
+
+    decBtn.addEventListener("click", () => {
+      const current = allocations[s.id] || 0;
+      if (current <= 0) return;
+      allocations[s.id] = current - 1;
+      spent -= 1;
+      updateRow();
+      updateUi();
+    });
+
+    incBtn.addEventListener("click", () => {
+      const current = allocations[s.id] || 0;
+      if (current >= s.lv) return;
+      if (spent >= 3) return;
+      allocations[s.id] = current + 1;
+      spent += 1;
+      updateRow();
+      updateUi();
+    });
+
+    rowUpdaters.push(updateRow);
+    el.hintSkillList.appendChild(row);
+  }
+
+  updateUi();
+
+  if (el.hintApplyBtn){
+    el.hintApplyBtn.onclick = () => {
+      hide(el.hintModal);
+      el.hintModal.dispatchEvent(new CustomEvent("apply-hint", { detail: { allocations } }));
+    };
+  }
+
+  show(el.hintModal);
+}
+
 export function onChooseSkill(el, handler){
   el.skillModal.addEventListener("choose-skill", (e) => handler(e.detail.skillId));
+}
+
+export function onApplyHint(el, handler){
+  if (!el.hintModal) return;
+  el.hintModal.addEventListener("apply-hint", (e) => handler(e.detail.allocations));
+}
+
+export function onCancelHint(el, handler){
+  if (!el.hintModal) return;
+  el.hintModal.addEventListener("cancel-hint", () => handler());
 }
 
 export function onApplyWinScore(el, handler){

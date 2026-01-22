@@ -3,12 +3,14 @@ import {
   createNewGame,
   beginSwipe, extendSwipe, releaseSwipe,
   getSkillOffers, upgradeSkill,
+  applyHint, canUseHint, totalSkillLevels,
   setWinScore
 } from "./game.js";
 import {
   bindUI, setDictStatus, renderAll,
   setFeedback, animateAttemptsFail, shakeFeedback,
   showSkillModal, onChooseSkill,
+  showHintModal, onApplyHint, onCancelHint,
   showEndModal, onApplyWinScore
 } from "./ui.js";
 
@@ -30,6 +32,7 @@ ui = bindUI({
   onPointerMove,
   onPointerUp,
   onPointerCancel,
+  onHint,
 });
 
 if (ui.winScoreValue){
@@ -43,6 +46,36 @@ onChooseSkill(ui, (skillId) => {
   renderAll(ui, g);
   setFeedback(ui, "Ready", "Swipe to form a word. Release to submit.");
   if (g.gameOver) showEndModal(ui, g);
+});
+
+onApplyHint(ui, (allocations) => {
+  if (!g || g.gameOver) return;
+  const result = applyHint(g, allocations);
+  locked = false;
+
+  if (!result.ok){
+    const ap = g.players[g.active];
+    const total = totalSkillLevels(ap);
+    const reasonText =
+      result.reason === "INSUFFICIENT_SKILLS" ? `Need 3 total skill levels (have ${total}).` :
+      result.reason === "NO_HINT_AVAILABLE" ? "No available word on this board right now." :
+      result.reason === "USED_THIS_TURN" ? "Hint already used this turn." :
+      result.reason === "TOTAL_NOT_THREE" ? "Select exactly 3 skill levels to sacrifice." :
+      "Hint unavailable.";
+    setFeedback(ui, "Hint failed", reasonText);
+    renderAll(ui, g);
+    return;
+  }
+
+  renderAll(ui, g);
+  setFeedback(ui, "Hint revealed", "Highlighted tiles form a valid word.");
+});
+
+onCancelHint(ui, () => {
+  if (!g || g.gameOver) return;
+  locked = false;
+  renderAll(ui, g);
+  setFeedback(ui, "Ready", "Swipe to form a word. Release to submit.");
 });
 
 onApplyWinScore(ui, ({ mode, value }) => {
@@ -226,6 +259,24 @@ async function openSkillSelectIfNeeded(){
 
   locked = true;
   showSkillModal(ui, g, offers);
+}
+
+function onHint(){
+  if (isLocked()) return;
+  if (!g || g.gameOver) return;
+
+  if (!canUseHint(g)){
+    const ap = g.players[g.active];
+    const total = totalSkillLevels(ap);
+    const msg = (g.hint && g.hint.usedThisTurn)
+      ? "Hint already used this turn."
+      : `Need 3 total skill levels (have ${total}).`;
+    setFeedback(ui, "Hint unavailable", msg);
+    return;
+  }
+
+  locked = true;
+  showHintModal(ui, g);
 }
 
 loadDictionary();
