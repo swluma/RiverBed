@@ -254,14 +254,21 @@ function makePlayer(id){
   };
 }
 
+function effectiveDecayPctFor(player, opponent){
+  const decayLv = opponent.skills.VALUE_DECAY || 0;
+  if (decayLv <= 0) return 0;
+  if (player.sameLenStreak < 2) return 0;
+  const step = DECAY_STEP[decayLv] || 0;
+  const pct = step * 100 * (player.sameLenStreak - 1);
+  return Math.min(60, Math.round(pct));
+}
+
 function updateDecaySteps(g){
   if (!g || !g.players || g.players.length < 2) return;
   const p1 = g.players[0];
   const p2 = g.players[1];
-  const p1Step = DECAY_STEP[p2.skills.VALUE_DECAY] || 0;
-  const p2Step = DECAY_STEP[p1.skills.VALUE_DECAY] || 0;
-  p1.decayStepPct = Math.round(p1Step * 100);
-  p2.decayStepPct = Math.round(p2Step * 100);
+  p1.decayStepPct = effectiveDecayPctFor(p1, p2);
+  p2.decayStepPct = effectiveDecayPctFor(p2, p1);
 }
 
 /* ------------------------
@@ -604,6 +611,9 @@ function handleFailure(g, {reason, word}){
   const ap = g.players[g.active];
 
   ap.combo = 0;
+  ap.sameLenStreak = 0;
+  ap.sameLenLast = 0;
+  updateDecaySteps(g);
 
   const foLv = ap.skills.FAIL_OPP;
   if (foLv >= 1){
@@ -655,10 +665,12 @@ function handleSuccess(g, word, wordLen){
       const decayMult = Math.max(0.40, 1.00 - step * (ap.sameLenStreak - 1));
       score *= decayMult;
     }
+    updateDecaySteps(g);
   } else {
     if (ap.sameLenLast === wordLen) ap.sameLenStreak += 1;
     else ap.sameLenStreak = 1;
     ap.sameLenLast = wordLen;
+    updateDecaySteps(g);
   }
 
   const piLv = ap.skills.POINT_INCREASE;
