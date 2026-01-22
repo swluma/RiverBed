@@ -13,7 +13,7 @@
   --skill-tech:#9bffa6;
   --gold:#f0c54a;
   --silver:#b9c6ff;
-  --gray:#6b6f7a;
+  --gray:#3a3d45;
   --shadow:0 14px 40px rgba(0,0,0,0.35);
   --r:18px;
 }
@@ -285,12 +285,12 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 /* Gray overrides usability: muddy overlay + desaturate */
 .tile.gray{
   filter: grayscale(1) saturate(0.35);
-  opacity: 0.72;
+  opacity: 0.9;
 }
 .tile.gray::before{
   content:"";
   position:absolute; inset:0;
-  background: rgba(80,80,90,0.45);
+  background: rgba(20,20,25,0.75);
   z-index:1;
 }
 
@@ -397,7 +397,7 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 .legendTile.demo.fountainRed{ background: conic-gradient(from 90deg, rgba(255,75,75,0.65) 0 50%, rgba(255,255,255,0.08) 50% 100%); }
 .legendTile.demo.gold{ background: rgba(240,197,74,0.35); }
 .legendTile.demo.silver{ background: rgba(185,198,255,0.35); }
-.legendTile.demo.gray{ background: rgba(120,120,130,0.55); filter: grayscale(1); }
+.legendTile.demo.gray{ background: rgba(40,40,48,0.7); filter: grayscale(1); }
 .legendTile.demo.multi{ background: conic-gradient(from 90deg,
   rgba(255,75,75,0.65) 0 33%,
   rgba(240,197,74,0.55) 33% 66%,
