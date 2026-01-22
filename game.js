@@ -150,6 +150,7 @@ export function createNewGame(dictSet, dictWords, winScore = WIN_SCORE){
     turnNo: 1,
     active: 0, // 0=P1, 1=P2
     attempts: 1,
+    extraChanceLeft: 0,
     gameOver: false,
     winScore: winScore,
 
@@ -359,6 +360,8 @@ export function startTurn(g){
   const ap = g.players[g.active];
   const op = g.players[1 - g.active];
 
+  g.extraChanceLeft = EXTRA_CHANCE_ADD[ap.skills.EXTRA_CHANCE];
+
   // Counter category bonus: gray tiles on opponent's turn
   const opCounterTier = counterTier(op);
   const grayCount = (opCounterTier === 2) ? 2 : (opCounterTier === 1 ? 1 : 0);
@@ -532,8 +535,9 @@ function handleFailure(g, {reason, word}){
   }
 
   const ecLv = ap.skills.EXTRA_CHANCE;
-  if (ecLv > 0){
-    g.attempts += EXTRA_CHANCE_ADD[ecLv];
+  if (ecLv > 0 && g.extraChanceLeft > 0){
+    g.attempts += 1;
+    g.extraChanceLeft -= 1;
   }
 
   const ended = (g.attempts <= 0);
