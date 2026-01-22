@@ -35,6 +35,7 @@
       <button id="hintBtn" class="ghost">Hint (-3 Lv)</button>
       <button id="winScoreBtn" class="ghost">Win Score</button>
       <button id="skillRefBtn" class="ghost">Skill Reference</button>
+      <button id="scoreInfoBtn" class="ghost">Scoring</button>
       <button id="legendBtn" class="ghost">Legend</button>
       <button id="newMatchBtn" class="primary" disabled>New Match</button>
     </div>
@@ -172,6 +173,50 @@
       </div>
       <div class="modalBody skillRefModalBody">
         <section class="skillReferenceRoot" id="skillReferenceRoot"></section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scoring Modal -->
+  <div class="modalOverlay hidden" id="scoreInfoModal">
+    <div class="modal card">
+      <div class="modalHead">
+        <div class="modalTitle">Base Points and Combo Multipliers</div>
+        <button class="ghost" id="closeScoreInfoBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="scoreInfoGrid">
+          <div class="scoreInfoBlock">
+            <div class="scoreInfoTitle">Base Points by Word Length</div>
+            <div class="muted">These are the base points before combo or skill multipliers.</div>
+            <table class="scoreInfoTable">
+              <tr><th>Length</th><th>Base Points</th></tr>
+              <tr><td>3</td><td>8</td></tr>
+              <tr><td>4</td><td>12</td></tr>
+              <tr><td>5</td><td>18</td></tr>
+              <tr><td>6</td><td>26</td></tr>
+              <tr><td>7</td><td>36</td></tr>
+              <tr><td>8</td><td>48</td></tr>
+              <tr><td>9</td><td>62</td></tr>
+              <tr><td>10+</td><td>78</td></tr>
+            </table>
+          </div>
+          <div class="scoreInfoBlock">
+            <div class="scoreInfoTitle">Combo Multiplier</div>
+            <div class="muted">Applies to base points when you chain successful words.</div>
+            <table class="scoreInfoTable">
+              <tr><th>Combo</th><th>Multiplier</th></tr>
+              <tr><td>0</td><td>1.00x</td></tr>
+              <tr><td>1</td><td>1.00x</td></tr>
+              <tr><td>2</td><td>1.05x</td></tr>
+              <tr><td>3</td><td>1.15x</td></tr>
+              <tr><td>4</td><td>1.30x</td></tr>
+              <tr><td>5</td><td>1.50x</td></tr>
+              <tr><td>6</td><td>1.75x</td></tr>
+              <tr><td>7+</td><td>2.00x</td></tr>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>

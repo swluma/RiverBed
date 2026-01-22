@@ -435,6 +435,43 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   flex-wrap:wrap;
 }
 
+.scoreInfoGrid{
+  display:grid;
+  gap:12px;
+}
+.scoreInfoBlock{
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:14px;
+  background:rgba(255,255,255,0.05);
+  padding:12px;
+  display:grid;
+  gap:8px;
+}
+.scoreInfoTitle{
+  font-weight:1000;
+  font-size:13px;
+}
+.scoreInfoTable{
+  width:100%;
+  border-collapse:collapse;
+  overflow:hidden;
+  border-radius:10px;
+}
+.scoreInfoTable th,
+.scoreInfoTable td{
+  border:1px solid rgba(255,255,255,0.10);
+  padding:6px 8px;
+  vertical-align:top;
+}
+.scoreInfoTable th{
+  font-weight:700;
+  text-align:left;
+  background:rgba(255,255,255,0.05);
+}
+.scoreInfoTable td{
+  background:rgba(0,0,0,0.08);
+}
+
 .winScoreForm{ display:grid; gap:10px; }
 .winScoreLabel{ font-size:12px; color:var(--muted); font-weight:800; }
 .winScoreInput{

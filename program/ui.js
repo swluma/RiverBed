@@ -20,6 +20,7 @@ export function bindUI(handlers){
     newMatchBtn: document.getElementById("newMatchBtn"),
     legendBtn: document.getElementById("legendBtn"),
     skillRefBtn: document.getElementById("skillRefBtn"),
+    scoreInfoBtn: document.getElementById("scoreInfoBtn"),
     winScoreBtn: document.getElementById("winScoreBtn"),
 
     fbTitle: document.getElementById("fbTitle"),
@@ -41,6 +42,8 @@ export function bindUI(handlers){
 
     legendModal: document.getElementById("legendModal"),
     closeLegendBtn: document.getElementById("closeLegendBtn"),
+    scoreInfoModal: document.getElementById("scoreInfoModal"),
+    closeScoreInfoBtn: document.getElementById("closeScoreInfoBtn"),
     skillRefModal: document.getElementById("skillRefModal"),
     closeSkillRefBtn: document.getElementById("closeSkillRefBtn"),
 
@@ -135,6 +138,19 @@ export function bindUI(handlers){
   el.legendModal.addEventListener("click", (e) => {
     if (e.target === el.legendModal) hide(el.legendModal);
   });
+
+  // Scoring modal
+  if (el.scoreInfoBtn && el.scoreInfoModal){
+    el.scoreInfoBtn.addEventListener("click", () => show(el.scoreInfoModal));
+  }
+  if (el.closeScoreInfoBtn && el.scoreInfoModal){
+    el.closeScoreInfoBtn.addEventListener("click", () => hide(el.scoreInfoModal));
+  }
+  if (el.scoreInfoModal){
+    el.scoreInfoModal.addEventListener("click", (e) => {
+      if (e.target === el.scoreInfoModal) hide(el.scoreInfoModal);
+    });
+  }
 
   // Skill reference modal
   if (el.skillRefBtn && el.skillRefModal){
