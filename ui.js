@@ -139,7 +139,10 @@ export function bindUI(handlers){
 
   // New match / restart
   el.newMatchBtn.addEventListener("click", handlers.onNewMatch);
-  el.restartBtn.addEventListener("click", handlers.onNewMatch);
+  el.restartBtn.addEventListener("click", () => {
+    hide(el.endModal);
+    handlers.onNewMatch();
+  });
   el.closeEndBtn.addEventListener("click", () => hide(el.endModal));
   el.endModal.addEventListener("click", (e) => {
     if (e.target === el.endModal) hide(el.endModal);
