@@ -134,6 +134,16 @@ function neighbors8(idx){
   return out;
 }
 
+function neighbors4(idx){
+  const {r,c} = idxToRC(idx);
+  const out = [];
+  if (r > 0) out.push((r-1)*SIZE + c);
+  if (r < SIZE-1) out.push((r+1)*SIZE + c);
+  if (c > 0) out.push(r*SIZE + (c-1));
+  if (c < SIZE-1) out.push(r*SIZE + (c+1));
+  return out;
+}
+
 /* ------------------------
    Game State
 ------------------------ */
@@ -267,7 +277,7 @@ function generateFieldWithEmbeddedTargets(dictWords){
     if (!okAll) continue;
 
     for (let i=0; i<letters.length; i++){
-      if (letters[i] == null) letters[i] = randomLetter();
+      if (letters[i] == null) letters[i] = randomLetterNoOrthAdjacency(letters, i);
     }
 
     return { letters, embedded: chosen };
@@ -288,10 +298,12 @@ function tryPlaceWordOnBoard(letters, word, maxTries){
 
   for (let t=0; t<maxTries; t++){
     const start = randInt(SIZE*SIZE);
-    if (!cellCanHold(letters, start, target[0])) continue;
+    const planned = new Map();
+    if (!canPlaceLetterAt(letters, start, target[0], planned)) continue;
 
     const path = [start];
     const used = new Set([start]);
+    planned.set(start, target[0]);
 
     let ok = true;
     let cur = start;
@@ -299,12 +311,13 @@ function tryPlaceWordOnBoard(letters, word, maxTries){
     for (let i=1; i<L; i++){
       const opts = neighbors8(cur)
         .filter(n => !used.has(n))
-        .filter(n => cellCanHold(letters, n, target[i]));
+        .filter(n => canPlaceLetterAt(letters, n, target[i], planned));
 
       if (opts.length === 0){ ok = false; break; }
       const nxt = opts[randInt(opts.length)];
       path.push(nxt);
       used.add(nxt);
+      planned.set(nxt, target[i]);
       cur = nxt;
     }
 
@@ -317,11 +330,20 @@ function tryPlaceWordOnBoard(letters, word, maxTries){
     return true;
   }
   return false;
+}
 
-  function cellCanHold(letters, idx, ch){
-    const cur = letters[idx];
-    return (cur == null) || (cur === ch);
+function canPlaceLetterAt(letters, idx, ch, planned){
+  const cur = letters[idx];
+  if (cur != null && cur !== ch) return false;
+
+  const ortho = neighbors4(idx);
+  for (const n of ortho){
+    const existing = letters[n];
+    if (existing === ch) return false;
+    if (planned && planned.get(n) === ch) return false;
   }
+
+  return true;
 }
 
 const LETTER_FREQ = [
@@ -339,6 +361,34 @@ function randomLetter(){
     if (x <= 0) return ch;
   }
   return "E";
+}
+
+function randomLetterNoOrthAdjacency(letters, idx){
+  const disallowed = new Set();
+  for (const n of neighbors4(idx)){
+    const ch = letters[n];
+    if (ch != null) disallowed.add(ch);
+  }
+
+  const candidates = LETTER_FREQ
+    .map(([ch]) => ch)
+    .filter(ch => !disallowed.has(ch));
+
+  if (candidates.length === 0) return randomLetter();
+
+  let total = 0;
+  const weights = candidates.map((ch) => {
+    const w = LETTER_FREQ.find(([c]) => c === ch)[1];
+    total += w;
+    return [ch, w];
+  });
+
+  let x = Math.random() * total;
+  for (const [ch, w] of weights){
+    x -= w;
+    if (x <= 0) return ch;
+  }
+  return candidates[0];
 }
 
 /* ------------------------
