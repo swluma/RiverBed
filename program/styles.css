@@ -87,6 +87,38 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 .pill .v{ color:var(--text); font-weight:900; }
 .pill.big .v{ font-size:14px; }
 
+@media (max-width: 720px){
+  .topbar{
+    flex-direction:column;
+    align-items:stretch;
+    gap:6px;
+    padding:6px 8px;
+  }
+  .top-left,
+  .top-right{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    gap:6px;
+  }
+  .top-left::-webkit-scrollbar,
+  .top-right::-webkit-scrollbar{
+    height:6px;
+  }
+  .pill{
+    padding:6px 8px;
+    font-size:11px;
+    white-space:nowrap;
+  }
+  .pill.big .v{ font-size:12px; }
+  .top-right button{
+    padding:6px 8px;
+    font-size:12px;
+    border-radius:10px;
+    white-space:nowrap;
+  }
+}
+
 .dot{ width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,0.4); }
 .dot.ok{ background:var(--green); }
 .dot.no{ background:rgba(255,110,110,0.95); }
