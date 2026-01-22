@@ -275,6 +275,20 @@ function renderLog(g){
   const items = g.log.slice().reverse();
   return items.map(it => {
     const cls = (it.player === 0) ? "logItem redOutline" : "logItem blueOutline";
+    if (it.type === "SKILL_DESTROY"){
+      const meta = SKILLS[it.skillId];
+      const name = meta ? meta.name : it.skillId;
+      const targetLabel = (it.target === 0) ? "Player 1" : "Player 2";
+      return `
+        <div class="${cls}">
+          <div class="left">
+            <div class="word">Skill Destruction</div>
+            <div class="muted">${targetLabel} ${escapeHtml(name)} Lv${it.from}->Lv${it.to}</div>
+          </div>
+          <div class="pts">-1 Lv</div>
+        </div>
+      `;
+    }
     const shared = (it.shared && it.shared > 0)
       ? `<div class="pts shared">-${it.shared} pts</div>`
       : "";

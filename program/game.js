@@ -145,7 +145,7 @@ export function createNewGame(dictSet, dictWords, winScore = WIN_SCORE){
     board: null,              // letters array length 36
     embeddedWords: null,       // hidden list (never shown)
     foundWords: new Set(),     // match-wide duplicate rule
-    log: [],                   // success-only entries
+    log: [],                   // success + event entries
 
     turnNo: 1,
     active: 0, // 0=P1, 1=P2
@@ -722,7 +722,16 @@ function attemptSkillDestruction(g){
   if (reducible.length === 0) return;
 
   const chosen = reducible[randInt(reducible.length)];
+  const prev = op.skills[chosen];
   op.skills[chosen] -= 1;
+  g.log.push({
+    type: "SKILL_DESTROY",
+    player: ap.id,
+    target: op.id,
+    skillId: chosen,
+    from: prev,
+    to: op.skills[chosen],
+  });
   ap.destroyedThisTurn = true;
 }
 
