@@ -249,6 +249,11 @@ export function renderAll(el, g){
   // Header
   el.turnNo.textContent = String(g.turnNo);
   el.activePlayer.textContent = (g.active === 0) ? "Player 1 (Red)" : "Player 2 (Blue)";
+  const activePill = el.activePlayer.closest(".pill");
+  if (activePill){
+    activePill.classList.remove("active-red","active-blue");
+    activePill.classList.add((g.active === 0) ? "active-red" : "active-blue");
+  }
   el.attemptsLeft.textContent = String(getAttemptsLeftDisplay(g));
   if (el.winScoreValue) el.winScoreValue.textContent = String(g.winScore);
 
