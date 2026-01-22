@@ -7,7 +7,7 @@ import {
 } from "./game.js";
 import {
   bindUI, setDictStatus, renderAll,
-  setFeedback, animateAttemptsFail,
+  setFeedback, animateAttemptsFail, shakeFeedback,
   showSkillModal, onChooseSkill,
   showEndModal, onApplyWinScore
 } from "./ui.js";
@@ -169,6 +169,7 @@ async function onPointerUp(e){
 
   if (result.type === "NO_CONSUME_SHORT"){
     setFeedback(ui, "No attempt consumed", "Trace at least 3 tiles to submit.");
+    shakeFeedback(ui);
     return;
   }
 
@@ -177,6 +178,7 @@ async function onPointerUp(e){
       result.reason === "DUPLICATE" ? "Duplicate (match-wide)" :
       "Not in dictionary";
     setFeedback(ui, "FAIL", `${reasonText}. Combo reset.`);
+    shakeFeedback(ui);
     await animateAttemptsFail(ui, g);
     renderAll(ui, g);
     if (result.ended){

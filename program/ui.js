@@ -19,6 +19,7 @@ export function bindUI(handlers){
 
     fbTitle: document.getElementById("fbTitle"),
     fbSub: document.getElementById("fbSub"),
+    feedback: document.getElementById("feedback"),
 
     p1Score: document.getElementById("p1Score"),
     p2Score: document.getElementById("p2Score"),
@@ -308,6 +309,16 @@ function conicSegments(colors){
 export function setFeedback(el, title, sub){
   el.fbTitle.textContent = title;
   el.fbSub.textContent = sub;
+}
+
+export function shakeFeedback(el){
+  if (!el.feedback) return;
+  el.feedback.classList.remove("shake");
+  void el.feedback.offsetWidth;
+  el.feedback.classList.add("shake");
+  el.feedback.addEventListener("animationend", () => {
+    el.feedback.classList.remove("shake");
+  }, { once:true });
 }
 
 export async function animateAttemptsFail(el, g){
