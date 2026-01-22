@@ -138,7 +138,7 @@ function neighbors8(idx){
    Game State
 ------------------------ */
 
-export function createNewGame(dictSet, dictWords){
+export function createNewGame(dictSet, dictWords, winScore = WIN_SCORE){
   const g = {
     dictSet,
     dictWords,
@@ -151,6 +151,7 @@ export function createNewGame(dictSet, dictWords){
     active: 0, // 0=P1, 1=P2
     attempts: 1,
     gameOver: false,
+    winScore: winScore,
 
     // Pending skill selection (after a turn ends, before next turn begins)
     skillSelect: {
@@ -796,11 +797,22 @@ export function upgradeSkill(g, skillId){
 export function checkVictory(g){
   const p1 = g.players[0];
   const p2 = g.players[1];
-  if (p1.score >= WIN_SCORE || p2.score >= WIN_SCORE){
+  const target = (g && Number.isFinite(g.winScore)) ? g.winScore : WIN_SCORE;
+  if (p1.score >= target || p2.score >= target){
     g.gameOver = true;
     return true;
   }
   return false;
+}
+
+export function setWinScore(g, winScore){
+  if (!g) return false;
+  g.winScore = winScore;
+  const p1 = g.players[0];
+  const p2 = g.players[1];
+  const ended = (p1.score >= winScore || p2.score >= winScore);
+  g.gameOver = ended;
+  return ended;
 }
 
 /* ------------------------

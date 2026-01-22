@@ -1,14 +1,15 @@
-import { DICT_URL } from "./config.js";
+import { DICT_URL, WIN_SCORE } from "./config.js";
 import {
   createNewGame,
   beginSwipe, extendSwipe, releaseSwipe,
-  getSkillOffers, upgradeSkill
+  getSkillOffers, upgradeSkill,
+  setWinScore
 } from "./game.js";
 import {
   bindUI, setDictStatus, renderAll,
   setFeedback, animateAttemptsFail,
   showSkillModal, onChooseSkill,
-  showEndModal
+  showEndModal, onApplyWinScore
 } from "./ui.js";
 
 let dictSet = null;
@@ -19,6 +20,7 @@ let ui = null;
 
 let locked = true;
 let pointerActiveId = null;
+let targetWinScore = WIN_SCORE;
 
 function isLocked(){ return locked || !g || g.gameOver; }
 
@@ -30,6 +32,10 @@ ui = bindUI({
   onPointerCancel,
 });
 
+if (ui.winScoreValue){
+  ui.winScoreValue.textContent = String(targetWinScore);
+}
+
 onChooseSkill(ui, (skillId) => {
   if (!g || g.gameOver) return;
   upgradeSkill(g, skillId);
@@ -37,6 +43,34 @@ onChooseSkill(ui, (skillId) => {
   renderAll(ui, g);
   setFeedback(ui, "Ready", "Swipe to form a word. Release to submit.");
   if (g.gameOver) showEndModal(ui, g);
+});
+
+onApplyWinScore(ui, ({ mode, value }) => {
+  const next = normalizeWinScore(value);
+  if (!next){
+    setFeedback(ui, "Invalid target", "Enter a whole number greater than 0.");
+    return;
+  }
+
+  targetWinScore = next;
+  if (ui.winScoreValue) ui.winScoreValue.textContent = String(targetWinScore);
+
+  if (mode === "new"){
+    onNewMatch();
+    return;
+  }
+
+  if (!g) return;
+  const ended = setWinScore(g, targetWinScore);
+  renderAll(ui, g);
+  if (ended && g.gameOver){
+    showEndModal(ui, g);
+    locked = true;
+  } else {
+    if (ui.endModal) ui.endModal.classList.add("hidden");
+    locked = false;
+    setFeedback(ui, "Target updated", `First to ${targetWinScore} points wins. Resume play.`);
+  }
 });
 
 async function loadDictionary(){
@@ -74,7 +108,7 @@ async function loadDictionary(){
 function onNewMatch(){
   if (!dictSet || !dictWords) return;
   try{
-    g = createNewGame(dictSet, dictWords);
+    g = createNewGame(dictSet, dictWords, targetWinScore);
   } catch(e){
     console.error(e);
     setFeedback(ui, "ERROR", "Field generation failed. Try again (New Match).");
@@ -84,6 +118,12 @@ function onNewMatch(){
   pointerActiveId = null;
   renderAll(ui, g);
   setFeedback(ui, "Ready", "Swipe to form a word. Release to submit.");
+}
+
+function normalizeWinScore(value){
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
 }
 
 function tileIndexFromEventTarget(target){

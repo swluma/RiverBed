@@ -9,11 +9,13 @@ export function bindUI(handlers){
     turnNo: document.getElementById("turnNo"),
     activePlayer: document.getElementById("activePlayer"),
     attemptsLeft: document.getElementById("attemptsLeft"),
+    winScoreValue: document.getElementById("winScoreValue"),
 
     dictDot: document.getElementById("dictDot"),
     dictText: document.getElementById("dictText"),
     newMatchBtn: document.getElementById("newMatchBtn"),
     legendBtn: document.getElementById("legendBtn"),
+    winScoreBtn: document.getElementById("winScoreBtn"),
 
     fbTitle: document.getElementById("fbTitle"),
     fbSub: document.getElementById("fbSub"),
@@ -43,6 +45,12 @@ export function bindUI(handlers){
     endP2: document.getElementById("endP2"),
     closeEndBtn: document.getElementById("closeEndBtn"),
     restartBtn: document.getElementById("restartBtn"),
+
+    winScoreModal: document.getElementById("winScoreModal"),
+    winScoreInput: document.getElementById("winScoreInput"),
+    winScoreApplyBtn: document.getElementById("winScoreApplyBtn"),
+    winScoreApplyNewBtn: document.getElementById("winScoreApplyNewBtn"),
+    winScoreCancelBtn: document.getElementById("winScoreCancelBtn"),
   };
 
   // Create a full Skill Reference section right under Player 2 status (NOT under the field area)
@@ -98,6 +106,37 @@ export function bindUI(handlers){
     if (e.target === el.legendModal) hide(el.legendModal);
   });
 
+  // Win score modal
+  if (el.winScoreBtn && el.winScoreModal){
+    el.winScoreBtn.addEventListener("click", () => {
+      if (el.winScoreInput && el.winScoreValue){
+        el.winScoreInput.value = el.winScoreValue.textContent || "";
+        el.winScoreInput.focus();
+        el.winScoreInput.select();
+      }
+      show(el.winScoreModal);
+    });
+    if (el.winScoreCancelBtn){
+      el.winScoreCancelBtn.addEventListener("click", () => hide(el.winScoreModal));
+    }
+    el.winScoreModal.addEventListener("click", (e) => {
+      if (e.target === el.winScoreModal) hide(el.winScoreModal);
+    });
+
+    const emitWinScore = (mode) => {
+      const value = el.winScoreInput ? el.winScoreInput.value : "";
+      hide(el.winScoreModal);
+      el.winScoreModal.dispatchEvent(new CustomEvent("apply-win-score", { detail: { mode, value } }));
+    };
+
+    if (el.winScoreApplyBtn){
+      el.winScoreApplyBtn.addEventListener("click", () => emitWinScore("resume"));
+    }
+    if (el.winScoreApplyNewBtn){
+      el.winScoreApplyNewBtn.addEventListener("click", () => emitWinScore("new"));
+    }
+  }
+
   // New match / restart
   el.newMatchBtn.addEventListener("click", handlers.onNewMatch);
   el.restartBtn.addEventListener("click", handlers.onNewMatch);
@@ -128,6 +167,7 @@ export function renderAll(el, g){
   el.turnNo.textContent = String(g.turnNo);
   el.activePlayer.textContent = (g.active === 0) ? "Player 1 (Red)" : "Player 2 (Blue)";
   el.attemptsLeft.textContent = String(g.attempts);
+  if (el.winScoreValue) el.winScoreValue.textContent = String(g.winScore);
 
   // Current word
   el.currentWord.textContent = g.selectionWord ? g.selectionWord : "—";
@@ -301,6 +341,10 @@ export function showSkillModal(el, g, offers){
 
 export function onChooseSkill(el, handler){
   el.skillModal.addEventListener("choose-skill", (e) => handler(e.detail.skillId));
+}
+
+export function onApplyWinScore(el, handler){
+  el.winScoreModal.addEventListener("apply-win-score", (e) => handler(e.detail));
 }
 
 export function showEndModal(el, g){

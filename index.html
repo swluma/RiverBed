@@ -21,6 +21,10 @@
         <span class="k">Attempts</span>
         <span class="v" id="attemptsLeft">1</span>
       </div>
+      <div class="pill">
+        <span class="k">Target</span>
+        <span class="v" id="winScoreValue">300</span>
+      </div>
       <div class="pill" id="dictPill">
         <span class="dot wait" id="dictDot"></span>
         <span class="k" id="dictText">Loading dictionary…</span>
@@ -28,6 +32,7 @@
     </div>
 
     <div class="top-right">
+      <button id="winScoreBtn" class="ghost">Win Score</button>
       <button id="legendBtn" class="ghost">Legend</button>
       <button id="newMatchBtn" class="primary" disabled>New Match</button>
     </div>
@@ -163,6 +168,27 @@
       </div>
       <div class="modalBody">
         <div class="offerRow" id="skillOffers"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Win Score Modal -->
+  <div class="modalOverlay hidden" id="winScoreModal">
+    <div class="modal card">
+      <div class="modalHead">
+        <div class="modalTitle">Set Win Score</div>
+        <button class="ghost" id="winScoreCancelBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="winScoreForm">
+          <label for="winScoreInput" class="winScoreLabel">Points to win</label>
+          <input id="winScoreInput" class="winScoreInput" type="number" min="1" step="1" inputmode="numeric" />
+          <div class="winScoreHint muted">Apply to current match or start a new match with this target.</div>
+          <div class="winScoreActions">
+            <button class="ghost" id="winScoreApplyBtn">Apply & Resume</button>
+            <button class="primary" id="winScoreApplyNewBtn">Apply & New Match</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

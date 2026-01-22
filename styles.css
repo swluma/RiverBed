@@ -282,6 +282,21 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 .modalBody{ padding:12px; }
 .muted{ color:var(--muted); font-size:12px; }
 
+.winScoreForm{ display:grid; gap:10px; }
+.winScoreLabel{ font-size:12px; color:var(--muted); font-weight:800; }
+.winScoreInput{
+  width:100%;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  font-weight:900;
+}
+.winScoreInput:focus{ outline:2px solid rgba(75,134,255,0.45); }
+.winScoreHint{ font-size:12px; }
+.winScoreActions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+
 .offerRow{
   display:grid;
   grid-template-columns: repeat(3, 1fr);
