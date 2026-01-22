@@ -210,9 +210,13 @@ function renderSkills(p){
     const meta = SKILLS[id];
     const lv = p.skills[id];
     const effect = escapeHtml(describeSkillCompact(p, id));
+    const catClass =
+      meta.cat === "POINT" ? "skillCatPoint" :
+      meta.cat === "COUNTER" ? "skillCatCounter" :
+      "skillCatTech";
     return `
-      <div class="skill compact">
-        <div class="name">${meta.name} <span class="muted">Lv${lv}/5</span></div>
+      <div class="skill compact ${catClass}">
+        <div class="name"><span class="skillCatDot"></span>${meta.name} <span class="muted">Lv${lv}/5</span></div>
         <div class="desc">${effect}</div>
       </div>
     `;
@@ -380,11 +384,11 @@ function buildSkillReferenceHtml(){
     </div>
 
     <div class="skillRefCats">
-      <div class="skillRefCat">
+      <div class="skillRefCat skillCatPoint">
         <div class="catTitle">Point Skills</div>
 
         <div class="skillRefItem">
-          <div class="name">Point Increase (multiplicative)</div>
+          <div class="name"><span class="skillCatDot"></span>Point Increase (multiplicative)</div>
           <div class="rule">Applied after combo (and after Value Decay if it applies). Multiplies your current score value.</div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Effect</th></tr>
@@ -397,7 +401,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Point Absorption (steal fixed points)</div>
+          <div class="name"><span class="skillCatDot"></span>Point Absorption (steal fixed points)</div>
           <div class="rule">After your <span class="skillRefSmall">finalWordPoints</span> is known: steal points from opponent (opponent score cannot go below 0), then add stolen points to you. (This is separate from your word’s own “+n pts”.)</div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Stolen on every successful word</th></tr>
@@ -410,7 +414,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Point Fountain</div>
+          <div class="name"><span class="skillCatDot"></span>Point Fountain</div>
           <div class="rule">
             When you find a word, the <b>final tile</b> becomes your fountain tile (max 1; new replaces old).
             <br/>• If <b>YOU</b> use your own fountain tile in a word: add a flat bonus.
@@ -427,7 +431,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Point Skills Category Bonus</div>
+          <div class="name"><span class="skillCatDot"></span>Point Skills Category Bonus</div>
           <div class="rule">Based on total Point-skill levels you own. Added at the end of each of your turns (after turn-end effects like Self Investment penalty).</div>
           <table class="skillRefTable">
             <tr><th>Tier</th><th>Requirement</th><th>Effect</th></tr>
@@ -437,11 +441,11 @@ function buildSkillReferenceHtml(){
         </div>
       </div>
 
-      <div class="skillRefCat">
+      <div class="skillRefCat skillCatCounter">
         <div class="catTitle">Counter Skills</div>
 
         <div class="skillRefItem">
-          <div class="name">Value Decay</div>
+          <div class="name"><span class="skillCatDot"></span>Value Decay</div>
           <div class="rule">
             Affects the opponent ONLY. Track their “same-length success streak”:
             increments only on successful words; resets to 1 when the next successful word has a different length.
@@ -458,7 +462,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Winner’s Footsteps (Gold tiles)</div>
+          <div class="name"><span class="skillCatDot"></span>Winner’s Footsteps (Gold tiles)</div>
           <div class="rule">
             Trigger: if the opponent finds a word, then on your <b>NEXT</b> turn gold tiles appear.
             Gold tiles are visible to both players and revert at the end of your turn.
@@ -476,7 +480,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Color Cancellation</div>
+          <div class="name"><span class="skillCatDot"></span>Color Cancellation</div>
           <div class="rule">
             When you find a word, the opponent’s NEXT turn spawns fewer <b>special tiles</b>:
             GOLD (Winner’s Footsteps) and SILVER (Failure into Opportunity).
@@ -493,7 +497,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Counter Skills Category Bonus (Gray tiles)</div>
+          <div class="name"><span class="skillCatDot"></span>Counter Skills Category Bonus (Gray tiles)</div>
           <div class="rule">
             On the opponent’s turn, visible gray tiles spawn (visible to both players).
             Gray tiles cannot be used in words (unusable). Gray is not reduced by Color Cancellation.
@@ -506,11 +510,11 @@ function buildSkillReferenceHtml(){
         </div>
       </div>
 
-      <div class="skillRefCat">
+      <div class="skillRefCat skillCatTech">
         <div class="catTitle">Technical Skills</div>
 
         <div class="skillRefItem">
-          <div class="name">Extra Chance</div>
+          <div class="name"><span class="skillCatDot"></span>Extra Chance</div>
           <div class="rule">
             After a failed attempt, you gain extra attempts (same turn).
             Failure still resets combo immediately. Extra attempts do NOT protect combo.
@@ -526,7 +530,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Failure into Opportunity (Silver tiles)</div>
+          <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (Silver tiles)</div>
           <div class="rule">
             Trigger: on a failed attempt, the tiles you traced become the candidate set.
             Choose up to the max silver tiles uniformly at random from that traced set — those become silver for your NEXT turn.
@@ -544,7 +548,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Self Investment</div>
+          <div class="name"><span class="skillCatDot"></span>Self Investment</div>
           <div class="rule">
             End of each of your turns: lose points (score cannot go below 0).
             In exchange, words of length 5+ gain a multiplier (applied after combo).
@@ -560,7 +564,7 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name">Technical Skills Category Bonus: Skill Destruction</div>
+          <div class="name"><span class="skillCatDot"></span>Technical Skills Category Bonus: Skill Destruction</div>
           <div class="rule">
             When you successfully find a word: reduce the level of a random opponent skill by 1.
             Skills at level 1 are never selected. Max once per turn.
