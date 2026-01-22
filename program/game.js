@@ -1042,7 +1042,7 @@ export function describeSkillCompact(p, skillId){
     case "POINT_FOUNTAIN":
       return `self +${FOUNTAIN_BONUS[lv]} / opponent share 50%`;
     case "VALUE_DECAY":
-      return `step ${DECAY_STEP[lv].toFixed(2)} (min ×0.40)`;
+      return `step ${Math.round(DECAY_STEP[lv] * 100)}% (min ×0.40)`;
     case "WIN_FOOTSTEPS":
       return `gold max ${GOLD_MAX_TILES[lv]}, +${GOLD_BONUS[lv]} if used`;
     case "COLOR_CANCEL":
@@ -1079,8 +1079,8 @@ export function describeSkill(p, skillId){
       return `Lv${lv}/5 — When you find a word, the LAST tile becomes your Fountain (only 1 at a time; new replaces old). Using YOUR Fountain in a later word adds +${bonus} flat points. If the OPPONENT uses your Fountain in a word, you gain 50% of that word’s FINAL points (rounded), and the opponent still keeps full word points.`;
     }
     case "VALUE_DECAY": {
-      const step = DECAY_STEP[lv];
-      return `Lv${lv}/5 — Affects the opponent ONLY. Track opponent’s “same-length success streak” (counts only on their successful words; resets to 1 if length changes). If streak ≥2, multiply their score by max(0.40, 1.00 − ${step.toFixed(2)} × (streak−1)). Applied after combo, before their own multipliers.`;
+      const stepPct = Math.round(DECAY_STEP[lv] * 100);
+      return `Lv${lv}/5 — Affects the opponent ONLY. Track opponent’s “same-length success streak” (counts only on their successful words; resets to 1 if length changes). If streak ≥2, multiply their score by max(0.40, 1.00 − ${stepPct}% × (streak−1)). Applied after combo, before their own multipliers.`;
     }
     case "WIN_FOOTSTEPS": {
       const maxGold = GOLD_MAX_TILES[lv];
@@ -1124,7 +1124,7 @@ export function describeOffer(p, skillMeta){
     case "POINT_INCREASE": effect = `Next: ×${(1+POINT_INCREASE_PCT[next]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[next]*100)}%)`; break;
     case "POINT_ABSORB":   effect = `Next: steal ${ABSORB_VALUE[next]} pts on success`; break;
     case "POINT_FOUNTAIN": effect = `Next: self-use +${FOUNTAIN_BONUS[next]} pts`; break;
-    case "VALUE_DECAY":    effect = `Next: decay step ${DECAY_STEP[next].toFixed(2)} (min ×0.40)`; break;
+    case "VALUE_DECAY":    effect = `Next: decay step ${Math.round(DECAY_STEP[next] * 100)}% (min ×0.40)`; break;
     case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]}`; break;
     case "COLOR_CANCEL":   effect = `Next: stronger reduction`; break;
     case "EXTRA_CHANCE":   effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure`; break;

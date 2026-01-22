@@ -717,14 +717,14 @@ function buildSkillReferenceHtml(){
             increments only on successful words; resets to 1 when the next successful word has a different length.
             If streak ≥ 2: <b>score ×= max(0.40, 1.00 − step × (streak−1))</b>.
           </div>
-          <table class="skillRefTable">
-            <tr><th>Level</th><th>Decay step</th></tr>
-            <tr><td>Lv1</td><td>0.06</td></tr>
-            <tr><td>Lv2</td><td>0.08</td></tr>
-            <tr><td>Lv3</td><td>0.10</td></tr>
-            <tr><td>Lv4</td><td>0.12</td></tr>
-            <tr><td>Lv5</td><td>0.15</td></tr>
-          </table>
+            <table class="skillRefTable">
+              <tr><th>Level</th><th>Decay step</th></tr>
+              <tr><td>Lv1</td><td>6%</td></tr>
+              <tr><td>Lv2</td><td>8%</td></tr>
+              <tr><td>Lv3</td><td>10%</td></tr>
+              <tr><td>Lv4</td><td>12%</td></tr>
+              <tr><td>Lv5</td><td>15%</td></tr>
+            </table>
         </div>
 
         <div class="skillRefItem">
