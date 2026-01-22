@@ -162,7 +162,12 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   border-radius:14px;
   padding:10px;
 }
-.feedback.shake{ animation: feedbackShake 260ms ease-out 0s 1; }
+.feedback.shake{
+  animation: feedbackShake 260ms ease-out 0s 1;
+  border-color: rgba(255,75,75,0.45);
+  background: rgba(255,75,75,0.08);
+  box-shadow: 0 0 0 2px rgba(255,75,75,0.12);
+}
 @keyframes feedbackShake{
   0%{ transform: translateX(0); }
   20%{ transform: translateX(-6px); }
