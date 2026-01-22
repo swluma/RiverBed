@@ -389,6 +389,10 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 }
 .modalTitle{ font-weight:1000; }
 .modalBody{ padding:12px; }
+.skillRefModalBody{
+  max-height: 72vh;
+  overflow:auto;
+}
 .muted{ color:var(--muted); font-size:12px; }
 
 .hintSummary{

@@ -19,6 +19,7 @@ export function bindUI(handlers){
     dictText: document.getElementById("dictText"),
     newMatchBtn: document.getElementById("newMatchBtn"),
     legendBtn: document.getElementById("legendBtn"),
+    skillRefBtn: document.getElementById("skillRefBtn"),
     winScoreBtn: document.getElementById("winScoreBtn"),
 
     fbTitle: document.getElementById("fbTitle"),
@@ -40,6 +41,8 @@ export function bindUI(handlers){
 
     legendModal: document.getElementById("legendModal"),
     closeLegendBtn: document.getElementById("closeLegendBtn"),
+    skillRefModal: document.getElementById("skillRefModal"),
+    closeSkillRefBtn: document.getElementById("closeSkillRefBtn"),
 
     skillModal: document.getElementById("skillModal"),
     skillOffers: document.getElementById("skillOffers"),
@@ -67,26 +70,39 @@ export function bindUI(handlers){
     hintCancelBtn: document.getElementById("hintCancelBtn"),
   };
 
-  // Create a full Skill Reference section right under Player 2 status (NOT under the field area)
+  // Skill reference content (now shown via modal button)
   if (!el.skillReferenceRoot){
     el.skillReferenceRoot = document.createElement("section");
     el.skillReferenceRoot.id = "skillReferenceRoot";
     el.skillReferenceRoot.className = "skillReferenceRoot";
-    el.skillReferenceRoot.innerHTML = buildSkillReferenceHtml();
 
-    // Insert immediately AFTER the Player 2 panel (fallback: after p2Skills container)
-    const p2Panel =
-      (el.p2Skills && (el.p2Skills.closest(".panel") || el.p2Skills.closest(".playerPanel"))) ||
-      (el.p2Skills && el.p2Skills.parentElement);
-
-    if (p2Panel && p2Panel.parentElement){
-      p2Panel.parentElement.insertBefore(el.skillReferenceRoot, p2Panel.nextSibling);
-    } else {
-      document.body.appendChild(el.skillReferenceRoot);
+    if (!el.skillRefModal){
+      el.skillRefModal = document.createElement("div");
+      el.skillRefModal.id = "skillRefModal";
+      el.skillRefModal.className = "modalOverlay hidden";
+      el.skillRefModal.innerHTML = `
+        <div class="modal card wide">
+          <div class="modalHead">
+            <div class="modalTitle">Skill Reference</div>
+            <button class="ghost" id="closeSkillRefBtn">Close</button>
+          </div>
+          <div class="modalBody skillRefModalBody"></div>
+        </div>
+      `;
+      document.body.appendChild(el.skillRefModal);
+      el.closeSkillRefBtn = el.skillRefModal.querySelector("#closeSkillRefBtn");
     }
 
+    const body = el.skillRefModal.querySelector(".skillRefModalBody");
+    if (body) body.appendChild(el.skillReferenceRoot);
+  }
+
+  el.skillReferenceRoot.innerHTML = buildSkillReferenceHtml();
+
+  if (!document.getElementById("skillReferenceStyle")){
     // Inject minimal styles (so we don't have to touch styles.css)
     const style = document.createElement("style");
+    style.id = "skillReferenceStyle";
     style.textContent = `
       .skillReferenceRoot{ margin: 12px 0 18px; padding: 12px; border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; background: rgba(255,255,255,0.03); }
       .skillRefHeader{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
@@ -119,6 +135,19 @@ export function bindUI(handlers){
   el.legendModal.addEventListener("click", (e) => {
     if (e.target === el.legendModal) hide(el.legendModal);
   });
+
+  // Skill reference modal
+  if (el.skillRefBtn && el.skillRefModal){
+    el.skillRefBtn.addEventListener("click", () => show(el.skillRefModal));
+  }
+  if (el.closeSkillRefBtn && el.skillRefModal){
+    el.closeSkillRefBtn.addEventListener("click", () => hide(el.skillRefModal));
+  }
+  if (el.skillRefModal){
+    el.skillRefModal.addEventListener("click", (e) => {
+      if (e.target === el.skillRefModal) hide(el.skillRefModal);
+    });
+  }
 
   // Hint modal
   if (el.hintBtn && handlers.onHint){
