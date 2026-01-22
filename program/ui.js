@@ -1,5 +1,5 @@
 import { SIZE, FAIL_COUNTDOWN_MS } from "./config.js";
-import { SKILLS, describeSkill, describeSkillCompact, describeOffer } from "./game.js";
+import { SKILLS, describeSkill, describeSkillCompact, describeOffer, pointTier, counterTier, techTier } from "./game.js";
 
 export function bindUI(handlers){
   const el = {
@@ -25,6 +25,8 @@ export function bindUI(handlers){
     p2Score: document.getElementById("p2Score"),
     p1Combo: document.getElementById("p1Combo"),
     p2Combo: document.getElementById("p2Combo"),
+    p1Bonus: document.getElementById("p1Bonus"),
+    p2Bonus: document.getElementById("p2Bonus"),
     p1Skills: document.getElementById("p1Skills"),
     p2Skills: document.getElementById("p2Skills"),
     // Dynamic skill reference (created if missing)
@@ -183,6 +185,8 @@ export function renderAll(el, g){
   el.p2Combo.textContent = String(g.players[1].combo);
 
   // Skills panels (compact: only level + current effect)
+  el.p1Bonus.innerHTML = renderCategoryBonuses(g.players[0]);
+  el.p2Bonus.innerHTML = renderCategoryBonuses(g.players[1]);
   el.p1Skills.innerHTML = renderSkills(g.players[0]);
   el.p2Skills.innerHTML = renderSkills(g.players[1]);
 
@@ -222,6 +226,49 @@ function renderSkills(p){
       </div>
     `;
   }).join("");
+}
+
+export function renderCategoryBonuses(p){
+  const pTier = pointTier(p);
+  const cTier = counterTier(p);
+  const tTier = techTier(p);
+  const items = [];
+
+  if (pTier > 0){
+    const bonus = (pTier === 1) ? "+8 end of turn" : "+15 end of turn";
+    items.push(`
+      <div class="bonusItem point">
+        <div class="tag"><span class="dot"></span>Point Tier ${pTier}</div>
+        <div class="detail">${bonus}</div>
+      </div>
+    `);
+  }
+
+  if (cTier > 0){
+    const tiles = (cTier === 1) ? "1 gray tile" : "2 gray tiles";
+    items.push(`
+      <div class="bonusItem counter">
+        <div class="tag"><span class="dot"></span>Counter Tier ${cTier}</div>
+        <div class="detail">Opponent turn spawns ${tiles}</div>
+      </div>
+    `);
+  }
+
+  if (tTier > 0){
+    const chance = (tTier === 1) ? "50% chance" : "100% chance";
+    items.push(`
+      <div class="bonusItem tech">
+        <div class="tag"><span class="dot"></span>Tech Tier ${tTier}</div>
+        <div class="detail">${chance} to destroy one opponent skill (Lv2+)</div>
+      </div>
+    `);
+  }
+
+  if (items.length === 0){
+    return `<div class="empty">No category bonuses active.</div>`;
+  }
+
+  return items.join("");
 }
 
 function renderLog(g){

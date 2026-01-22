@@ -670,7 +670,7 @@ function countOverlap(setA, setB){
    Category bonuses
 ------------------------ */
 
-function pointTier(p){
+export function pointTier(p){
   const total =
     p.skills.POINT_INCREASE +
     p.skills.POINT_ABSORB +
@@ -681,7 +681,7 @@ function pointTier(p){
   return 0;
 }
 
-function counterTier(p){
+export function counterTier(p){
   const total =
     p.skills.VALUE_DECAY +
     p.skills.WIN_FOOTSTEPS +
@@ -692,7 +692,7 @@ function counterTier(p){
   return 0;
 }
 
-function techTier(p){
+export function techTier(p){
   const total =
     p.skills.EXTRA_CHANCE +
     p.skills.FAIL_OPP +

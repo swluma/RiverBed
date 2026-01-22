@@ -125,6 +125,39 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 .stat .k{ font-size:12px; color:var(--muted); }
 .stat .v{ font-size:22px; font-weight:1000; }
 
+.bonusSummary{
+  display:grid;
+  gap:8px;
+  padding:10px;
+  border-radius:14px;
+  background:rgba(255,255,255,0.04);
+  border:1px dashed rgba(255,255,255,0.10);
+}
+.bonusSummary .empty{ color:var(--muted); font-size:12px; }
+.bonusItem{
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+  font-size:12px;
+}
+.bonusItem .tag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-weight:900;
+  letter-spacing:0.2px;
+}
+.bonusItem .dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  box-shadow:0 0 0 2px rgba(0,0,0,0.15);
+}
+.bonusItem .detail{ color:var(--muted); line-height:1.35; }
+.bonusItem.point .dot{ background:var(--skill-point); }
+.bonusItem.counter .dot{ background:var(--skill-counter); }
+.bonusItem.tech .dot{ background:var(--skill-tech); }
+
 .skills{ display:grid; gap:8px; }
 .skill{
   background:rgba(255,255,255,0.05);
