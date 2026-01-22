@@ -177,7 +177,7 @@ async function onPointerUp(e){
       result.reason === "DUPLICATE" ? "Duplicate (match-wide)" :
       "Not in dictionary";
     setFeedback(ui, "FAIL", `${reasonText}. Combo reset.`);
-    await animateAttemptsFail(ui, g.attempts);
+    await animateAttemptsFail(ui, g);
     renderAll(ui, g);
     if (result.ended){
       await openSkillSelectIfNeeded();

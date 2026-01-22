@@ -169,7 +169,7 @@ export function renderAll(el, g){
   // Header
   el.turnNo.textContent = String(g.turnNo);
   el.activePlayer.textContent = (g.active === 0) ? "Player 1 (Red)" : "Player 2 (Blue)";
-  el.attemptsLeft.textContent = String(g.attempts);
+  el.attemptsLeft.textContent = String(getAttemptsLeftDisplay(g));
   if (el.winScoreValue) el.winScoreValue.textContent = String(g.winScore);
 
   // Current word
@@ -310,8 +310,9 @@ export function setFeedback(el, title, sub){
   el.fbSub.textContent = sub;
 }
 
-export async function animateAttemptsFail(el, attemptsLeft){
-  setFeedback(el, "FAIL", `Attempts left: ${attemptsLeft}`);
+export async function animateAttemptsFail(el, g){
+  const nextAttemptsLeft = getAttemptsLeftDisplay(g);
+  setFeedback(el, "FAIL", `Attempts left: ${nextAttemptsLeft}`);
   await sleep(FAIL_COUNTDOWN_MS);
 }
 
@@ -587,4 +588,11 @@ function escapeHtml(s){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+}
+
+function getAttemptsLeftDisplay(g){
+  if (!g || !Number.isFinite(g.attempts)) return 0;
+  if (g.attempts <= 0) return 0;
+  const extra = Number.isFinite(g.extraChanceLeft) ? g.extraChanceLeft : 0;
+  return g.attempts + extra;
 }
