@@ -676,8 +676,8 @@ export function pointTier(p){
     p.skills.POINT_ABSORB +
     p.skills.POINT_FOUNTAIN;
 
-  if (total >= 6) return 2;
-  if (total >= 3) return 1;
+  if (total >= 10) return 2;
+  if (total >= 5) return 1;
   return 0;
 }
 
@@ -687,8 +687,8 @@ export function counterTier(p){
     p.skills.WIN_FOOTSTEPS +
     p.skills.COLOR_CANCEL;
 
-  if (total >= 6) return 2;
-  if (total >= 3) return 1;
+  if (total >= 10) return 2;
+  if (total >= 5) return 1;
   return 0;
 }
 
@@ -698,8 +698,8 @@ export function techTier(p){
     p.skills.FAIL_OPP +
     p.skills.SELF_INVEST;
 
-  if (total >= 6) return 2;
-  if (total >= 3) return 1;
+  if (total >= 10) return 2;
+  if (total >= 5) return 1;
   return 0;
 }
 
