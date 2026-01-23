@@ -412,6 +412,11 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 }
 .modalTitle{ font-weight:1000; }
 .modalBody{ padding:12px; }
+.scoreInfoModalBody{
+  max-height: 64vh;
+  overflow:auto;
+  padding:10px 12px;
+}
 .skillRefModalBody{
   max-height: 72vh;
   overflow:auto;
