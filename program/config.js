@@ -1,6 +1,8 @@
 // Dictionary: keep GitHub fetch (as requested)
 export const DICT_URL =
   "https://raw.githubusercontent.com/rressler/data_raw_courses/main/enable1_words.txt";
+export const COMMON_WORDS_URL =
+  "https://raw.githubusercontent.com/aparrish/wordfreq-en-25000/main/wordfreq-en-25000-log.json";
 
 // Field
 export const SIZE = 6;

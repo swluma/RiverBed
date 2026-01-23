@@ -152,7 +152,7 @@ function neighbors4(idx){
    Game State
 ------------------------ */
 
-export function createNewGame(dictSet, dictWords, winScore = WIN_SCORE){
+export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCORE){
   const g = {
     dictSet,
     dictWords,
@@ -202,7 +202,8 @@ export function createNewGame(dictSet, dictWords, winScore = WIN_SCORE){
   };
 
   // Create a fixed field with embedded targets satisfying EXACT constraints
-  const { letters, embedded } = generateFieldWithEmbeddedTargets(dictWords);
+  const embedPool = (embedWords && embedWords.length > 0) ? embedWords : dictWords;
+  const { letters, embedded } = generateFieldWithEmbeddedTargets(embedPool);
   g.board = letters;
   g.embeddedWords = embedded;
   console.log("[boggle] embedded words:", embedded.join(", "));

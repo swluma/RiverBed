@@ -1,4 +1,4 @@
-import { DICT_URL, WIN_SCORE } from "./config.js";
+import { COMMON_WORDS_URL, DICT_URL, WIN_SCORE } from "./config.js";
 import {
   createNewGame,
   beginSwipe, extendSwipe, releaseSwipe,
@@ -16,6 +16,7 @@ import {
 
 let dictSet = null;
 let dictWords = null;
+let embedWords = null;
 
 let g = null;
 let ui = null;
@@ -109,15 +110,33 @@ onApplyWinScore(ui, ({ mode, value }) => {
 async function loadDictionary(){
   setDictStatus(ui, "wait", "Loading dictionary…");
   try{
-    const res = await fetch(DICT_URL, { cache:"force-cache" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const text = await res.text();
+    const dictRes = await fetch(DICT_URL, { cache:"force-cache" });
+    if (!dictRes.ok) throw new Error("HTTP " + dictRes.status);
+    const dictText = await dictRes.text();
+
+    let commonJson = [];
+    try{
+      const commonRes = await fetch(COMMON_WORDS_URL, { cache:"force-cache" });
+      if (commonRes.ok){
+        commonJson = await commonRes.json();
+      }
+    } catch {}
 
     const set = new Set();
     const words = [];
+    const commonSet = new Set();
 
-    for (const line of text.split(/\r?\n/)){
-      const w = line.trim().toLowerCase().replace(/[^a-z]/g, "");
+    const normalizeWord = (raw) =>
+      String(raw || "").toLowerCase().replace(/[^a-z]/g, "");
+
+    for (const row of commonJson){
+      const w = normalizeWord(row && row[0]);
+      if (w.length < 3) continue;
+      commonSet.add(w);
+    }
+
+    for (const line of dictText.split(/\r?\n/)){
+      const w = normalizeWord(line.trim());
       if (w.length < 3) continue;
       if (set.has(w)) continue;
       set.add(w);
@@ -126,6 +145,8 @@ async function loadDictionary(){
 
     dictSet = set;
     dictWords = words;
+    embedWords = words.filter((w) => commonSet.has(w));
+    if (embedWords.length === 0) embedWords = words;
 
     setDictStatus(ui, "ok", `Dictionary OK (${set.size.toLocaleString()} words)`);
     ui.newMatchBtn.disabled = false;
@@ -142,7 +163,7 @@ async function loadDictionary(){
 function onNewMatch(){
   if (!dictSet || !dictWords) return;
   try{
-    g = createNewGame(dictSet, dictWords, targetWinScore);
+    g = createNewGame(dictSet, dictWords, embedWords, targetWinScore);
   } catch(e){
     console.error(e);
     setFeedback(ui, "ERROR", "Field generation failed. Try again (New Match).");
