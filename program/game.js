@@ -87,13 +87,17 @@ const LEN_TABLE = (len) => {
 const COMBO_MULT = (combo) => {
   if (combo <= 0) return 1.0;
   if (combo === 1) return 1.00;
-  if (combo === 2) return 1.05;
-  if (combo === 3) return 1.15;
-  if (combo === 4) return 1.30;
-  if (combo === 5) return 1.50;
-  if (combo === 6) return 1.75;
+  if (combo === 2) return 1.15;
+  if (combo === 3) return 1.30;
+  if (combo === 4) return 1.50;
+  if (combo === 5) return 1.75;
+  if (combo === 6) return 1.85;
   return 2.00; // >=7 cap
 };
+
+export function comboMultiplier(combo){
+  return COMBO_MULT(combo);
+}
 
 function roundInt(x){
   // standard rounding, 0.5 up

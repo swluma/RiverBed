@@ -2,7 +2,7 @@ import { SIZE, FAIL_COUNTDOWN_MS } from "./config.js";
 import {
   SKILLS, describeSkill, describeSkillCompact, describeOffer,
   pointTier, counterTier, techTier,
-  canUseHint, totalSkillLevels
+  canUseHint, totalSkillLevels, comboMultiplier
 } from "./game.js";
 
 export function bindUI(handlers){
@@ -32,6 +32,8 @@ export function bindUI(handlers){
     p2Score: document.getElementById("p2Score"),
     p1Combo: document.getElementById("p1Combo"),
     p2Combo: document.getElementById("p2Combo"),
+    p1ComboMult: document.getElementById("p1ComboMult"),
+    p2ComboMult: document.getElementById("p2ComboMult"),
     p1DecayStep: document.getElementById("p1DecayStep"),
     p2DecayStep: document.getElementById("p2DecayStep"),
     p1Bonus: document.getElementById("p1Bonus"),
@@ -281,6 +283,8 @@ export function renderAll(el, g){
   el.p2Score.textContent = String(g.players[1].score);
   el.p1Combo.textContent = String(g.players[0].combo);
   el.p2Combo.textContent = String(g.players[1].combo);
+  if (el.p1ComboMult) el.p1ComboMult.textContent = formatComboMultiplier(g.players[0].combo);
+  if (el.p2ComboMult) el.p2ComboMult.textContent = formatComboMultiplier(g.players[1].combo);
   if (el.p1DecayStep) el.p1DecayStep.textContent = `${g.players[0].decayStepPct ?? 0}%`;
   if (el.p2DecayStep) el.p2DecayStep.textContent = `${g.players[1].decayStepPct ?? 0}%`;
 
@@ -892,4 +896,9 @@ function getAttemptsLeftDisplay(g){
   if (g.attempts <= 0 && extra <= 0) return "0";
   if (extra > 0) return `${g.attempts} + ${extra}`;
   return String(g.attempts);
+}
+
+function formatComboMultiplier(combo){
+  const mult = comboMultiplier(combo);
+  return `${mult.toFixed(2)}x`;
 }
