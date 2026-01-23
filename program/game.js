@@ -66,8 +66,8 @@ const CANCEL_REDUCTION = (lv) => {
 
 const EXTRA_CHANCE_ADD   = [0, 1, 2, 3, 4, 5];
 
-const SILVER_MAX_TILES   = [0, 1, 1, 2, 2, 3];
-const SILVER_MULT        = [1, 1.5, 1.9, 1.9, 2.6, 2.6];
+const SILVER_MAX_TILES   = [0, 2, 3, 3, 4, 6];
+const SILVER_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
 
 const INVEST_PENALTY     = [0, 3, 5, 7, 10, 14];
 const INVEST_MULT        = [1, 1.2, 1.45, 1.8, 2.3, 3.0];
@@ -102,6 +102,13 @@ export function comboMultiplier(combo){
 function roundInt(x){
   // standard rounding, 0.5 up
   return Math.round(x);
+}
+
+function formatSilverMult(mult){
+  const s = mult.toFixed(2);
+  if (s.endsWith("00")) return formatSilverMult(mult);
+  if (s.endsWith("0")) return s.slice(0, -1);
+  return s;
 }
 
 function randInt(n){ return Math.floor(Math.random() * n); }
@@ -248,7 +255,7 @@ function makePlayer(id){
     // Winner's Footsteps: triggered by opponent success -> on NEXT turn for this player
     pendingGoldTrigger: false,
 
-    // Failure into Opportunity: selected tiles become silver for NEXT turn
+  // Failure into Opportunity: random board tiles become silver for NEXT turn
     pendingSilver: new Set(),
 
     // Color Cancellation: reduction to apply on opponent's NEXT turn (special tiles + fountain)
@@ -637,9 +644,7 @@ function handleFailure(g, {reason, word}){
   const foLv = ap.skills.FAIL_OPP;
   if (foLv >= 1){
     const maxSilver = SILVER_MAX_TILES[foLv];
-    const candidates = Array.from(new Set(g.selection));
-    shuffle(candidates);
-    const chosen = candidates.slice(0, Math.min(maxSilver, candidates.length));
+    const chosen = pickDistinctIndices(maxSilver, SIZE * SIZE);
     ap.pendingSilver = new Set(chosen);
   } else {
     ap.pendingSilver = new Set();
@@ -1095,7 +1100,7 @@ export function describeSkillCompact(p, skillId){
     case "EXTRA_CHANCE":
       return `+${EXTRA_CHANCE_ADD[lv]} attempts after fail`;
     case "FAIL_OPP":
-      return `silver max ${SILVER_MAX_TILES[lv]}, ×${SILVER_MULT[lv].toFixed(1)} if ≥2 used`;
+      return `silver max ${SILVER_MAX_TILES[lv]}, ×${formatSilverMult(SILVER_MULT[lv])} if ≥2 used`;
     case "SELF_INVEST":
       return `-${INVEST_PENALTY[lv]}/turn, 5+ ×${INVEST_MULT[lv].toFixed(2)}`;
     default:
@@ -1138,7 +1143,7 @@ export function describeSkill(p, skillId){
     case "FAIL_OPP": {
       const maxS = SILVER_MAX_TILES[lv];
       const mult = SILVER_MULT[lv];
-      return `Lv${lv}/5 — Trigger on failure: from the tiles you traced in that failed attempt, choose up to ${maxS} uniformly at random; those become SILVER on your NEXT turn. On that next turn, if your successful word uses ≥2 silver tiles, multiply that word’s score by ×${mult.toFixed(1)}. Silver tiles are visible and disappear at the end of that next turn.`;
+      return `Lv${lv}/5 — Trigger on failure: choose up to ${maxS} tiles uniformly at random from the entire board; those become SILVER on your NEXT turn. On that next turn, if your successful word uses ≥2 silver tiles, multiply that word’s score by ×${formatSilverMult(mult)}. Silver tiles are visible and disappear at the end of that next turn.`;
     }
     case "SELF_INVEST": {
       const lose = INVEST_PENALTY[lv];
@@ -1178,7 +1183,7 @@ export function describeOffer(p, skillMeta){
       break;
     }
     case "EXTRA_CHANCE":   effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure`; break;
-    case "FAIL_OPP":       effect = `Next: max silver ${SILVER_MAX_TILES[next]}, silver mult ×${SILVER_MULT[next].toFixed(1)}`; break;
+    case "FAIL_OPP":       effect = `Next: max silver ${SILVER_MAX_TILES[next]}, silver mult ×${formatSilverMult(SILVER_MULT[next])}`; break;
     case "SELF_INVEST":    effect = `Next: -${INVEST_PENALTY[next]} / turn, 5+ ×${INVEST_MULT[next].toFixed(2)}`; break;
   }
 

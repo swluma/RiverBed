@@ -833,18 +833,17 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (Silver tiles)</div>
           <div class="rule">
-            Trigger: on a failed attempt, the tiles you traced become the candidate set.
-            Choose up to the max silver tiles uniformly at random from that traced set — those become silver for your NEXT turn.
+            Trigger: on a failed attempt, choose up to the max silver tiles uniformly at random from the entire board — those become silver for your NEXT turn.
             On your NEXT turn, if your successful word uses at least 2 silver tiles, apply the multiplier.
             Silver tiles revert at the end of that next turn.
           </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Max silver tiles</th><th>Silver multiplier (if ≥2 used)</th></tr>
-            <tr><td>Lv1</td><td>1</td><td>×1.5</td></tr>
-            <tr><td>Lv2</td><td>1</td><td>×1.9</td></tr>
-            <tr><td>Lv3</td><td>2</td><td>×1.9</td></tr>
-            <tr><td>Lv4</td><td>2</td><td>×2.6</td></tr>
-            <tr><td>Lv5</td><td>3</td><td>×2.6</td></tr>
+            <tr><td>Lv1</td><td>2</td><td>×1.3</td></tr>
+            <tr><td>Lv2</td><td>3</td><td>×1.5</td></tr>
+            <tr><td>Lv3</td><td>3</td><td>×1.7</td></tr>
+            <tr><td>Lv4</td><td>4</td><td>×1.85</td></tr>
+            <tr><td>Lv5</td><td>6</td><td>×2.0</td></tr>
           </table>
         </div>
 
