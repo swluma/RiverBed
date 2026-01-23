@@ -1,11 +1,11 @@
 // Dictionary: keep GitHub fetch (as requested)
 export const DICT_URL =
-  "https://raw.githubusercontent.com/aparrish/wordfreq-en-25000/main/wordfreq-en-25000-log.json";
+  "https://raw.githubusercontent.com/rressler/data_raw_courses/main/enable1_words.txt";
 
 // Field
 export const SIZE = 6;
 export const MIN_WORD_LEN = 3;
-
+2
 // Match
 export const WIN_SCORE = 300;
 

@@ -111,14 +111,15 @@ async function loadDictionary(){
   try{
     const res = await fetch(DICT_URL, { cache:"force-cache" });
     if (!res.ok) throw new Error("HTTP " + res.status);
-    const json = await res.json();
+    const text = await res.text();
 
     const set = new Set();
     const words = [];
 
-    for (const row of json){
-      const w = String(row[0]).toLowerCase().replace(/[^a-z]/g, "");
+    for (const line of text.split(/\r?\n/)){
+      const w = line.trim().toLowerCase().replace(/[^a-z]/g, "");
       if (w.length < 3) continue;
+      if (set.has(w)) continue;
       set.add(w);
       words.push(w);
     }
