@@ -865,8 +865,9 @@ function escapeHtml(s){
 }
 
 function getAttemptsLeftDisplay(g){
-  if (!g || !Number.isFinite(g.attempts)) return 0;
-  if (g.attempts <= 0) return 0;
+  if (!g || !Number.isFinite(g.attempts)) return "0";
   const extra = Number.isFinite(g.extraChanceLeft) ? g.extraChanceLeft : 0;
-  return g.attempts + extra;
+  if (g.attempts <= 0 && extra <= 0) return "0";
+  if (extra > 0) return `${g.attempts} + ${extra}`;
+  return String(g.attempts);
 }

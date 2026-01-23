@@ -578,7 +578,7 @@ export function releaseSwipe(g){
     return { type:"NO_CONSUME_SHORT", len };
   }
 
-  g.attempts -= 1;
+  consumeAttempt(g);
 
   const word = g.selectionWord.toLowerCase();
 
@@ -601,6 +601,16 @@ function isAdjacent(a, b){
   const br = Math.floor(b / SIZE), bc = b % SIZE;
   const dr = Math.abs(ar - br), dc = Math.abs(ac - bc);
   return (dr <= 1 && dc <= 1 && !(dr === 0 && dc === 0));
+}
+
+function consumeAttempt(g){
+  if (g.attempts > 0){
+    g.attempts -= 1;
+    return;
+  }
+  if (g.extraChanceLeft > 0){
+    g.extraChanceLeft -= 1;
+  }
 }
 
 /* ------------------------
@@ -626,13 +636,7 @@ function handleFailure(g, {reason, word}){
     ap.pendingSilver = new Set();
   }
 
-  const ecLv = ap.skills.EXTRA_CHANCE;
-  if (ecLv > 0 && g.extraChanceLeft > 0){
-    g.attempts += 1;
-    g.extraChanceLeft -= 1;
-  }
-
-  const ended = (g.attempts <= 0);
+  const ended = (g.attempts <= 0 && g.extraChanceLeft <= 0);
   if (ended){
     endTurn(g, "OUT_OF_ATTEMPTS");
   }
