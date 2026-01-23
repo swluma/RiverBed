@@ -210,9 +210,19 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
 
   // Create a fixed field with embedded targets satisfying EXACT constraints
   const embedPool = (embedWords && embedWords.length > 0) ? embedWords : dictWords;
-  const extraTen = pickRandomWordOfLength(dictWords, 10);
-  const required = extraTen ? [extraTen] : [];
-  const { letters, embedded } = generateFieldWithEmbeddedTargets(embedPool, required);
+  let attempts = 0;
+  let generated = null;
+  while (!generated){
+    const extraTen = pickRandomWordOfLength(dictWords, 10);
+    const required = extraTen ? [extraTen] : [];
+    try {
+      generated = generateFieldWithEmbeddedTargets(embedPool, required);
+    } catch (err){
+      attempts += 1;
+      console.warn(`[boggle] field generation failed (retry ${attempts})`, err);
+    }
+  }
+  const { letters, embedded } = generated;
   g.board = letters;
   g.embeddedWords = embedded;
   console.log("[boggle] embedded words:", embedded.join(", "));
