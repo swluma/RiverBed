@@ -9,6 +9,8 @@ export function bindUI(handlers){
   const el = {
     grid: document.getElementById("grid"),
     currentWord: document.getElementById("currentWord"),
+    confirmBtn: document.getElementById("confirmBtn"),
+    confirmHint: document.getElementById("confirmHint"),
 
     turnNo: document.getElementById("turnNo"),
     activePlayer: document.getElementById("activePlayer"),
@@ -254,6 +256,10 @@ export function bindUI(handlers){
   el.grid.addEventListener("pointerup", (e) => handlers.onPointerUp(e));
   el.grid.addEventListener("pointercancel", (e) => handlers.onPointerCancel(e));
 
+  if (el.confirmBtn && handlers.onConfirm){
+    el.confirmBtn.addEventListener("click", () => handlers.onConfirm());
+  }
+
   return el;
 }
 
@@ -310,6 +316,16 @@ export function renderAll(el, g){
     el.hintBtn.title = (total < 3)
       ? `Need 3 total skill levels (have ${total}).`
       : "";
+  }
+}
+
+export function setConfirmState(el, pending, locked){
+  if (!el.confirmBtn) return;
+  el.confirmBtn.disabled = locked || !pending;
+  if (el.confirmHint){
+    el.confirmHint.textContent = pending
+      ? "Tap Confirm to submit this word."
+      : "Release to lock in a word, then confirm.";
   }
 }
 

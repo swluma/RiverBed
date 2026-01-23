@@ -206,6 +206,7 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
     selection: [],        // indices in current swipe
     selectionSet: new Set(),
     selectionWord: "",
+    pendingConfirm: false,
   };
 
   // Create a fixed field with embedded targets satisfying EXACT constraints
@@ -471,9 +472,8 @@ function randomLetterNoOrthAdjacency(letters, idx){
 export function startTurn(g){
   if (g.gameOver) return;
 
-  g.selection = [];
-  g.selectionSet = new Set();
-  g.selectionWord = "";
+  clearSelection(g);
+  g.pendingConfirm = false;
 
   if (g.hint){
     g.hint.usedThisTurn = false;
@@ -547,6 +547,9 @@ export function startTurn(g){
 export function endTurn(g, reason){
   if (g.gameOver) return;
 
+  clearSelection(g);
+  g.pendingConfirm = false;
+
   // End-of-turn revert: gold/silver/gray do NOT persist into skill selection
   g.gold.clear();
   g.silver.clear();
@@ -600,6 +603,7 @@ export function canSelectTile(g, idx){
 export function beginSwipe(g, idx){
   if (g.gameOver) return;
   if (!canSelectTile(g, idx)) return;
+  g.pendingConfirm = false;
   g.selection = [idx];
   g.selectionSet = new Set([idx]);
   g.selectionWord = g.board[idx];
@@ -624,9 +628,27 @@ export function releaseSwipe(g){
   const len = g.selection.length;
 
   if (len < MIN_WORD_LEN){
+    clearSelection(g);
+    g.pendingConfirm = false;
     return { type:"NO_CONSUME_SHORT", len };
   }
 
+  g.pendingConfirm = true;
+  return { type:"PENDING", len, word: g.selectionWord };
+}
+
+export function confirmSwipe(g){
+  if (g.gameOver) return { type:"NOOP" };
+  if (!g.pendingConfirm) return { type:"NO_PENDING" };
+
+  const len = g.selection.length;
+  if (len < MIN_WORD_LEN){
+    clearSelection(g);
+    g.pendingConfirm = false;
+    return { type:"NO_CONSUME_SHORT", len };
+  }
+
+  g.pendingConfirm = false;
   consumeAttempt(g);
 
   const word = g.selectionWord.toLowerCase();
@@ -643,6 +665,12 @@ export function releaseSwipe(g){
 
   const success = handleSuccess(g, word, len);
   return { type:"SUCCESS", word, len, ...success };
+}
+
+function clearSelection(g){
+  g.selection = [];
+  g.selectionSet = new Set();
+  g.selectionWord = "";
 }
 
 function isAdjacent(a, b){

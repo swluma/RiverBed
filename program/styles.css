@@ -310,6 +310,13 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 }
 .currentWord .k{ font-size:12px; color:var(--muted); }
 .currentWord .v{ font-size:18px; font-weight:1000; letter-spacing:0.6px; text-transform:uppercase; }
+.confirmRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.confirmHint{ font-size:12px; }
 
 .fieldWrap{ padding:12px; display:grid; place-items:center; }
 .grid{

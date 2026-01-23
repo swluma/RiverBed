@@ -1,13 +1,14 @@
 import { COMMON_WORDS_URL, DICT_URL, WIN_SCORE } from "./config.js";
 import {
   createNewGame,
-  beginSwipe, extendSwipe, releaseSwipe,
+  beginSwipe, extendSwipe, releaseSwipe, confirmSwipe,
   getSkillOffers, upgradeSkill,
   applyHint, canUseHint, totalSkillLevels,
   setWinScore
 } from "./game.js";
 import {
   bindUI, setDictStatus, renderAll,
+  setConfirmState,
   setFeedback, animateAttemptsFail, shakeFeedback,
   showSkillModal, onChooseSkill,
   showHintModal, onApplyHint, onCancelHint,
@@ -34,6 +35,7 @@ ui = bindUI({
   onPointerUp,
   onPointerCancel,
   onHint,
+  onConfirm,
 });
 
 if (ui.winScoreValue){
@@ -44,8 +46,8 @@ onChooseSkill(ui, (skillId) => {
   if (!g || g.gameOver) return;
   upgradeSkill(g, skillId);
   locked = false;
-  renderAll(ui, g);
-  setFeedback(ui, "Ready", "Swipe to form a word. Release to submit.");
+  renderNow();
+  setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
   if (g.gameOver) showEndModal(ui, g);
 });
 
@@ -64,19 +66,19 @@ onApplyHint(ui, (allocations) => {
       result.reason === "TOTAL_NOT_THREE" ? "Select exactly 3 skill levels to sacrifice." :
       "Hint unavailable.";
     setFeedback(ui, "Hint failed", reasonText);
-    renderAll(ui, g);
+    renderNow();
     return;
   }
 
-  renderAll(ui, g);
+  renderNow();
   setFeedback(ui, "Hint revealed", "Highlighted tiles form a valid word.");
 });
 
 onCancelHint(ui, () => {
   if (!g || g.gameOver) return;
   locked = false;
-  renderAll(ui, g);
-  setFeedback(ui, "Ready", "Swipe to form a word. Release to submit.");
+  renderNow();
+  setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
 });
 
 onApplyWinScore(ui, ({ mode, value }) => {
@@ -96,7 +98,7 @@ onApplyWinScore(ui, ({ mode, value }) => {
 
   if (!g) return;
   const ended = setWinScore(g, targetWinScore);
-  renderAll(ui, g);
+  renderNow();
   if (ended && g.gameOver){
     showEndModal(ui, g);
     locked = true;
@@ -171,8 +173,8 @@ function onNewMatch(){
   }
   locked = false;
   pointerActiveId = null;
-  renderAll(ui, g);
-  setFeedback(ui, "Ready", "Swipe to form a word. Release to submit.");
+  renderNow();
+  setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
 }
 
 function normalizeWinScore(value){
@@ -196,7 +198,7 @@ function onPointerDown(e){
   ui.grid.setPointerCapture(pointerActiveId);
 
   beginSwipe(g, idx);
-  renderAll(ui, g);
+  renderNow();
 }
 
 function onPointerMove(e){
@@ -208,7 +210,7 @@ function onPointerMove(e){
   if (!(idx >= 0)) return;
 
   extendSwipe(g, idx);
-  renderAll(ui, g);
+  renderNow();
 }
 
 async function onPointerUp(e){
@@ -220,7 +222,7 @@ async function onPointerUp(e){
 
   const result = releaseSwipe(g);
 
-  renderAll(ui, g);
+  renderNow();
 
   if (result.type === "NO_CONSUME_SHORT"){
     setFeedback(ui, "No attempt consumed", "Trace at least 3 tiles to submit.");
@@ -228,29 +230,8 @@ async function onPointerUp(e){
     return;
   }
 
-  if (result.type === "FAIL_INVALID" || result.type === "FAIL_DUPLICATE"){
-    const reasonText =
-      result.reason === "DUPLICATE" ? "Duplicate (match-wide)" :
-      "Not in dictionary";
-    setFeedback(ui, "FAIL", `${reasonText}. Combo reset.`);
-    shakeFeedback(ui);
-    await animateAttemptsFail(ui, g);
-    renderAll(ui, g);
-    if (result.ended){
-      await openSkillSelectIfNeeded();
-    }
-    return;
-  }
-
-  if (result.type === "SUCCESS"){
-    setFeedback(ui, "SUCCESS", `+${result.finalWordPoints} pts (word itself). Turn ends.`);
-    renderAll(ui, g);
-    if (g.gameOver){
-      showEndModal(ui, g);
-      locked = true;
-      return;
-    }
-    await openSkillSelectIfNeeded();
+  if (result.type === "PENDING"){
+    setFeedback(ui, "Ready to confirm", "Trace locked. Tap Confirm to submit.");
     return;
   }
 }
@@ -264,8 +245,9 @@ function onPointerCancel(e){
   g.selection = [];
   g.selectionSet = new Set();
   g.selectionWord = "";
-  renderAll(ui, g);
-  setFeedback(ui, "Ready", "Swipe to form a word. Release to submit.");
+  g.pendingConfirm = false;
+  renderNow();
+  setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
 }
 
 async function openSkillSelectIfNeeded(){
@@ -274,7 +256,7 @@ async function openSkillSelectIfNeeded(){
   const offers = getSkillOffers(g);
   if (offers.length === 0){
     locked = false;
-    renderAll(ui, g);
+    renderNow();
     setFeedback(ui, "Ready", "All skills maxed. No selection this turn.");
     return;
   }
@@ -299,6 +281,55 @@ function onHint(){
 
   locked = true;
   showHintModal(ui, g);
+}
+
+async function onConfirm(){
+  if (isLocked()) return;
+  if (!g || g.gameOver) return;
+
+  const result = confirmSwipe(g);
+  renderNow();
+
+  if (result.type === "NO_CONSUME_SHORT"){
+    setFeedback(ui, "No attempt consumed", "Trace at least 3 tiles to submit.");
+    shakeFeedback(ui);
+    return;
+  }
+
+  await handleEvaluationResult(result);
+}
+
+async function handleEvaluationResult(result){
+  if (result.type === "FAIL_INVALID" || result.type === "FAIL_DUPLICATE"){
+    const reasonText =
+      result.reason === "DUPLICATE" ? "Duplicate (match-wide)" :
+      "Not in dictionary";
+    setFeedback(ui, "FAIL", `${reasonText}. Combo reset.`);
+    shakeFeedback(ui);
+    await animateAttemptsFail(ui, g);
+    renderNow();
+    if (result.ended){
+      await openSkillSelectIfNeeded();
+    }
+    return;
+  }
+
+  if (result.type === "SUCCESS"){
+    setFeedback(ui, "SUCCESS", `+${result.finalWordPoints} pts (word itself). Turn ends.`);
+    renderNow();
+    if (g.gameOver){
+      showEndModal(ui, g);
+      locked = true;
+      return;
+    }
+    await openSkillSelectIfNeeded();
+  }
+}
+
+function renderNow(){
+  if (!g) return;
+  renderAll(ui, g);
+  setConfirmState(ui, g.pendingConfirm, isLocked());
 }
 
 loadDictionary();

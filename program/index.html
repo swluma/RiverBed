@@ -76,12 +76,16 @@
       <div class="centerHead">
         <div class="feedback" id="feedback">
           <span class="fbTitle" id="fbTitle">Ready</span>
-          <span class="fbSub" id="fbSub">Swipe across tiles to form a word. Release to submit.</span>
+          <span class="fbSub" id="fbSub">Swipe across tiles to form a word. Release to lock it in, then confirm.</span>
         </div>
 
         <div class="currentWord">
           <div class="k">Current</div>
           <div class="v" id="currentWord">—</div>
+        </div>
+        <div class="confirmRow">
+          <button id="confirmBtn" class="primary" disabled>Confirm</button>
+          <div class="confirmHint muted" id="confirmHint">Release to lock in a word, then confirm.</div>
         </div>
       </div>
 
@@ -209,7 +213,7 @@
           <div class="tutorialCard">
             <div class="tutorialTitle">1) Swipe a word</div>
             <div class="tutorialText">
-              Press and drag across adjacent tiles to spell a word. Release to submit. Longer words = bigger base points.
+              Press and drag across adjacent tiles to spell a word. Release to lock it in, then press Confirm. Longer words = bigger base points.
             </div>
           </div>
           <div class="tutorialCard">
