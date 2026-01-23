@@ -693,11 +693,11 @@ function buildSkillReferenceHtml(){
           <div class="rule">Applied after combo (and after Value Decay if it applies). Multiplies your current score value.</div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Effect</th></tr>
-            <tr><td>Lv1</td><td>×1.10 (+10%)</td></tr>
-            <tr><td>Lv2</td><td>×1.18 (+18%)</td></tr>
-            <tr><td>Lv3</td><td>×1.27 (+27%)</td></tr>
-            <tr><td>Lv4</td><td>×1.38 (+38%)</td></tr>
-            <tr><td>Lv5</td><td>×1.50 (+50%)</td></tr>
+            <tr><td>Lv1</td><td>×1.05 (+5%)</td></tr>
+            <tr><td>Lv2</td><td>×1.10 (+10%)</td></tr>
+            <tr><td>Lv3</td><td>×1.15 (+15%)</td></tr>
+            <tr><td>Lv4</td><td>×1.20 (+20%)</td></tr>
+            <tr><td>Lv5</td><td>×1.30 (+30%)</td></tr>
           </table>
         </div>
 
@@ -785,7 +785,7 @@ function buildSkillReferenceHtml(){
           <div class="rule">
             When you find a word, the opponent’s NEXT turn spawns fewer <b>special tiles</b>:
             GOLD (Winner’s Footsteps) and SILVER (Failure into Opportunity).
-            Gray tiles are excluded from this reduction, and fountain tiles are never removed.
+            Gray tiles are excluded from this reduction. If the opponent has a fountain tile, it is removed before their next turn begins.
           </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Reduction</th></tr>

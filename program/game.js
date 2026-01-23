@@ -41,7 +41,7 @@ export const SKILLS = {
   SELF_INVEST:    { id:"SELF_INVEST",    cat:"TECH", name:"Self Investment",            max:5 },
 };
 
-const POINT_INCREASE_PCT = [0, 0.10, 0.18, 0.27, 0.38, 0.50];
+const POINT_INCREASE_PCT = [0, 0.05, 0.10, 0.15, 0.20, 0.30];
 const ABSORB_VALUE       = [0, 2, 4, 6, 8, 10];
 const FOUNTAIN_BONUS     = [0, 5, 8, 12, 18, 25];
 
@@ -251,7 +251,7 @@ function makePlayer(id){
     // Failure into Opportunity: selected tiles become silver for NEXT turn
     pendingSilver: new Set(),
 
-    // Color Cancellation: reduction to apply on opponent's NEXT turn (special tiles only)
+    // Color Cancellation: reduction to apply on opponent's NEXT turn (special tiles + fountain)
     imposeCancelOnOpponentNextTurn: 0,
 
     // Technical category bonus: skill destruction can happen max once per turn
@@ -476,9 +476,9 @@ export function startTurn(g){
     goldIndices = pickDistinctIndices(goldCount, SIZE*SIZE);
   }
 
-  // Color Cancellation reduction from opponent (special tiles only)
-  const reduction = op.imposeCancelOnOpponentNextTurn || 0;
-  op.imposeCancelOnOpponentNextTurn = 0;
+  // Color Cancellation reduction targeting this player (special tiles + fountain)
+  const reduction = ap.imposeCancelOnOpponentNextTurn || 0;
+  ap.imposeCancelOnOpponentNextTurn = 0;
 
   const union = new Set([...goldIndices, ...silverIndices]);
   const unionArr = Array.from(union);
@@ -494,6 +494,10 @@ export function startTurn(g){
   }
   for (const idx of silverIndices){
     if (union.has(idx)) g.silver.add(idx);
+  }
+
+  if (reduction > 0 && ap.fountainIdx != null){
+    ap.fountainIdx = null;
   }
 
   ap.pendingGoldTrigger = false;
@@ -1125,7 +1129,7 @@ export function describeSkill(p, skillId){
       return `Lv${lv}/5 — Trigger: if the opponent finds a word, then on YOUR NEXT turn spawn up to ${maxGold} visible GOLD tiles (uniform random among all 36). If your found word uses ≥1 gold tile: add +${bonus} flat points. Gold tiles are visible to both players and disappear at the end of your turn.`;
     }
     case "COLOR_CANCEL": {
-      return `Lv${lv}/5 — When you find a word, the opponent’s NEXT turn spawns fewer “special tiles” (GOLD from Winner’s Footsteps and SILVER from Failure into Opportunity). Gray tiles are NOT reduced, and Fountain tiles are never removed. Reduction: Lv1 −1, Lv2 −1 (50% chance −2), Lv3 −2, Lv4 −2 (50% chance −3), Lv5 −3.`;
+      return `Lv${lv}/5 — When you find a word, the opponent’s NEXT turn spawns fewer “special tiles” (GOLD from Winner’s Footsteps and SILVER from Failure into Opportunity). Gray tiles are NOT reduced. If the opponent has a Fountain tile, it is removed before their next turn begins. Reduction: Lv1 −1, Lv2 −1 (50% chance −2), Lv3 −2, Lv4 −2 (50% chance −3), Lv5 −3.`;
     }
     case "EXTRA_CHANCE": {
       const add = EXTRA_CHANCE_ADD[lv];
@@ -1170,7 +1174,7 @@ export function describeOffer(p, skillMeta){
         next === 3 ? "-2 special tiles" :
         next === 4 ? "-2 special tiles (50% chance of -3)" :
         "-3 special tiles";
-      effect = `Next: ${cancelText} (gold/silver only)`;
+      effect = `Next: ${cancelText} (gold/silver + remove fountain if present)`;
       break;
     }
     case "EXTRA_CHANCE":   effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure`; break;
