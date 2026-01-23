@@ -4,7 +4,8 @@ import {
   beginSwipe, extendSwipe, releaseSwipe, confirmSwipe,
   getSkillOffers, upgradeSkill,
   applyHint, canUseHint, totalSkillLevels,
-  setWinScore
+  setWinScore,
+  timeoutTurn
 } from "./game.js";
 import {
   bindUI, setDictStatus, renderAll,
@@ -12,7 +13,7 @@ import {
   setFeedback, animateAttemptsFail, shakeFeedback,
   showSkillModal, onChooseSkill,
   showHintModal, onApplyHint, onCancelHint,
-  showEndModal, onApplyWinScore
+  showEndModal, onApplyWinScore, onApplyTimeLimit
 } from "./ui.js";
 
 let dictSet = null;
@@ -25,8 +26,14 @@ let ui = null;
 let locked = true;
 let pointerActiveId = null;
 let targetWinScore = WIN_SCORE;
+let timeLimitSettings = [0, 0];
+let timeLimitIntervalId = null;
+let timeLimitDeadlineMs = null;
+let timeLimitRemainingSec = null;
+let timeLimitCoverActive = false;
+let lastTurnKey = null;
 
-function isLocked(){ return locked || !g || g.gameOver; }
+function isLocked(){ return locked || timeLimitCoverActive || !g || g.gameOver; }
 
 ui = bindUI({
   onNewMatch,
@@ -36,6 +43,7 @@ ui = bindUI({
   onPointerCancel,
   onHint,
   onConfirm,
+  onStartTurn,
 });
 
 if (ui.winScoreValue){
@@ -109,6 +117,29 @@ onApplyWinScore(ui, ({ mode, value }) => {
   }
 });
 
+onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
+  const parsed = normalizeTimeLimits(p1, p2);
+  if (!parsed){
+    setFeedback(ui, "Invalid time limit", "Enter minutes >= 0 (decimals allowed).");
+    return;
+  }
+  const [p1Sec, p2Sec] = parsed;
+
+  timeLimitSettings = [p1Sec, p2Sec];
+  if (g) g.timeLimits = [p1Sec, p2Sec];
+  syncTimeLimitModalDefaults();
+
+  if (mode === "new"){
+    onNewMatch();
+    return;
+  }
+
+  if (!g) return;
+  lastTurnKey = null;
+  renderNow();
+  setFeedback(ui, "Time limit updated", "Settings applied. Resume play.");
+});
+
 async function loadDictionary(){
   setDictStatus(ui, "wait", "Loading dictionary…");
   try{
@@ -171,8 +202,16 @@ function onNewMatch(){
     setFeedback(ui, "ERROR", "Field generation failed. Try again (New Match).");
     return;
   }
+  if (g){
+    g.timeLimits = [timeLimitSettings[0] || 0, timeLimitSettings[1] || 0];
+  }
+  syncTimeLimitModalDefaults();
   locked = false;
   pointerActiveId = null;
+  lastTurnKey = null;
+  stopTimeLimitCountdown();
+  timeLimitRemainingSec = null;
+  setGridCoverVisible(false);
   renderNow();
   setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
 }
@@ -181,6 +220,142 @@ function normalizeWinScore(value){
   const n = Number.parseInt(value, 10);
   if (!Number.isFinite(n) || n <= 0) return null;
   return n;
+}
+
+function normalizeTimeLimits(p1Raw, p2Raw){
+  const p1 = Number.parseFloat(p1Raw);
+  const p2 = Number.parseFloat(p2Raw);
+  if (!Number.isFinite(p1) || !Number.isFinite(p2)) return null;
+  if (p1 < 0 || p2 < 0) return null;
+  const p1Sec = Math.round(p1 * 60);
+  const p2Sec = Math.round(p2 * 60);
+  return [p1Sec, p2Sec];
+}
+
+function syncTimeLimitModalDefaults(){
+  if (!ui) return;
+  if (ui.timeLimitP1Input){
+    ui.timeLimitP1Input.dataset.value = String((timeLimitSettings[0] || 0) / 60);
+  }
+  if (ui.timeLimitP2Input){
+    ui.timeLimitP2Input.dataset.value = String((timeLimitSettings[1] || 0) / 60);
+  }
+}
+
+function getTimeLimitForActive(){
+  if (!g) return 0;
+  const raw = Array.isArray(g.timeLimits) ? g.timeLimits[g.active] : 0;
+  const limit = Number(raw);
+  if (!Number.isFinite(limit) || limit <= 0) return 0;
+  return limit;
+}
+
+function updateTimeLimitDisplay(){
+  if (!ui || !ui.timeLimitDisplay) return;
+  const limit = getTimeLimitForActive();
+  if (!limit){
+    ui.timeLimitDisplay.classList.add("hidden");
+    ui.timeLimitDisplay.textContent = "";
+    return;
+  }
+  ui.timeLimitDisplay.classList.remove("hidden");
+  const remaining = (timeLimitRemainingSec != null) ? timeLimitRemainingSec : limit;
+  ui.timeLimitDisplay.textContent = `${remaining}s`;
+  ui.timeLimitDisplay.classList.toggle("red", g && g.active === 0);
+  ui.timeLimitDisplay.classList.toggle("blue", g && g.active === 1);
+}
+
+function setGridCoverVisible(visible){
+  timeLimitCoverActive = !!visible;
+  if (!ui || !ui.gridCover) return;
+  ui.gridCover.classList.toggle("hidden", !visible);
+  if (!visible) return;
+  ui.gridCover.classList.toggle("red", g && g.active === 0);
+  ui.gridCover.classList.toggle("blue", g && g.active === 1);
+  if (ui.gridCoverTitle){
+    ui.gridCoverTitle.textContent = (g && g.active === 0) ? "Player 1 Ready" : "Player 2 Ready";
+  }
+}
+
+function stopTimeLimitCountdown(){
+  if (timeLimitIntervalId){
+    clearInterval(timeLimitIntervalId);
+    timeLimitIntervalId = null;
+  }
+  timeLimitDeadlineMs = null;
+}
+
+function initializeTimeLimitForTurn(){
+  stopTimeLimitCountdown();
+  const limit = getTimeLimitForActive();
+  timeLimitRemainingSec = limit || null;
+  if (!limit){
+    setGridCoverVisible(false);
+    updateTimeLimitDisplay();
+    return;
+  }
+  updateTimeLimitDisplay();
+  setGridCoverVisible(true);
+}
+
+function startTimeLimitCountdown(){
+  const limit = getTimeLimitForActive();
+  if (!limit) return;
+  stopTimeLimitCountdown();
+  timeLimitRemainingSec = limit;
+  timeLimitDeadlineMs = Date.now() + limit * 1000;
+  setGridCoverVisible(false);
+  updateTimeLimitDisplay();
+
+  timeLimitIntervalId = setInterval(() => {
+    if (!g || g.gameOver || (g.skillSelect && g.skillSelect.pending)){
+      stopTimeLimitCountdown();
+      return;
+    }
+    const remaining = Math.max(0, Math.ceil((timeLimitDeadlineMs - Date.now()) / 1000));
+    if (remaining !== timeLimitRemainingSec){
+      timeLimitRemainingSec = remaining;
+      updateTimeLimitDisplay();
+    }
+    if (remaining <= 0){
+      stopTimeLimitCountdown();
+      void handleTimeLimitExpired();
+    }
+  }, 200);
+}
+
+async function handleTimeLimitExpired(){
+  if (!g || g.gameOver || (g.skillSelect && g.skillSelect.pending)) return;
+  const result = timeoutTurn(g);
+  renderNow();
+  setFeedback(ui, "TIME UP", "Time expired. Attempt skipped and counted as a failure.");
+  if (result.ended){
+    await openSkillSelectIfNeeded();
+  }
+}
+
+function syncTimeLimitState(){
+  if (!g || g.gameOver){
+    stopTimeLimitCountdown();
+    setGridCoverVisible(false);
+    updateTimeLimitDisplay();
+    return;
+  }
+  if (g.skillSelect && g.skillSelect.pending){
+    stopTimeLimitCountdown();
+    setGridCoverVisible(false);
+    updateTimeLimitDisplay();
+    return;
+  }
+
+  const turnKey = `${g.turnNo}:${g.active}`;
+  if (turnKey !== lastTurnKey){
+    lastTurnKey = turnKey;
+    initializeTimeLimitForTurn();
+    return;
+  }
+
+  updateTimeLimitDisplay();
 }
 
 function tileIndexFromEventTarget(target){
@@ -283,6 +458,13 @@ function onHint(){
   showHintModal(ui, g);
 }
 
+function onStartTurn(){
+  if (!g || g.gameOver) return;
+  if (g.skillSelect && g.skillSelect.pending) return;
+  if (!getTimeLimitForActive()) return;
+  startTimeLimitCountdown();
+}
+
 async function onConfirm(){
   if (isLocked()) return;
   if (!g || g.gameOver) return;
@@ -329,6 +511,8 @@ async function handleEvaluationResult(result){
 function renderNow(){
   if (!g) return;
   renderAll(ui, g);
+  syncTimeLimitState();
+  syncTimeLimitModalDefaults();
   setConfirmState(ui, g.pendingConfirm, isLocked());
 }
 

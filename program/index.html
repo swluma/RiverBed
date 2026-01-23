@@ -86,12 +86,19 @@
         </div>
         <div class="confirmRow">
           <button id="confirmBtn" class="primary" disabled>Confirm</button>
+          <div class="timeLimitDisplay hidden" id="timeLimitDisplay">--</div>
           <div class="confirmHint muted" id="confirmHint">Release to lock in a word, then confirm.</div>
         </div>
       </div>
 
       <div class="fieldWrap">
         <div class="grid" id="grid" aria-label="field"></div>
+        <div class="gridCover hidden" id="gridCover">
+          <div class="gridCoverInner">
+            <div class="gridCoverTitle" id="gridCoverTitle">Ready</div>
+            <button class="primary" id="startTurnBtn">Start Swiping</button>
+          </div>
+        </div>
       </div>
 
       <div class="logWrap">
@@ -347,6 +354,29 @@
           <div class="winScoreActions">
             <button class="ghost" id="winScoreApplyBtn">Apply & Resume</button>
             <button class="primary" id="winScoreApplyNewBtn">Apply & New Match</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time Limit Modal -->
+  <div class="modalOverlay hidden" id="timeLimitModal">
+    <div class="modal card">
+      <div class="modalHead">
+        <div class="modalTitle">Set Time Limit (Minutes)</div>
+        <button class="ghost" id="timeLimitCancelBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="winScoreForm">
+          <label for="timeLimitP1Input" class="winScoreLabel">Player 1 time limit (minutes)</label>
+          <input id="timeLimitP1Input" class="winScoreInput" type="number" min="0" step="0.5" inputmode="decimal" />
+          <label for="timeLimitP2Input" class="winScoreLabel">Player 2 time limit (minutes)</label>
+          <input id="timeLimitP2Input" class="winScoreInput" type="number" min="0" step="0.5" inputmode="decimal" />
+          <div class="winScoreHint muted">Set different limits per player. Use 0 to disable.</div>
+          <div class="winScoreActions">
+            <button class="ghost" id="timeLimitApplyBtn">Apply & Resume</button>
+            <button class="primary" id="timeLimitApplyNewBtn">Apply & New Match</button>
           </div>
         </div>
       </div>

@@ -174,6 +174,7 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
     extraChanceLeft: 0,
     gameOver: false,
     winScore: winScore,
+    timeLimits: [0, 0],
 
     // Pending skill selection (after a turn ends, before next turn begins)
     skillSelect: {
@@ -693,6 +694,16 @@ function consumeAttempt(g){
 /* ------------------------
    Failure handling
 ------------------------ */
+
+export function timeoutTurn(g){
+  if (g.gameOver) return { type:"NOOP" };
+  clearSelection(g);
+  g.pendingConfirm = false;
+  g.attempts = 0;
+  g.extraChanceLeft = 0;
+  const result = handleFailure(g, { reason:"TIMEOUT", word:null });
+  return { type:"TIMEOUT", ...result };
+}
 
 function handleFailure(g, {reason, word}){
   const ap = g.players[g.active];

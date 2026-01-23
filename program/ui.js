@@ -11,6 +11,7 @@ export function bindUI(handlers){
     currentWord: document.getElementById("currentWord"),
     confirmBtn: document.getElementById("confirmBtn"),
     confirmHint: document.getElementById("confirmHint"),
+    timeLimitDisplay: document.getElementById("timeLimitDisplay"),
 
     turnNo: document.getElementById("turnNo"),
     activePlayer: document.getElementById("activePlayer"),
@@ -25,6 +26,7 @@ export function bindUI(handlers){
     skillRefBtn: document.getElementById("skillRefBtn"),
     scoreInfoBtn: document.getElementById("scoreInfoBtn"),
     winScoreBtn: document.getElementById("winScoreBtn"),
+    timeLimitBtn: document.getElementById("timeLimitBtn"),
 
     fbTitle: document.getElementById("fbTitle"),
     fbSub: document.getElementById("fbSub"),
@@ -46,6 +48,9 @@ export function bindUI(handlers){
     skillReferenceRoot: document.getElementById("skillReferenceRoot"),
 
     log: document.getElementById("wordLog"),
+    gridCover: document.getElementById("gridCover"),
+    gridCoverTitle: document.getElementById("gridCoverTitle"),
+    startTurnBtn: document.getElementById("startTurnBtn"),
 
     legendModal: document.getElementById("legendModal"),
     closeLegendBtn: document.getElementById("closeLegendBtn"),
@@ -73,6 +78,13 @@ export function bindUI(handlers){
     winScoreApplyBtn: document.getElementById("winScoreApplyBtn"),
     winScoreApplyNewBtn: document.getElementById("winScoreApplyNewBtn"),
     winScoreCancelBtn: document.getElementById("winScoreCancelBtn"),
+
+    timeLimitModal: document.getElementById("timeLimitModal"),
+    timeLimitP1Input: document.getElementById("timeLimitP1Input"),
+    timeLimitP2Input: document.getElementById("timeLimitP2Input"),
+    timeLimitApplyBtn: document.getElementById("timeLimitApplyBtn"),
+    timeLimitApplyNewBtn: document.getElementById("timeLimitApplyNewBtn"),
+    timeLimitCancelBtn: document.getElementById("timeLimitCancelBtn"),
 
     hintBtn: document.getElementById("hintBtn"),
     hintModal: document.getElementById("hintModal"),
@@ -237,6 +249,43 @@ export function bindUI(handlers){
     }
   }
 
+  // Time limit modal
+  if (el.timeLimitBtn && el.timeLimitModal){
+    el.timeLimitBtn.addEventListener("click", () => {
+      const p1 = el.timeLimitP1Input?.dataset?.value || "0";
+      const p2 = el.timeLimitP2Input?.dataset?.value || "0";
+      if (el.timeLimitP1Input){
+        el.timeLimitP1Input.value = p1;
+        el.timeLimitP1Input.focus();
+        el.timeLimitP1Input.select();
+      }
+      if (el.timeLimitP2Input){
+        el.timeLimitP2Input.value = p2;
+      }
+      show(el.timeLimitModal);
+    });
+    if (el.timeLimitCancelBtn){
+      el.timeLimitCancelBtn.addEventListener("click", () => hide(el.timeLimitModal));
+    }
+    el.timeLimitModal.addEventListener("click", (e) => {
+      if (e.target === el.timeLimitModal) hide(el.timeLimitModal);
+    });
+
+    const emitTimeLimit = (mode) => {
+      const p1 = el.timeLimitP1Input ? el.timeLimitP1Input.value : "";
+      const p2 = el.timeLimitP2Input ? el.timeLimitP2Input.value : "";
+      hide(el.timeLimitModal);
+      el.timeLimitModal.dispatchEvent(new CustomEvent("apply-time-limit", { detail: { mode, p1, p2 } }));
+    };
+
+    if (el.timeLimitApplyBtn){
+      el.timeLimitApplyBtn.addEventListener("click", () => emitTimeLimit("resume"));
+    }
+    if (el.timeLimitApplyNewBtn){
+      el.timeLimitApplyNewBtn.addEventListener("click", () => emitTimeLimit("new"));
+    }
+  }
+
   // New match / restart
   el.newMatchBtn.addEventListener("click", handlers.onNewMatch);
   el.restartBtn.addEventListener("click", () => {
@@ -250,6 +299,10 @@ export function bindUI(handlers){
 
   // Grid pointer controls
   el.grid.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  if (el.startTurnBtn && handlers.onStartTurn){
+    el.startTurnBtn.addEventListener("click", handlers.onStartTurn);
+  }
 
   el.grid.addEventListener("pointerdown", (e) => handlers.onPointerDown(e));
   el.grid.addEventListener("pointermove", (e) => handlers.onPointerMove(e));
@@ -669,6 +722,11 @@ export function onCancelHint(el, handler){
 
 export function onApplyWinScore(el, handler){
   el.winScoreModal.addEventListener("apply-win-score", (e) => handler(e.detail));
+}
+
+export function onApplyTimeLimit(el, handler){
+  if (!el.timeLimitModal) return;
+  el.timeLimitModal.addEventListener("apply-time-limit", (e) => handler(e.detail));
 }
 
 export function showEndModal(el, g){
