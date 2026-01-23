@@ -473,6 +473,12 @@ function conicSegments(colors){
 export function setFeedback(el, title, sub){
   el.fbTitle.textContent = title;
   el.fbSub.textContent = sub;
+  if (!el.feedback) return;
+  el.feedback.classList.remove("success");
+  void el.feedback.offsetWidth;
+  if (title === "SUCCESS"){
+    el.feedback.classList.add("success");
+  }
 }
 
 export function shakeFeedback(el){
