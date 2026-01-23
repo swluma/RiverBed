@@ -1158,7 +1158,16 @@ export function describeOffer(p, skillMeta){
     case "POINT_FOUNTAIN": effect = `Next: self-use +${FOUNTAIN_BONUS[next]} pts`; break;
     case "VALUE_DECAY":    effect = `Next: decay step ${Math.round(DECAY_STEP[next] * 100)}% (min ×0.40)`; break;
     case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]}`; break;
-    case "COLOR_CANCEL":   effect = `Next: stronger reduction`; break;
+    case "COLOR_CANCEL": {
+      const cancelText =
+        next === 1 ? "-1 special tile" :
+        next === 2 ? "-1 special tile (50% chance of -2)" :
+        next === 3 ? "-2 special tiles" :
+        next === 4 ? "-2 special tiles (50% chance of -3)" :
+        "-3 special tiles";
+      effect = `Next: ${cancelText} (gold/silver only)`;
+      break;
+    }
     case "EXTRA_CHANCE":   effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure`; break;
     case "FAIL_OPP":       effect = `Next: max silver ${SILVER_MAX_TILES[next]}, silver mult ×${SILVER_MULT[next].toFixed(1)}`; break;
     case "SELF_INVEST":    effect = `Next: -${INVEST_PENALTY[next]} / turn, 5+ ×${INVEST_MULT[next].toFixed(2)}`; break;
