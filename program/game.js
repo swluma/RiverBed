@@ -210,7 +210,9 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
 
   // Create a fixed field with embedded targets satisfying EXACT constraints
   const embedPool = (embedWords && embedWords.length > 0) ? embedWords : dictWords;
-  const { letters, embedded } = generateFieldWithEmbeddedTargets(embedPool);
+  const extraTen = pickRandomWordOfLength(dictWords, 10);
+  const required = extraTen ? [extraTen] : [];
+  const { letters, embedded } = generateFieldWithEmbeddedTargets(embedPool, required);
   g.board = letters;
   g.embeddedWords = embedded;
   console.log("[boggle] embedded words:", embedded.join(", "));
@@ -287,13 +289,21 @@ function updateDecaySteps(g){
    Field generation with EXACT embedded rules
 ------------------------ */
 
-function generateFieldWithEmbeddedTargets(dictWords){
+function generateFieldWithEmbeddedTargets(dictWords, requiredWords = []){
   const poolShort = [];
   const poolLong = [];
+
+  const requiredSet = new Set(
+    (requiredWords || [])
+      .map(w => String(w || "").toLowerCase())
+      .filter(w => /^[a-z]+$/.test(w))
+      .filter(w => w.length >= MIN_WORD_LEN)
+  );
 
   for (const w of dictWords){
     if (!/^[a-z]+$/.test(w)) continue;
     if (w.length < MIN_WORD_LEN) continue;
+    if (requiredSet.has(w)) continue;
     if (w.length >= EMBED_LONG_MINLEN) poolLong.push(w);
     else poolShort.push(w);
   }
@@ -305,7 +315,7 @@ function generateFieldWithEmbeddedTargets(dictWords){
     if (chosenLong.length !== EMBED_LONG_COUNT || chosenShort.length !== (EMBED_COUNT-EMBED_LONG_COUNT)){
       continue;
     }
-    const chosen = [...chosenLong, ...chosenShort];
+    const chosen = [...requiredSet, ...chosenLong, ...chosenShort];
 
     const letters = Array(SIZE*SIZE).fill(null);
 
@@ -324,6 +334,19 @@ function generateFieldWithEmbeddedTargets(dictWords){
   }
 
   throw new Error("Field generation failed: could not embed required target words.");
+}
+
+function pickRandomWordOfLength(words, len){
+  if (!Array.isArray(words) || words.length === 0) return null;
+  const matches = [];
+  for (const w of words){
+    if (typeof w !== "string") continue;
+    if (w.length !== len) continue;
+    if (!/^[a-z]+$/.test(w)) continue;
+    matches.push(w);
+  }
+  if (matches.length === 0) return null;
+  return matches[randInt(matches.length)];
 }
 
 function pickRandomDistinct(arr, n){
