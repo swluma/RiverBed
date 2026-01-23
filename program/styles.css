@@ -452,6 +452,10 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   max-height: 72vh;
   overflow:auto;
 }
+.tutorialBody{
+  max-height: 70vh;
+  overflow:auto;
+}
 .muted{ color:var(--muted); font-size:12px; }
 
 .hintSummary{
@@ -585,6 +589,42 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   rgba(255,75,75,0.65) 0 33%,
   rgba(240,197,74,0.55) 33% 66%,
   rgba(185,198,255,0.55) 66% 100%); }
+
+.tutorialIntro{
+  font-weight:800;
+  font-size:14px;
+  line-height:1.4;
+  margin-bottom:12px;
+}
+.tutorialGrid{
+  display:grid;
+  gap:12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tutorialCard{
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:14px;
+  background:rgba(255,255,255,0.05);
+  padding:12px;
+  display:grid;
+  gap:6px;
+}
+.tutorialTitle{
+  font-weight:1000;
+  font-size:13px;
+  letter-spacing:0.2px;
+}
+.tutorialText{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.4;
+}
+.tutorialOutro{
+  margin-top:12px;
+}
+@media (max-width: 820px){
+  .tutorialGrid{ grid-template-columns: 1fr; }
+}
 
 .endScore{ display:grid; gap:8px; font-size:16px; font-weight:1000; }
 .endActions{ margin-top:12px; display:flex; justify-content:flex-end; }

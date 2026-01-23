@@ -34,6 +34,7 @@
     <div class="top-right">
       <button id="hintBtn" class="ghost">Hint (-3 Lv)</button>
       <button id="winScoreBtn" class="ghost">Win Score</button>
+      <button id="tutorialBtn" class="ghost">Tutorial</button>
       <button id="skillRefBtn" class="ghost">Skill Reference</button>
       <button id="scoreInfoBtn" class="ghost">Scoring</button>
       <button id="legendBtn" class="ghost">Legend</button>
@@ -181,6 +182,62 @@
       </div>
       <div class="modalBody skillRefModalBody">
         <section class="skillReferenceRoot" id="skillReferenceRoot"></section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tutorial Modal -->
+  <div class="modalOverlay hidden" id="tutorialModal">
+    <div class="modal card wide">
+      <div class="modalHead">
+        <div class="modalTitle">How to Play (Quick & Cheery)</div>
+        <button class="ghost" id="closeTutorialBtn">Close</button>
+      </div>
+      <div class="modalBody tutorialBody">
+        <div class="tutorialIntro">
+          Welcome to Rogue Boggle Duel! Each turn is a quick word-hunt sprint, and every skill is a spicy twist. Ready? Let’s go!
+        </div>
+        <div class="tutorialGrid">
+          <div class="tutorialCard">
+            <div class="tutorialTitle">1) Swipe a word</div>
+            <div class="tutorialText">
+              Press and drag across adjacent tiles to spell a word. Release to submit. Longer words = bigger base points.
+            </div>
+          </div>
+          <div class="tutorialCard">
+            <div class="tutorialTitle">2) Chain your combo</div>
+            <div class="tutorialText">
+              Successes stack a combo multiplier. A miss resets it, so play boldly but cleanly!
+            </div>
+          </div>
+          <div class="tutorialCard">
+            <div class="tutorialTitle">3) Watch special tiles</div>
+            <div class="tutorialText">
+              Gold gives a bonus, Silver boosts big when used twice, and Fountains share points. Gray tiles are off-limits.
+            </div>
+          </div>
+          <div class="tutorialCard">
+            <div class="tutorialTitle">4) Grow your skills</div>
+            <div class="tutorialText">
+              Pick upgrades when offered. Mix categories to unlock extra bonuses and mind games.
+            </div>
+          </div>
+          <div class="tutorialCard">
+            <div class="tutorialTitle">5) First to the target wins</div>
+            <div class="tutorialText">
+              The match ends when someone reaches the Win Score. Change it anytime from the top bar.
+            </div>
+          </div>
+          <div class="tutorialCard">
+            <div class="tutorialTitle">6) Want help?</div>
+            <div class="tutorialText">
+              Use “Hint” to reveal a path by trading 3 skill levels. It’s a comeback button, not a freebie.
+            </div>
+          </div>
+        </div>
+        <div class="tutorialOutro muted">
+          Tip: open “Legend” and “Scoring” anytime if you want the numbers. Now go find that glorious word!
+        </div>
       </div>
     </div>
   </div>

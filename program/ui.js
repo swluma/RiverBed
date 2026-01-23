@@ -19,6 +19,7 @@ export function bindUI(handlers){
     dictText: document.getElementById("dictText"),
     newMatchBtn: document.getElementById("newMatchBtn"),
     legendBtn: document.getElementById("legendBtn"),
+    tutorialBtn: document.getElementById("tutorialBtn"),
     skillRefBtn: document.getElementById("skillRefBtn"),
     scoreInfoBtn: document.getElementById("scoreInfoBtn"),
     winScoreBtn: document.getElementById("winScoreBtn"),
@@ -44,6 +45,8 @@ export function bindUI(handlers){
 
     legendModal: document.getElementById("legendModal"),
     closeLegendBtn: document.getElementById("closeLegendBtn"),
+    tutorialModal: document.getElementById("tutorialModal"),
+    closeTutorialBtn: document.getElementById("closeTutorialBtn"),
     scoreInfoModal: document.getElementById("scoreInfoModal"),
     closeScoreInfoBtn: document.getElementById("closeScoreInfoBtn"),
     skillRefModal: document.getElementById("skillRefModal"),
@@ -164,6 +167,19 @@ export function bindUI(handlers){
   if (el.skillRefModal){
     el.skillRefModal.addEventListener("click", (e) => {
       if (e.target === el.skillRefModal) hide(el.skillRefModal);
+    });
+  }
+
+  // Tutorial modal
+  if (el.tutorialBtn && el.tutorialModal){
+    el.tutorialBtn.addEventListener("click", () => show(el.tutorialModal));
+  }
+  if (el.closeTutorialBtn && el.tutorialModal){
+    el.closeTutorialBtn.addEventListener("click", () => hide(el.tutorialModal));
+  }
+  if (el.tutorialModal){
+    el.tutorialModal.addEventListener("click", (e) => {
+      if (e.target === el.tutorialModal) hide(el.tutorialModal);
     });
   }
 
