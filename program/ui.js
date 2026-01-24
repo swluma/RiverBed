@@ -93,6 +93,13 @@ export function bindUI(handlers){
     shuffleConfirmBtn: document.getElementById("shuffleConfirmBtn"),
     shuffleCancelBtn: document.getElementById("shuffleCancelBtn"),
 
+    testSkillsBtn: document.getElementById("testSkillsBtn"),
+    testSkillsModal: document.getElementById("testSkillsModal"),
+    testSkillsList: document.getElementById("testSkillsList"),
+    testSkillsApplyBtn: document.getElementById("testSkillsApplyBtn"),
+    testSkillsResetBtn: document.getElementById("testSkillsResetBtn"),
+    testSkillsCancelBtn: document.getElementById("testSkillsCancelBtn"),
+
     hintBtn: document.getElementById("hintBtn"),
     hintModal: document.getElementById("hintModal"),
     hintSkillList: document.getElementById("hintSkillList"),
@@ -320,6 +327,39 @@ export function bindUI(handlers){
       if (e.target === el.shuffleModal){
         hide(el.shuffleModal);
         el.shuffleModal.dispatchEvent(new CustomEvent("cancel-shuffle"));
+      }
+    });
+  }
+
+  // Test skills modal
+  if (el.testSkillsBtn && handlers.onOpenTestSkills){
+    el.testSkillsBtn.addEventListener("click", handlers.onOpenTestSkills);
+  }
+  if (el.testSkillsModal){
+    if (el.testSkillsCancelBtn){
+      el.testSkillsCancelBtn.addEventListener("click", () => {
+        hide(el.testSkillsModal);
+        el.testSkillsModal.dispatchEvent(new CustomEvent("cancel-test-skills"));
+      });
+    }
+    if (el.testSkillsResetBtn){
+      el.testSkillsResetBtn.addEventListener("click", () => {
+        el.testSkillsModal.querySelectorAll("input[data-skill]").forEach((input) => {
+          input.value = "0";
+        });
+      });
+    }
+    if (el.testSkillsApplyBtn){
+      el.testSkillsApplyBtn.addEventListener("click", () => {
+        const payload = readTestSkillsValues(el);
+        hide(el.testSkillsModal);
+        el.testSkillsModal.dispatchEvent(new CustomEvent("apply-test-skills", { detail: payload }));
+      });
+    }
+    el.testSkillsModal.addEventListener("click", (e) => {
+      if (e.target === el.testSkillsModal){
+        hide(el.testSkillsModal);
+        el.testSkillsModal.dispatchEvent(new CustomEvent("cancel-test-skills"));
       }
     });
   }
@@ -745,6 +785,65 @@ export function showHintModal(el, g){
   show(el.hintModal);
 }
 
+export function showTestSkillsModal(el, initialSkills){
+  if (!el.testSkillsModal || !el.testSkillsList) return;
+
+  const order = [
+    "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN",
+    "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
+    "EXTRA_CHANCE","FAIL_OPP","SELF_INVEST"
+  ];
+
+  const getValue = (playerKey, skillId) => {
+    const raw = initialSkills?.[playerKey]?.[skillId];
+    const n = Number.parseInt(raw, 10);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(SKILLS[skillId]?.max ?? 5, n));
+  };
+
+  el.testSkillsList.innerHTML = "";
+
+  for (const id of order){
+    const meta = SKILLS[id];
+    if (!meta) continue;
+    const row = document.createElement("div");
+    row.className = "testSkillsRow";
+    row.dataset.skill = id;
+    row.innerHTML = `
+      <div class="testSkillsMeta">
+        <div class="testSkillsName">${meta.name}</div>
+        <div class="testSkillsCat">${meta.cat}</div>
+      </div>
+      <div class="testSkillsInput">
+        <label>Player 1</label>
+        <input class="testSkillsField" type="number" min="0" max="${meta.max}" step="1" inputmode="numeric" data-skill="${id}" data-player="p1" />
+      </div>
+      <div class="testSkillsInput">
+        <label>Player 2</label>
+        <input class="testSkillsField" type="number" min="0" max="${meta.max}" step="1" inputmode="numeric" data-skill="${id}" data-player="p2" />
+      </div>
+    `;
+
+    const p1Input = row.querySelector('input[data-player="p1"]');
+    const p2Input = row.querySelector('input[data-player="p2"]');
+    if (p1Input) p1Input.value = String(getValue("p1", id));
+    if (p2Input) p2Input.value = String(getValue("p2", id));
+
+    for (const input of [p1Input, p2Input]){
+      if (!input) continue;
+      input.addEventListener("change", () => {
+        const raw = Number.parseInt(input.value, 10);
+        const clamped = Number.isFinite(raw) ? Math.max(0, Math.min(meta.max, raw)) : 0;
+        input.value = String(clamped);
+      });
+    }
+
+    el.testSkillsList.appendChild(row);
+  }
+
+  show(el.testSkillsModal);
+}
+
 export function onChooseSkill(el, handler){
   el.skillModal.addEventListener("choose-skill", (e) => handler(e.detail.skillId));
 }
@@ -757,6 +856,16 @@ export function onApplyHint(el, handler){
 export function onCancelHint(el, handler){
   if (!el.hintModal) return;
   el.hintModal.addEventListener("cancel-hint", () => handler());
+}
+
+export function onApplyTestSkills(el, handler){
+  if (!el.testSkillsModal) return;
+  el.testSkillsModal.addEventListener("apply-test-skills", (e) => handler(e.detail));
+}
+
+export function onCancelTestSkills(el, handler){
+  if (!el.testSkillsModal) return;
+  el.testSkillsModal.addEventListener("cancel-test-skills", () => handler());
 }
 
 export function onApplyWinScore(el, handler){
@@ -1018,6 +1127,25 @@ function escapeHtml(s){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+}
+
+function readTestSkillsValues(el){
+  const p1 = {};
+  const p2 = {};
+  if (!el.testSkillsList) return { p1, p2 };
+
+  const inputs = el.testSkillsList.querySelectorAll("input[data-skill]");
+  for (const input of inputs){
+    const skillId = input.dataset.skill;
+    const player = input.dataset.player;
+    if (!skillId || !player) continue;
+    const raw = Number.parseInt(input.value, 10);
+    const max = SKILLS[skillId]?.max ?? 5;
+    const value = Number.isFinite(raw) ? Math.max(0, Math.min(max, raw)) : 0;
+    if (player === "p1") p1[skillId] = value;
+    if (player === "p2") p2[skillId] = value;
+  }
+  return { p1, p2 };
 }
 
 function getAttemptsLeftDisplay(g){

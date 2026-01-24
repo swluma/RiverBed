@@ -6,7 +6,8 @@ import {
   applyHint, canUseHint, totalSkillLevels,
   setWinScore,
   timeoutTurn,
-  shuffleBoard
+  shuffleBoard,
+  SKILLS
 } from "./game.js";
 import {
   bindUI, setDictStatus, renderAll,
@@ -15,7 +16,8 @@ import {
   showSkillModal, onChooseSkill,
   showHintModal, onApplyHint, onCancelHint,
   showEndModal, onApplyWinScore, onApplyTimeLimit,
-  showShuffleModal, onConfirmShuffle, onCancelShuffle
+  showShuffleModal, onConfirmShuffle, onCancelShuffle,
+  showTestSkillsModal, onApplyTestSkills, onCancelTestSkills
 } from "./ui.js";
 
 let dictSet = null;
@@ -34,6 +36,30 @@ let timeLimitDeadlineMs = null;
 let timeLimitRemainingSec = null;
 let timeLimitCoverActive = false;
 let lastTurnKey = null;
+let initialSkills = createInitialSkillState();
+
+function createInitialSkillState(){
+  const base = {};
+  for (const id of Object.keys(SKILLS)){
+    base[id] = 0;
+  }
+  return {
+    p1: { ...base },
+    p2: { ...base },
+  };
+}
+
+function normalizeInitialSkills(input){
+  const normalized = createInitialSkillState();
+  for (const id of Object.keys(SKILLS)){
+    const max = SKILLS[id]?.max ?? 5;
+    const p1Raw = Number.parseInt(input?.p1?.[id], 10);
+    const p2Raw = Number.parseInt(input?.p2?.[id], 10);
+    normalized.p1[id] = Number.isFinite(p1Raw) ? Math.max(0, Math.min(max, p1Raw)) : 0;
+    normalized.p2[id] = Number.isFinite(p2Raw) ? Math.max(0, Math.min(max, p2Raw)) : 0;
+  }
+  return normalized;
+}
 
 function isLocked(){ return locked || timeLimitCoverActive || !g || g.gameOver; }
 
@@ -47,6 +73,7 @@ ui = bindUI({
   onConfirm,
   onStartTurn,
   onShuffle,
+  onOpenTestSkills,
 });
 
 if (ui.winScoreValue){
@@ -90,6 +117,16 @@ onCancelHint(ui, () => {
   locked = false;
   renderNow();
   setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
+});
+
+onApplyTestSkills(ui, (payload) => {
+  initialSkills = normalizeInitialSkills(payload);
+  locked = false;
+  onNewMatch();
+});
+
+onCancelTestSkills(ui, () => {
+  locked = false;
 });
 
 onApplyWinScore(ui, ({ mode, value }) => {
@@ -213,7 +250,7 @@ async function loadDictionary(){
 function onNewMatch(){
   if (!dictSet || !dictWords) return;
   try{
-    g = createNewGame(dictSet, dictWords, embedWords, targetWinScore);
+    g = createNewGame(dictSet, dictWords, embedWords, targetWinScore, initialSkills);
   } catch(e){
     console.error(e);
     setFeedback(ui, "ERROR", "Field generation failed. Try again (New Match).");
@@ -491,6 +528,12 @@ function onShuffle(){
   }
   locked = true;
   showShuffleModal(ui);
+}
+
+function onOpenTestSkills(){
+  if (!ui) return;
+  locked = true;
+  showTestSkillsModal(ui, initialSkills);
 }
 
 async function onConfirm(){

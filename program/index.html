@@ -145,6 +145,32 @@
     </section>
   </main>
 
+  <section class="bottomPanel card">
+    <div class="bottomPanelContent">
+      <div class="bottomPanelTitle">Testing Panel</div>
+      <div class="bottomPanelHint">Adjust starting skills for both players, then start a new match.</div>
+    </div>
+    <button id="testSkillsBtn" class="primary">Test: Initial Skills</button>
+  </section>
+
+  <!-- Test Skills Modal -->
+  <div class="modalOverlay hidden" id="testSkillsModal">
+    <div class="modal card wide">
+      <div class="modalHead">
+        <div class="modalTitle">Test Initial Skills</div>
+        <button class="ghost" id="testSkillsCancelBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="testSkillsIntro muted">Set starting skill levels for each player (0-5). Confirm starts a new match.</div>
+        <div class="testSkillsGrid" id="testSkillsList"></div>
+        <div class="testSkillsActions">
+          <button class="ghost" id="testSkillsResetBtn">Reset to 0</button>
+          <button class="primary" id="testSkillsApplyBtn">Confirm & New Match</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Legend Modal -->
   <div class="modalOverlay hidden" id="legendModal">
     <div class="modal card">

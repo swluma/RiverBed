@@ -173,7 +173,7 @@ function neighbors4(idx){
    Game State
 ------------------------ */
 
-export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCORE){
+export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCORE, initialSkills = null){
   const g = {
     dictSet,
     dictWords,
@@ -224,6 +224,8 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
     pendingConfirm: false,
   };
 
+  applyInitialSkills(g, initialSkills);
+
   // Create a fixed field with embedded targets satisfying EXACT constraints
   const embedPool = (embedWords && embedWords.length > 0) ? embedWords : dictWords;
   let attempts = 0;
@@ -249,6 +251,27 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
   startTurn(g);
 
   return g;
+}
+
+function applyInitialSkills(g, initialSkills){
+  if (!g || !initialSkills) return;
+  const norm = normalizeInitialSkills(initialSkills);
+  for (const id of Object.keys(SKILLS)){
+    g.players[0].skills[id] = norm.p1[id];
+    g.players[1].skills[id] = norm.p2[id];
+  }
+}
+
+function normalizeInitialSkills(initialSkills){
+  const out = { p1: {}, p2: {} };
+  for (const [id, meta] of Object.entries(SKILLS)){
+    const max = meta?.max ?? 5;
+    const p1Raw = Number.parseInt(initialSkills?.p1?.[id], 10);
+    const p2Raw = Number.parseInt(initialSkills?.p2?.[id], 10);
+    out.p1[id] = Number.isFinite(p1Raw) ? Math.max(0, Math.min(max, p1Raw)) : 0;
+    out.p2[id] = Number.isFinite(p2Raw) ? Math.max(0, Math.min(max, p2Raw)) : 0;
+  }
+  return out;
 }
 
 function makePlayer(id){
