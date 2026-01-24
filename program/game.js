@@ -1,4 +1,4 @@
-import {
+﻿import {
   SIZE, MIN_WORD_LEN, WIN_SCORE,
   EMBED_COUNT, EMBED_LONG_COUNT, EMBED_LONG_MINLEN,
   GEN_MAX_RESTARTS, GEN_TRIES_PER_WORD
@@ -39,6 +39,7 @@ export const SKILLS = {
   EXTRA_CHANCE:   { id:"EXTRA_CHANCE",   cat:"TECH", name:"Extra Chance",               max:5 },
   FAIL_OPP:       { id:"FAIL_OPP",       cat:"TECH", name:"Failure into Opportunity",  max:5 },
   SELF_INVEST:    { id:"SELF_INVEST",    cat:"TECH", name:"Self Investment",            max:5 },
+  SPELL_FINDER:   { id:"SPELL_FINDER",   cat:"TECH", name:"Spell Finder",               max:5 },
 };
 
 const POINT_INCREASE_PCT = [0, 0.05, 0.10, 0.15, 0.20, 0.30];
@@ -71,6 +72,15 @@ const SILVER_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
 
 const INVEST_PENALTY     = [0, 3, 5, 7, 10, 14];
 const INVEST_MULT        = [1, 1.2, 1.45, 1.8, 2.3, 3.0];
+
+const SPELL_FINDER_MINLEN = (lv) => {
+  if (lv <= 0) return 0;
+  if (lv <= 2) return 4;
+  if (lv === 3) return 5;
+  return 6;
+};
+
+const SPELL_FINDER_HINT_TILES = (lv) => (lv >= 2 ? 2 : 1);
 
 // Length table: total before combo/skills (already includes base)
 const LEN_TABLE = (len) => {
@@ -130,6 +140,11 @@ export function shuffleBoard(g){
     g.hint.usedThisTurn = false;
     g.hint.tiles.clear();
     g.hint.word = null;
+  }
+  if (g.players){
+    for (const p of g.players){
+      clearSpellFinder(p);
+    }
   }
   return true;
 }
@@ -298,6 +313,7 @@ function makePlayer(id){
       EXTRA_CHANCE: 0,
       FAIL_OPP: 0,
       SELF_INVEST: 0,
+      SPELL_FINDER: 0,
     },
 
     // Fountain tile index (single)
@@ -314,6 +330,13 @@ function makePlayer(id){
 
     // Technical category bonus: skill destruction can happen max once per turn
     destroyedThisTurn: false,
+
+    // Spell Finder: fixed target + hint tiles
+    spellFinder: {
+      word: null,
+      path: [],
+      tiles: new Set(),
+    },
   };
 }
 
@@ -580,6 +603,8 @@ export function startTurn(g){
 
   ap.pendingGoldTrigger = false;
   ap.destroyedThisTurn = false;
+
+  updateSpellFinderForPlayer(g, g.active);
 }
 
 export function endTurn(g, reason){
@@ -850,16 +875,29 @@ function handleSuccess(g, word, wordLen){
     if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
   }
 
+  let spellFinderShared = 0;
+  const opSpellLv = op.skills.SPELL_FINDER || 0;
+  if (opSpellLv >= 5 && op.spellFinder && op.spellFinder.word === word){
+    spellFinderShared = roundInt(finalWordPoints * 0.5);
+    op.score += spellFinderShared;
+    if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
+  }
+
   ap.score += finalWordPoints;
   if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
 
   g.foundWords.add(word);
+  const sharedTotal = fountainShared + spellFinderShared;
   g.log.push({
     word,
     player: ap.id,
     pts: finalWordPoints,
-    shared: fountainShared,
+    shared: sharedTotal,
   });
+
+  if (ap.spellFinder && ap.spellFinder.word === word){
+    clearSpellFinder(ap);
+  }
 
   if (pfLv > 0){
     const lastIdx = g.selection[g.selection.length - 1];
@@ -920,6 +958,7 @@ export function applyHint(g, allocations){
 
   applyHintAllocations(ap, normalized.allocations);
   updateDecaySteps(g);
+  updateSpellFinderForPlayer(g, g.active);
 
   // Derived state adjustments after skill reduction
   const newExtra = EXTRA_CHANCE_ADD[ap.skills.EXTRA_CHANCE];
@@ -1017,6 +1056,76 @@ function findWordPathOnBoard(letters, word, blocked){
   return null;
 }
 
+function clearSpellFinder(p){
+  if (!p) return;
+  if (!p.spellFinder){
+    p.spellFinder = { word: null, path: [], tiles: new Set() };
+  }
+  p.spellFinder.word = null;
+  p.spellFinder.path = [];
+  p.spellFinder.tiles = new Set();
+}
+
+function updateSpellFinderForPlayer(g, playerIndex){
+  if (!g || !g.players || !g.players[playerIndex]) return;
+  const p = g.players[playerIndex];
+  const lv = p.skills.SPELL_FINDER || 0;
+  if (lv <= 0){
+    clearSpellFinder(p);
+    return;
+  }
+
+  const minLen = SPELL_FINDER_MINLEN(lv);
+  const hintTiles = SPELL_FINDER_HINT_TILES(lv);
+  const opponentWord = g.players[1 - playerIndex]?.spellFinder?.word || null;
+
+  let word = p.spellFinder?.word || null;
+  let path = null;
+
+  if (word){
+    if (word.length < minLen) word = null;
+    if (word && g.foundWords.has(word)) word = null;
+    if (word && opponentWord && word === opponentWord) word = null;
+    if (word){
+      path = findWordPathOnBoard(g.board, word, g.gray);
+      if (!path) word = null;
+    }
+  }
+
+  if (!word){
+    const chosen = findSpellFinderWord(g, minLen, opponentWord);
+    if (!chosen){
+      clearSpellFinder(p);
+      return;
+    }
+    word = chosen.word;
+    path = chosen.path;
+    console.log(`[spell-finder] ${p.name} target: ${word}`);
+  }
+
+  if (!p.spellFinder){
+    p.spellFinder = { word: null, path: [], tiles: new Set() };
+  }
+  p.spellFinder.word = word;
+  p.spellFinder.path = path;
+  p.spellFinder.tiles = new Set(path.slice(0, hintTiles));
+}
+
+function findSpellFinderWord(g, minLen, opponentWord){
+  if (!g.dictWords || g.dictWords.length === 0) return null;
+  const start = randInt(g.dictWords.length);
+  for (let i=0; i<g.dictWords.length; i++){
+    const idx = (start + i) % g.dictWords.length;
+    const word = g.dictWords[idx];
+    if (!word || word.length < minLen) continue;
+    if (g.foundWords.has(word)) continue;
+    if (opponentWord && word === opponentWord) continue;
+    const path = findWordPathOnBoard(g.board, word, g.gray);
+    if (path) return { word, path };
+  }
+  return null;
+}
+
 /* ------------------------
    Category bonuses
 ------------------------ */
@@ -1047,7 +1156,8 @@ export function techTier(p){
   const total =
     p.skills.EXTRA_CHANCE +
     p.skills.FAIL_OPP +
-    p.skills.SELF_INVEST;
+    p.skills.SELF_INVEST +
+    p.skills.SPELL_FINDER;
 
   if (total >= 10) return 2;
   if (total >= 5) return 1;
@@ -1215,6 +1325,12 @@ export function describeSkillCompact(p, skillId){
       return `silver max ${SILVER_MAX_TILES[lv]}, ×${formatSilverMult(SILVER_MULT[lv])} if ≥2 used`;
     case "SELF_INVEST":
       return `-${INVEST_PENALTY[lv]}/turn, 5+ ×${INVEST_MULT[lv].toFixed(2)}`;
+    case "SPELL_FINDER": {
+      const minLen = SPELL_FINDER_MINLEN(lv);
+      const tiles = SPELL_FINDER_HINT_TILES(lv);
+      const shareTag = (lv >= 5) ? "; 50% share if stolen" : "";
+      return `len>=${minLen}, hint ${tiles} tile${tiles > 1 ? "s" : ""}${shareTag}`;
+    }
     default:
       return `Lv${lv}`;
   }
@@ -1265,6 +1381,12 @@ export function describeSkill(p, skillId){
       const mult = INVEST_MULT[lv];
       return `Lv${lv}/5 — End of each of YOUR turns: lose ${lose} points (score can’t go below 0). In return, for words of length 5+ you multiply your score by ×${mult.toFixed(2)} (applied after combo and after Point Increase, if you have it).`;
     }
+    case "SPELL_FINDER": {
+      const minLen = SPELL_FINDER_MINLEN(lv);
+      const tiles = SPELL_FINDER_HINT_TILES(lv);
+      const share = (lv >= 5) ? " If your opponent finds your marked word, you gain 50% of that word's final points." : "";
+      return `Lv${lv}/5 - At the start of your turn, pick a random swipeable word not yet found in the match (and not assigned to the opponent's Spell Finder). The word stays fixed until you find it. Highlight the first ${tiles} letter${tiles > 1 ? "s" : ""} in green; word length must be >=${minLen}.${share}`;
+    }
     default:
       return `Lv${lv}/5`;
   }
@@ -1304,6 +1426,13 @@ export function describeOffer(p, skillMeta){
     }
     case "FAIL_OPP":       effect = `Next: max silver ${SILVER_MAX_TILES[next]}, silver mult ×${formatSilverMult(SILVER_MULT[next])}`; break;
     case "SELF_INVEST":    effect = `Next: -${INVEST_PENALTY[next]} / turn, 5+ ×${INVEST_MULT[next].toFixed(2)}`; break;
+    case "SPELL_FINDER": {
+      const minLen = SPELL_FINDER_MINLEN(next);
+      const tiles = SPELL_FINDER_HINT_TILES(next);
+      const share = (next >= 5) ? ", 50% share if opponent finds" : "";
+      effect = `Next: word len>=${minLen}, highlight ${tiles}${share}`;
+      break;
+    }
   }
 
   return { catLabel, effect };

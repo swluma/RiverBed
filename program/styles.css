@@ -498,6 +498,16 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   color: rgba(40, 30, 0, 0.95);
   text-shadow: 0 1px 0 rgba(255,255,255,0.35);
 }
+.tile.spellHint{
+  box-shadow:
+    0 8px 20px rgba(0,0,0,0.18),
+    inset 0 0 0 999px rgba(96, 255, 156, 0.38);
+  border-color: rgba(96, 255, 156, 0.75);
+}
+.tile.spellHint .letter{
+  color: rgba(0, 35, 18, 0.95);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
 
 /* Log */
 .logWrap{ padding:12px; border-top:1px solid rgba(255,255,255,0.10); }

@@ -601,6 +601,12 @@ function renderGrid(gridEl, g){
     // hint highlight
     t.classList.toggle("hint", g.hint && g.hint.tiles && g.hint.tiles.has(idx));
 
+    // spell finder hint (active player only)
+    const spellTiles = (!g.skillSelect || !g.skillSelect.pending)
+      ? g.players[g.active]?.spellFinder?.tiles
+      : null;
+    t.classList.toggle("spellHint", !!spellTiles && spellTiles.has(idx));
+
     // segments: fountain (red/blue), gold, silver
     const segColors = [];
 
@@ -791,7 +797,7 @@ export function showTestSkillsModal(el, initialSkills){
   const order = [
     "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
-    "EXTRA_CHANCE","FAIL_OPP","SELF_INVEST"
+    "EXTRA_CHANCE","FAIL_OPP","SELF_INVEST","SPELL_FINDER"
   ];
 
   const getValue = (playerKey, skillId) => {
@@ -1100,6 +1106,23 @@ function buildSkillReferenceHtml(){
             <tr><td>Lv3</td><td>−7</td><td>×1.8</td></tr>
             <tr><td>Lv4</td><td>−10</td><td>×2.3</td></tr>
             <tr><td>Lv5</td><td>−14</td><td>×3.0</td></tr>
+          </table>
+        </div>
+
+        <div class="skillRefItem">
+          <div class="name"><span class="skillCatDot"></span>Spell Finder</div>
+          <div class="rule">
+            At the start of your turn, choose a random swipeable word not yet found in the match and not assigned to the opponent's Spell Finder.
+            The word stays fixed until you find it. Highlight the first N tiles in green.
+            If the opponent finds your marked word at Lv5, you gain 50% of that word's final points.
+          </div>
+          <table class="skillRefTable">
+            <tr><th>Level</th><th>Min word length</th><th>Hint tiles</th><th>Opponent share</th></tr>
+            <tr><td>Lv1</td><td>4+</td><td>1</td><td>No</td></tr>
+            <tr><td>Lv2</td><td>4+</td><td>2</td><td>No</td></tr>
+            <tr><td>Lv3</td><td>5+</td><td>2</td><td>No</td></tr>
+            <tr><td>Lv4</td><td>6+</td><td>2</td><td>No</td></tr>
+            <tr><td>Lv5</td><td>6+</td><td>2</td><td>Yes (50%)</td></tr>
           </table>
         </div>
 
