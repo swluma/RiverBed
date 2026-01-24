@@ -337,6 +337,7 @@ function makePlayer(id){
       word: null,
       path: [],
       tiles: new Set(),
+      tileLimitThisTurn: null,
     },
   };
 }
@@ -550,6 +551,9 @@ export function startTurn(g){
 
   const ap = g.players[g.active];
   const op = g.players[1 - g.active];
+  if (ap.spellFinder){
+    ap.spellFinder.tileLimitThisTurn = null;
+  }
 
   g.extraChanceLeft = EXTRA_CHANCE_ADD[ap.skills.EXTRA_CHANCE];
 
@@ -582,7 +586,9 @@ export function startTurn(g){
   const reduction = ap.imposeCancelOnOpponentNextTurn || 0;
   ap.imposeCancelOnOpponentNextTurn = 0;
 
-  const union = new Set([...goldIndices, ...silverIndices]);
+  updateSpellFinderForPlayer(g, g.active);
+  const spellTiles = ap.spellFinder?.tiles ? Array.from(ap.spellFinder.tiles) : [];
+  const union = new Set([...goldIndices, ...silverIndices, ...spellTiles]);
   const unionArr = Array.from(union);
   shuffle(unionArr);
 
@@ -598,14 +604,21 @@ export function startTurn(g){
     if (union.has(idx)) g.silver.add(idx);
   }
 
+  if (ap.spellFinder && ap.spellFinder.tiles){
+    const kept = new Set();
+    for (const idx of ap.spellFinder.tiles){
+      if (union.has(idx)) kept.add(idx);
+    }
+    ap.spellFinder.tiles = kept;
+    ap.spellFinder.tileLimitThisTurn = kept.size;
+  }
+
   if (reduction > 0 && ap.fountainIdx != null){
     ap.fountainIdx = null;
   }
 
   ap.pendingGoldTrigger = false;
   ap.destroyedThisTurn = false;
-
-  updateSpellFinderForPlayer(g, g.active);
 }
 
 export function endTurn(g, reason){
@@ -1067,6 +1080,7 @@ function clearSpellFinder(p){
   p.spellFinder.word = null;
   p.spellFinder.path = [];
   p.spellFinder.tiles = new Set();
+  p.spellFinder.tileLimitThisTurn = null;
 }
 
 function updateSpellFinderForPlayer(g, playerIndex){
@@ -1111,7 +1125,10 @@ function updateSpellFinderForPlayer(g, playerIndex){
   }
   p.spellFinder.word = word;
   p.spellFinder.path = path;
-  p.spellFinder.tiles = new Set(path.slice(0, hintTiles));
+  const limit = (typeof p.spellFinder.tileLimitThisTurn === "number")
+    ? Math.max(0, Math.min(hintTiles, p.spellFinder.tileLimitThisTurn))
+    : hintTiles;
+  p.spellFinder.tiles = new Set(path.slice(0, limit));
 }
 
 function findSpellFinderWord(g, minLen, opponentWord){
@@ -1379,7 +1396,7 @@ export function describeSkill(p, skillId){
       return `Lv${lv}/5 — Trigger: if the opponent finds a word, then on YOUR NEXT turn spawn up to ${maxGold} visible GOLD tiles (uniform random among all 36). If your found word uses ≥1 gold tile: add +${bonus} flat points. Gold tiles are visible to both players and disappear at the end of your turn.`;
     }
     case "COLOR_CANCEL": {
-      return `Lv${lv}/5 — When you find a word, the opponent’s NEXT turn spawns fewer “special tiles” (GOLD from Winner’s Footsteps and SILVER from Failure into Opportunity). Gray tiles are NOT reduced. If the opponent has a Fountain tile, it is removed before their next turn begins. Reduction: Lv1 −1, Lv2 −1 (50% chance −2), Lv3 −2, Lv4 −2 (50% chance −3), Lv5 −3.`;
+      return `Lv${lv}/5 — When you find a word, the opponent’s NEXT turn spawns fewer “special tiles” (GOLD from Winner’s Footsteps, SILVER from Failure into Opportunity, and GREEN Spell Finder hints). Gray tiles are NOT reduced. If the opponent has a Fountain tile, it is removed before their next turn begins. Reduction: Lv1 −1, Lv2 −1 (50% chance −2), Lv3 −2, Lv4 −2 (50% chance −3), Lv5 −3.`;
     }
     case "EXTRA_CHANCE": {
       const add = EXTRA_CHANCE_ADD[lv];

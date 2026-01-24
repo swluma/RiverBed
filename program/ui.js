@@ -1030,7 +1030,7 @@ function buildSkillReferenceHtml(){
           <div class="name"><span class="skillCatDot"></span>Color Cancellation</div>
           <div class="rule">
             When you find a word, the opponent’s NEXT turn spawns fewer <b>special tiles</b>:
-            GOLD (Winner’s Footsteps) and SILVER (Failure into Opportunity).
+            GOLD (Winner’s Footsteps), SILVER (Failure into Opportunity), and GREEN Spell Finder hints.
             Gray tiles are excluded from this reduction. If the opponent has a fountain tile, it is removed before their next turn begins.
           </div>
           <table class="skillRefTable">
