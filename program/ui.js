@@ -27,6 +27,7 @@ export function bindUI(handlers){
     scoreInfoBtn: document.getElementById("scoreInfoBtn"),
     winScoreBtn: document.getElementById("winScoreBtn"),
     timeLimitBtn: document.getElementById("timeLimitBtn"),
+    shuffleBtn: document.getElementById("shuffleBtn"),
 
     fbTitle: document.getElementById("fbTitle"),
     fbSub: document.getElementById("fbSub"),
@@ -85,6 +86,12 @@ export function bindUI(handlers){
     timeLimitApplyBtn: document.getElementById("timeLimitApplyBtn"),
     timeLimitApplyNewBtn: document.getElementById("timeLimitApplyNewBtn"),
     timeLimitCancelBtn: document.getElementById("timeLimitCancelBtn"),
+
+    shuffleModal: document.getElementById("shuffleModal"),
+    shuffleP1Agree: document.getElementById("shuffleP1Agree"),
+    shuffleP2Agree: document.getElementById("shuffleP2Agree"),
+    shuffleConfirmBtn: document.getElementById("shuffleConfirmBtn"),
+    shuffleCancelBtn: document.getElementById("shuffleCancelBtn"),
 
     hintBtn: document.getElementById("hintBtn"),
     hintModal: document.getElementById("hintModal"),
@@ -284,6 +291,37 @@ export function bindUI(handlers){
     if (el.timeLimitApplyNewBtn){
       el.timeLimitApplyNewBtn.addEventListener("click", () => emitTimeLimit("new"));
     }
+  }
+
+  // Shuffle modal
+  if (el.shuffleBtn && handlers.onShuffle){
+    el.shuffleBtn.addEventListener("click", handlers.onShuffle);
+  }
+  if (el.shuffleModal){
+    const updateShuffleConfirm = () => {
+      const ok = !!(el.shuffleP1Agree?.checked && el.shuffleP2Agree?.checked);
+      if (el.shuffleConfirmBtn) el.shuffleConfirmBtn.disabled = !ok;
+    };
+    if (el.shuffleP1Agree) el.shuffleP1Agree.addEventListener("change", updateShuffleConfirm);
+    if (el.shuffleP2Agree) el.shuffleP2Agree.addEventListener("change", updateShuffleConfirm);
+    if (el.shuffleConfirmBtn){
+      el.shuffleConfirmBtn.addEventListener("click", () => {
+        hide(el.shuffleModal);
+        el.shuffleModal.dispatchEvent(new CustomEvent("confirm-shuffle"));
+      });
+    }
+    if (el.shuffleCancelBtn){
+      el.shuffleCancelBtn.addEventListener("click", () => {
+        hide(el.shuffleModal);
+        el.shuffleModal.dispatchEvent(new CustomEvent("cancel-shuffle"));
+      });
+    }
+    el.shuffleModal.addEventListener("click", (e) => {
+      if (e.target === el.shuffleModal){
+        hide(el.shuffleModal);
+        el.shuffleModal.dispatchEvent(new CustomEvent("cancel-shuffle"));
+      }
+    });
   }
 
   // New match / restart
@@ -728,6 +766,24 @@ export function onApplyWinScore(el, handler){
 export function onApplyTimeLimit(el, handler){
   if (!el.timeLimitModal) return;
   el.timeLimitModal.addEventListener("apply-time-limit", (e) => handler(e.detail));
+}
+
+export function showShuffleModal(el){
+  if (!el.shuffleModal) return;
+  if (el.shuffleP1Agree) el.shuffleP1Agree.checked = false;
+  if (el.shuffleP2Agree) el.shuffleP2Agree.checked = false;
+  if (el.shuffleConfirmBtn) el.shuffleConfirmBtn.disabled = true;
+  show(el.shuffleModal);
+}
+
+export function onConfirmShuffle(el, handler){
+  if (!el.shuffleModal) return;
+  el.shuffleModal.addEventListener("confirm-shuffle", () => handler());
+}
+
+export function onCancelShuffle(el, handler){
+  if (!el.shuffleModal) return;
+  el.shuffleModal.addEventListener("cancel-shuffle", () => handler());
 }
 
 export function showEndModal(el, g){

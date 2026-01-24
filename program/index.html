@@ -39,6 +39,7 @@
       <button id="scoreInfoBtn" class="ghost">Scoring</button>
       <button id="legendBtn" class="ghost">Legend</button>
       <button id="timeLimitBtn" class="ghost">Time Limit</button>
+      <button id="shuffleBtn" class="ghost">Shuffle Board</button>
       <button id="newMatchBtn" class="primary" disabled>New Match</button>
     </div>
   </header>
@@ -378,6 +379,34 @@
             <button class="ghost" id="timeLimitApplyBtn">Apply & Resume</button>
             <button class="primary" id="timeLimitApplyNewBtn">Apply & New Match</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shuffle Board Modal -->
+  <div class="modalOverlay hidden" id="shuffleModal">
+    <div class="modal card">
+      <div class="modalHead">
+        <div class="modalTitle">Shuffle Board</div>
+        <button class="ghost" id="shuffleCancelBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="shuffleIntro">
+          Shuffling randomizes the board tiles and removes embedded words. Current selections and hints will be cleared.
+        </div>
+        <div class="shuffleAgreements">
+          <label class="shuffleAgree">
+            <input type="checkbox" id="shuffleP1Agree" />
+            <span>Player 1 agrees</span>
+          </label>
+          <label class="shuffleAgree">
+            <input type="checkbox" id="shuffleP2Agree" />
+            <span>Player 2 agrees</span>
+          </label>
+        </div>
+        <div class="shuffleActions">
+          <button class="primary" id="shuffleConfirmBtn" disabled>Shuffle Now</button>
         </div>
       </div>
     </div>

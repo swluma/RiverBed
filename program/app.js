@@ -5,7 +5,8 @@ import {
   getSkillOffers, upgradeSkill,
   applyHint, canUseHint, totalSkillLevels,
   setWinScore,
-  timeoutTurn
+  timeoutTurn,
+  shuffleBoard
 } from "./game.js";
 import {
   bindUI, setDictStatus, renderAll,
@@ -13,7 +14,8 @@ import {
   setFeedback, animateAttemptsFail, shakeFeedback,
   showSkillModal, onChooseSkill,
   showHintModal, onApplyHint, onCancelHint,
-  showEndModal, onApplyWinScore, onApplyTimeLimit
+  showEndModal, onApplyWinScore, onApplyTimeLimit,
+  showShuffleModal, onConfirmShuffle, onCancelShuffle
 } from "./ui.js";
 
 let dictSet = null;
@@ -44,6 +46,7 @@ ui = bindUI({
   onHint,
   onConfirm,
   onStartTurn,
+  onShuffle,
 });
 
 if (ui.winScoreValue){
@@ -138,6 +141,20 @@ onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
   lastTurnKey = null;
   renderNow();
   setFeedback(ui, "Time limit updated", "Settings applied. Resume play.");
+});
+
+onConfirmShuffle(ui, () => {
+  if (!g || g.gameOver) return;
+  const ok = shuffleBoard(g);
+  locked = false;
+  renderNow();
+  if (ok){
+    setFeedback(ui, "Board shuffled", "Tiles randomized. Embedded words removed.");
+  }
+});
+
+onCancelShuffle(ui, () => {
+  locked = false;
 });
 
 async function loadDictionary(){
@@ -463,6 +480,17 @@ function onStartTurn(){
   if (g.skillSelect && g.skillSelect.pending) return;
   if (!getTimeLimitForActive()) return;
   startTimeLimitCountdown();
+}
+
+function onShuffle(){
+  if (isLocked()) return;
+  if (!g || g.gameOver) return;
+  if (g.skillSelect && g.skillSelect.pending){
+    setFeedback(ui, "Shuffle blocked", "Choose a skill first, then try again.");
+    return;
+  }
+  locked = true;
+  showShuffleModal(ui);
 }
 
 async function onConfirm(){

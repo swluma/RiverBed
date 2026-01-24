@@ -120,6 +120,20 @@ function shuffle(a){
   return a;
 }
 
+export function shuffleBoard(g){
+  if (!g || !Array.isArray(g.board)) return false;
+  shuffle(g.board);
+  g.embeddedWords = [];
+  clearSelection(g);
+  g.pendingConfirm = false;
+  if (g.hint){
+    g.hint.usedThisTurn = false;
+    g.hint.tiles.clear();
+    g.hint.word = null;
+  }
+  return true;
+}
+
 function pickDistinctIndices(count, max){
   const arr = Array.from({length:max}, (_,i)=>i);
   shuffle(arr);
