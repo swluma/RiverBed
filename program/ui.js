@@ -1118,11 +1118,11 @@ function buildSkillReferenceHtml(){
           </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Min word length</th><th>Hint tiles</th><th>Opponent share</th></tr>
-            <tr><td>Lv1</td><td>4+</td><td>1</td><td>No</td></tr>
-            <tr><td>Lv2</td><td>4+</td><td>2</td><td>No</td></tr>
-            <tr><td>Lv3</td><td>5+</td><td>2</td><td>No</td></tr>
-            <tr><td>Lv4</td><td>6+</td><td>2</td><td>No</td></tr>
-            <tr><td>Lv5</td><td>6+</td><td>2</td><td>Yes (50%)</td></tr>
+            <tr><td>Lv1</td><td>3+</td><td>1</td><td>No</td></tr>
+            <tr><td>Lv2</td><td>3+</td><td>2</td><td>No</td></tr>
+            <tr><td>Lv3</td><td>4+</td><td>2</td><td>No</td></tr>
+            <tr><td>Lv4</td><td>5+</td><td>2</td><td>No</td></tr>
+            <tr><td>Lv5</td><td>5+</td><td>2</td><td>Yes (50%)</td></tr>
           </table>
         </div>
 

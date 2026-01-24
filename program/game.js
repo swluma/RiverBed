@@ -75,9 +75,9 @@ const INVEST_MULT        = [1, 1.2, 1.45, 1.8, 2.3, 3.0];
 
 const SPELL_FINDER_MINLEN = (lv) => {
   if (lv <= 0) return 0;
-  if (lv <= 2) return 4;
-  if (lv === 3) return 5;
-  return 6;
+  if (lv <= 2) return 3;
+  if (lv === 3) return 4;
+  return 5;
 };
 
 const SPELL_FINDER_HINT_TILES = (lv) => (lv >= 2 ? 2 : 1);
@@ -1114,14 +1114,25 @@ function updateSpellFinderForPlayer(g, playerIndex){
 function findSpellFinderWord(g, minLen, opponentWord){
   if (!g.dictWords || g.dictWords.length === 0) return null;
   const start = randInt(g.dictWords.length);
+  let bestLen = Infinity;
+  const candidates = [];
   for (let i=0; i<g.dictWords.length; i++){
     const idx = (start + i) % g.dictWords.length;
     const word = g.dictWords[idx];
     if (!word || word.length < minLen) continue;
+    if (word.length > bestLen) continue;
     if (g.foundWords.has(word)) continue;
     if (opponentWord && word === opponentWord) continue;
     const path = findWordPathOnBoard(g.board, word, g.gray);
-    if (path) return { word, path };
+    if (!path) continue;
+    if (word.length < bestLen){
+      bestLen = word.length;
+      candidates.length = 0;
+    }
+    candidates.push({ word, path });
+  }
+  if (candidates.length > 0){
+    return candidates[randInt(candidates.length)];
   }
   return null;
 }
