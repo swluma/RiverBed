@@ -106,7 +106,7 @@ function roundInt(x){
 
 function formatSilverMult(mult){
   const s = mult.toFixed(2);
-  if (s.endsWith("00")) return formatSilverMult(mult);
+  if (s.endsWith(".00")) return s.slice(0, -3);
   if (s.endsWith("0")) return s.slice(0, -1);
   return s;
 }
@@ -1023,8 +1023,7 @@ function attemptSkillDestruction(g){
   const tTier = techTier(ap);
   if (tTier === 0) return;
 
-  const chance = (tTier === 1) ? 0.5 : 1.0;
-  if (Math.random() > chance) return;
+  const reduction = (tTier === 1) ? 1 : 2;
 
   const reducible = [];
   for (const k of Object.keys(op.skills)){
@@ -1034,7 +1033,7 @@ function attemptSkillDestruction(g){
 
   const chosen = reducible[randInt(reducible.length)];
   const prev = op.skills[chosen];
-  op.skills[chosen] -= 1;
+  op.skills[chosen] = Math.max(0, prev - reduction);
   updateDecaySteps(g);
   g.log.push({
     type: "SKILL_DESTROY",
