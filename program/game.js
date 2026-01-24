@@ -192,6 +192,7 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
   const g = {
     dictSet,
     dictWords,
+    commonWords: Array.isArray(embedWords) && embedWords.length > 0 ? embedWords : dictWords,
     board: null,              // letters array length 36
     embeddedWords: null,       // hidden list (never shown)
     foundWords: new Set(),     // match-wide duplicate rule
@@ -1112,13 +1113,16 @@ function updateSpellFinderForPlayer(g, playerIndex){
 }
 
 function findSpellFinderWord(g, minLen, opponentWord){
-  if (!g.dictWords || g.dictWords.length === 0) return null;
-  const start = randInt(g.dictWords.length);
+  const pool = (Array.isArray(g.commonWords) && g.commonWords.length > 0)
+    ? g.commonWords
+    : g.dictWords;
+  if (!pool || pool.length === 0) return null;
+  const start = randInt(pool.length);
   let bestLen = Infinity;
   const candidates = [];
-  for (let i=0; i<g.dictWords.length; i++){
-    const idx = (start + i) % g.dictWords.length;
-    const word = g.dictWords[idx];
+  for (let i=0; i<pool.length; i++){
+    const idx = (start + i) % pool.length;
+    const word = pool[idx];
     if (!word || word.length < minLen) continue;
     if (word.length > bestLen) continue;
     if (g.foundWords.has(word)) continue;
