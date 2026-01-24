@@ -877,14 +877,16 @@ function handleSuccess(g, word, wordLen){
   }
 
   let spellFinderShared = 0;
+  let spellFinderReduction = 0;
   const opSpellLv = op.skills.SPELL_FINDER || 0;
   if (opSpellLv >= 5 && op.spellFinder && op.spellFinder.word === word){
     spellFinderShared = roundInt(finalWordPoints * 0.5);
+    spellFinderReduction = spellFinderShared;
     op.score += spellFinderShared;
     if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
   }
 
-  ap.score += finalWordPoints;
+  ap.score += Math.max(0, finalWordPoints - spellFinderReduction);
   if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
 
   g.foundWords.add(word);
