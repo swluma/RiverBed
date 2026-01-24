@@ -365,7 +365,11 @@ export function bindUI(handlers){
   }
 
   // New match / restart
-  el.newMatchBtn.addEventListener("click", handlers.onNewMatch);
+  el.newMatchBtn.addEventListener("click", () => {
+    const ok = window.confirm("Start a new match? Current progress will be lost.");
+    if (!ok) return;
+    handlers.onNewMatch();
+  });
   el.restartBtn.addEventListener("click", () => {
     hide(el.endModal);
     handlers.onNewMatch();
