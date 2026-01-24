@@ -465,7 +465,7 @@ function renderSkills(p){
   const order = [
     "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
-    "EXTRA_CHANCE","FAIL_OPP","SELF_INVEST"
+    "EXTRA_CHANCE","FAIL_OPP","SELF_INVEST","SPELL_FINDER"
   ];
 
   const owned = order.filter(id => (p.skills[id] ?? 0) >= 1);
