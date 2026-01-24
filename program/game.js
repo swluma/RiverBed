@@ -29,6 +29,7 @@ export const SKILLS = {
   POINT_INCREASE: { id:"POINT_INCREASE", cat:"POINT", name:"Point Increase", max:5 },
   POINT_ABSORB:   { id:"POINT_ABSORB",   cat:"POINT", name:"Point Absorption", max:5 },
   POINT_FOUNTAIN: { id:"POINT_FOUNTAIN", cat:"POINT", name:"Point Fountain",   max:5 },
+  FAIL_OPP:       { id:"FAIL_OPP",       cat:"POINT", name:"Failure into Opportunity",  max:5 },
 
   // Counter
   VALUE_DECAY:    { id:"VALUE_DECAY",    cat:"COUNTER", name:"Value Decay",         max:5 },
@@ -37,7 +38,6 @@ export const SKILLS = {
 
   // Technical
   EXTRA_CHANCE:   { id:"EXTRA_CHANCE",   cat:"TECH", name:"Extra Chance",               max:5 },
-  FAIL_OPP:       { id:"FAIL_OPP",       cat:"TECH", name:"Failure into Opportunity",  max:5 },
   SELF_INVEST:    { id:"SELF_INVEST",    cat:"TECH", name:"Self Investment",            max:5 },
   SPELL_FINDER:   { id:"SPELL_FINDER",   cat:"TECH", name:"Spell Finder",               max:5 },
 };
@@ -1168,7 +1168,8 @@ export function pointTier(p){
   const total =
     p.skills.POINT_INCREASE +
     p.skills.POINT_ABSORB +
-    p.skills.POINT_FOUNTAIN;
+    p.skills.POINT_FOUNTAIN +
+    p.skills.FAIL_OPP;
 
   if (total >= 10) return 2;
   if (total >= 5) return 1;
@@ -1189,7 +1190,6 @@ export function counterTier(p){
 export function techTier(p){
   const total =
     p.skills.EXTRA_CHANCE +
-    p.skills.FAIL_OPP +
     p.skills.SELF_INVEST +
     p.skills.SPELL_FINDER;
 

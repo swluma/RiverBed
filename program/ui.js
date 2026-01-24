@@ -467,9 +467,9 @@ export function setConfirmState(el, pending, locked){
 function renderSkills(p){
   // Compact list for the player panels: level + CURRENT effect only.
   const order = [
-    "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN",
+    "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN","FAIL_OPP",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
-    "EXTRA_CHANCE","FAIL_OPP","SELF_INVEST","SPELL_FINDER"
+    "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER"
   ];
 
   const owned = order.filter(id => (p.skills[id] ?? 0) >= 1);
@@ -799,9 +799,9 @@ export function showTestSkillsModal(el, initialSkills){
   if (!el.testSkillsModal || !el.testSkillsList) return;
 
   const order = [
-    "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN",
+    "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN","FAIL_OPP",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
-    "EXTRA_CHANCE","FAIL_OPP","SELF_INVEST","SPELL_FINDER"
+    "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER"
   ];
 
   const getValue = (playerKey, skillId) => {
@@ -982,6 +982,23 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
+          <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (Silver tiles)</div>
+          <div class="rule">
+            Trigger: on a failed attempt, choose up to the max silver tiles uniformly at random from the entire board — those become silver for your NEXT turn.
+            On your NEXT turn, if your successful word uses at least 2 silver tiles, apply the multiplier.
+            Silver tiles revert at the end of that next turn.
+          </div>
+          <table class="skillRefTable">
+            <tr><th>Level</th><th>Max silver tiles</th><th>Silver multiplier (if ≥2 used)</th></tr>
+            <tr><td>Lv1</td><td>2</td><td>×1.3</td></tr>
+            <tr><td>Lv2</td><td>3</td><td>×1.5</td></tr>
+            <tr><td>Lv3</td><td>3</td><td>×1.7</td></tr>
+            <tr><td>Lv4</td><td>4</td><td>×1.85</td></tr>
+            <tr><td>Lv5</td><td>6</td><td>×2.0</td></tr>
+          </table>
+        </div>
+
+        <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Point Skills Category Bonus</div>
           <div class="rule">Based on total Point-skill levels you own. Added at the end of each of your turns (after turn-end effects like Self Investment penalty).</div>
           <table class="skillRefTable">
@@ -1080,22 +1097,6 @@ function buildSkillReferenceHtml(){
           </table>
         </div>
 
-        <div class="skillRefItem">
-          <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (Silver tiles)</div>
-          <div class="rule">
-            Trigger: on a failed attempt, choose up to the max silver tiles uniformly at random from the entire board — those become silver for your NEXT turn.
-            On your NEXT turn, if your successful word uses at least 2 silver tiles, apply the multiplier.
-            Silver tiles revert at the end of that next turn.
-          </div>
-          <table class="skillRefTable">
-            <tr><th>Level</th><th>Max silver tiles</th><th>Silver multiplier (if ≥2 used)</th></tr>
-            <tr><td>Lv1</td><td>2</td><td>×1.3</td></tr>
-            <tr><td>Lv2</td><td>3</td><td>×1.5</td></tr>
-            <tr><td>Lv3</td><td>3</td><td>×1.7</td></tr>
-            <tr><td>Lv4</td><td>4</td><td>×1.85</td></tr>
-            <tr><td>Lv5</td><td>6</td><td>×2.0</td></tr>
-          </table>
-        </div>
 
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Self Investment</div>
