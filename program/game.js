@@ -722,7 +722,11 @@ export function timeoutTurn(g){
 function handleFailure(g, {reason, word}){
   const ap = g.players[g.active];
 
-  ap.combo = 0;
+  const ended = (g.attempts <= 0 && g.extraChanceLeft <= 0);
+  const preserveCombo = (ap.skills.EXTRA_CHANCE >= 5) && !ended;
+  if (!preserveCombo){
+    ap.combo = 0;
+  }
   ap.sameLenStreak = 0;
   ap.sameLenLast = 0;
   updateDecaySteps(g);
@@ -736,7 +740,6 @@ function handleFailure(g, {reason, word}){
     ap.pendingSilver = new Set();
   }
 
-  const ended = (g.attempts <= 0 && g.extraChanceLeft <= 0);
   if (ended){
     endTurn(g, "OUT_OF_ATTEMPTS");
   }
@@ -1183,6 +1186,7 @@ export function describeSkillCompact(p, skillId){
       if (lv===4) return `−2 (50% −3)`;
       return `−3`;
     case "EXTRA_CHANCE":
+      if (lv >= 5) return `+${EXTRA_CHANCE_ADD[lv]} attempts; combo kept on success`;
       return `+${EXTRA_CHANCE_ADD[lv]} attempts after fail`;
     case "FAIL_OPP":
       return `silver max ${SILVER_MAX_TILES[lv]}, ×${formatSilverMult(SILVER_MULT[lv])} if ≥2 used`;
@@ -1223,7 +1227,10 @@ export function describeSkill(p, skillId){
     }
     case "EXTRA_CHANCE": {
       const add = EXTRA_CHANCE_ADD[lv];
-      return `Lv${lv}/5 — After a failed attempt (invalid word / duplicate / not in dictionary): immediately gain +${add} extra attempts for the SAME turn. IMPORTANT: the failure still consumes the attempt and ALWAYS resets combo; extra attempts do NOT protect combo.`;
+      const comboNote = (lv >= 5)
+        ? " At Lv5, if you eventually succeed in the SAME turn (even using extra attempts), your combo is preserved."
+        : " IMPORTANT: the failure still consumes the attempt and ALWAYS resets combo; extra attempts do NOT protect combo.";
+      return `Lv${lv}/5 — After a failed attempt (invalid word / duplicate / not in dictionary): immediately gain +${add} extra attempts for the SAME turn.${comboNote}`;
     }
     case "FAIL_OPP": {
       const maxS = SILVER_MAX_TILES[lv];
@@ -1267,7 +1274,11 @@ export function describeOffer(p, skillMeta){
       effect = `Next: ${cancelText} (gold/silver + remove fountain if present)`;
       break;
     }
-    case "EXTRA_CHANCE":   effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure`; break;
+    case "EXTRA_CHANCE": {
+      const comboTag = (next >= 5) ? " + combo preserved on success" : "";
+      effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure${comboTag}`;
+      break;
+    }
     case "FAIL_OPP":       effect = `Next: max silver ${SILVER_MAX_TILES[next]}, silver mult ×${formatSilverMult(SILVER_MULT[next])}`; break;
     case "SELF_INVEST":    effect = `Next: -${INVEST_PENALTY[next]} / turn, 5+ ×${INVEST_MULT[next].toFixed(2)}`; break;
   }

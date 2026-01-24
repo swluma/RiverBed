@@ -949,7 +949,7 @@ function buildSkillReferenceHtml(){
           <div class="name"><span class="skillCatDot"></span>Extra Chance</div>
           <div class="rule">
             After a failed attempt, you gain extra attempts (same turn).
-            Failure still resets combo immediately. Extra attempts do NOT protect combo.
+            Failure still resets combo immediately. Extra attempts do NOT protect combo, except at Lv5 where combo is preserved if you eventually succeed that turn.
           </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Extra attempts after a failure</th></tr>
@@ -957,7 +957,7 @@ function buildSkillReferenceHtml(){
             <tr><td>Lv2</td><td>+2</td></tr>
             <tr><td>Lv3</td><td>+3</td></tr>
             <tr><td>Lv4</td><td>+4</td></tr>
-            <tr><td>Lv5</td><td>+5</td></tr>
+            <tr><td>Lv5</td><td>+5 (combo preserved on success)</td></tr>
           </table>
         </div>
 
