@@ -494,7 +494,7 @@ export function startTurn(g){
 
   // Counter category bonus: gray tiles on opponent's turn
   const opCounterTier = counterTier(op);
-  const grayCount = (opCounterTier === 2) ? 2 : (opCounterTier === 1 ? 1 : 0);
+  const grayCount = (opCounterTier === 2) ? 4 : (opCounterTier === 1 ? 2 : 0);
   if (grayCount > 0){
     const idxs = pickDistinctIndices(grayCount, SIZE*SIZE);
     for (const i of idxs) g.gray.add(i);

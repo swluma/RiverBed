@@ -430,7 +430,7 @@ export function renderCategoryBonuses(p){
   }
 
   if (cTier > 0){
-    const tiles = (cTier === 1) ? "1 gray tile" : "2 gray tiles";
+    const tiles = (cTier === 1) ? "2 gray tiles" : "4 gray tiles";
     items.push(`
       <div class="bonusItem counter">
         <div class="tag"><span class="dot"></span>Counter Tier ${cTier}</div>
@@ -879,8 +879,8 @@ function buildSkillReferenceHtml(){
           </div>
           <table class="skillRefTable">
             <tr><th>Tier</th><th>Effect</th></tr>
-            <tr><td>Tier 1</td><td>Opponent’s turn spawns 1 gray tile</td></tr>
-            <tr><td>Tier 2</td><td>Opponent’s turn spawns 2 gray tiles</td></tr>
+            <tr><td>Tier 1</td><td>Opponent’s turn spawns 2 gray tiles</td></tr>
+            <tr><td>Tier 2</td><td>Opponent’s turn spawns 4 gray tiles</td></tr>
           </table>
         </div>
       </div>
