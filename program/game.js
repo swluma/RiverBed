@@ -27,7 +27,6 @@ export const CATEGORIES = {
 export const SKILLS = {
   // Point
   POINT_INCREASE: { id:"POINT_INCREASE", cat:"POINT", name:"Point Increase", max:5 },
-  POINT_ABSORB:   { id:"POINT_ABSORB",   cat:"POINT", name:"Point Absorption", max:5 },
   POINT_FOUNTAIN: { id:"POINT_FOUNTAIN", cat:"POINT", name:"Point Fountain",   max:5 },
   FAIL_OPP:       { id:"FAIL_OPP",       cat:"POINT", name:"Failure into Opportunity",  max:5 },
   SAFETY_NET:     { id:"SAFETY_NET",     cat:"TECH",  name:"Safety Net",             max:5 },
@@ -44,7 +43,6 @@ export const SKILLS = {
 };
 
 const POINT_INCREASE_PCT = [0, 0.05, 0.10, 0.15, 0.20, 0.30];
-const ABSORB_VALUE       = [0, 2, 4, 6, 8, 10];
 const FOUNTAIN_BONUS     = [0, 5, 8, 12, 18, 25];
 
 const DECAY_STEP         = [0, 0.06, 0.08, 0.10, 0.12, 0.15];
@@ -309,7 +307,6 @@ function makePlayer(id){
     // Skills levels
     skills: {
       POINT_INCREASE: 0,
-      POINT_ABSORB: 0,
       POINT_FOUNTAIN: 0,
       VALUE_DECAY: 0,
       WIN_FOOTSTEPS: 0,
@@ -892,14 +889,6 @@ function handleSuccess(g, word, wordLen){
   const finalWordPoints = roundInt(score);
   let fountainShared = 0;
 
-  const paLv = ap.skills.POINT_ABSORB;
-  if (paLv > 0){
-    const stolen = ABSORB_VALUE[paLv];
-    op.score = Math.max(0, op.score - stolen);
-    ap.score += stolen;
-    if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
-  }
-
   const usedOpponentFountain = (op.fountainIdx != null && g.selectionSet.has(op.fountainIdx));
   if (usedOpponentFountain){
     const opponentBonus = roundInt(finalWordPoints * 0.5);
@@ -1186,7 +1175,6 @@ function findSpellFinderWord(g, minLen, opponentWord){
 export function pointTier(p){
   const total =
     p.skills.POINT_INCREASE +
-    p.skills.POINT_ABSORB +
     p.skills.POINT_FOUNTAIN +
     p.skills.FAIL_OPP;
 
@@ -1358,8 +1346,6 @@ export function describeSkillCompact(p, skillId){
   switch(skillId){
     case "POINT_INCREASE":
       return `×${(1+POINT_INCREASE_PCT[lv]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[lv]*100)}%)`;
-    case "POINT_ABSORB":
-      return `steal ${ABSORB_VALUE[lv]} pts`;
     case "POINT_FOUNTAIN":
       return `self +${FOUNTAIN_BONUS[lv]} / opponent share 50%`;
     case "VALUE_DECAY":
@@ -1399,10 +1385,6 @@ export function describeSkill(p, skillId){
     case "POINT_INCREASE": {
       const pct = Math.round(POINT_INCREASE_PCT[lv] * 100);
       return `Lv${lv}/5 — After combo (and after Value Decay if it applies): multiply your word’s Base+Length score by ×${(1+POINT_INCREASE_PCT[lv]).toFixed(2)} (+${pct}%).`;
-    }
-    case "POINT_ABSORB": {
-      const steal = ABSORB_VALUE[lv];
-      return `Lv${lv}/5 — On every successful word: steal ${steal} points from the opponent (opponent score can’t go below 0). This happens AFTER your word’s final points are computed, and BEFORE those word points are added.`;
     }
     case "POINT_FOUNTAIN": {
       const bonus = FOUNTAIN_BONUS[lv];
@@ -1465,7 +1447,6 @@ export function describeOffer(p, skillMeta){
   let effect = "";
   switch(id){
     case "POINT_INCREASE": effect = `Next: ×${(1+POINT_INCREASE_PCT[next]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[next]*100)}%)`; break;
-    case "POINT_ABSORB":   effect = `Next: steal ${ABSORB_VALUE[next]} pts on success`; break;
     case "POINT_FOUNTAIN": effect = `Next: self-use +${FOUNTAIN_BONUS[next]} pts`; break;
     case "VALUE_DECAY":    effect = `Next: decay step ${Math.round(DECAY_STEP[next] * 100)}% (min ×0.40)`; break;
     case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]}`; break;

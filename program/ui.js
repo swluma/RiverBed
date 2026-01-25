@@ -522,7 +522,7 @@ export function setConfirmState(el, pending, locked){
 function renderSkills(p){
   // Compact list for the player panels: level + CURRENT effect only.
   const order = [
-    "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN","FAIL_OPP",
+    "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
     "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER","SAFETY_NET"
   ];
@@ -854,7 +854,7 @@ export function showTestSkillsModal(el, initialSkills){
   if (!el.testSkillsModal || !el.testSkillsList) return;
 
   const order = [
-    "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN","FAIL_OPP",
+    "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
     "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER","SAFETY_NET"
   ];
@@ -1003,19 +1003,6 @@ function buildSkillReferenceHtml(){
             <tr><td>Lv3</td><td>×1.15 (+15%)</td></tr>
             <tr><td>Lv4</td><td>×1.20 (+20%)</td></tr>
             <tr><td>Lv5</td><td>×1.30 (+30%)</td></tr>
-          </table>
-        </div>
-
-        <div class="skillRefItem">
-          <div class="name"><span class="skillCatDot"></span>Point Absorption (steal fixed points)</div>
-          <div class="rule">After your <span class="skillRefSmall">finalWordPoints</span> is known: steal points from opponent (opponent score cannot go below 0), then add stolen points to you. (This is separate from your word’s own “+n pts”.)</div>
-          <table class="skillRefTable">
-            <tr><th>Level</th><th>Stolen on every successful word</th></tr>
-            <tr><td>Lv1</td><td>2</td></tr>
-            <tr><td>Lv2</td><td>4</td></tr>
-            <tr><td>Lv3</td><td>6</td></tr>
-            <tr><td>Lv4</td><td>8</td></tr>
-            <tr><td>Lv5</td><td>10</td></tr>
           </table>
         </div>
 
