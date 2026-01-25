@@ -427,7 +427,7 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 
 .fieldWrap{ padding:12px; display:grid; place-items:center; position:relative; }
 .grid{
-  width:min(520px, 94vw);
+  width:min(520px, 100%);
   aspect-ratio: 1 / 1;
   display:grid;
   grid-template-columns: repeat(6, 1fr);
@@ -440,7 +440,7 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 }
 .gridCover{
   position:absolute;
-  width:min(520px, 94vw);
+  width:min(520px, 100%);
   aspect-ratio: 1 / 1;
   border-radius:22px;
   border:1px solid rgba(255,255,255,0.12);
