@@ -1057,15 +1057,15 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Value Decay</div>
           <div class="rule">
-            Affects the opponent ONLY. Track their “same-length success streak” (increments on each successful word of the same length; resets to 1 when the next successful word has a different length). Once the opponent reaches streak ≥2, multiply their score by <b>max(min, 1.00 − step × (streak−1))</b> after combo and before their other multipliers. Lv4 bottoms at ×0.25 (max 75% decay); Lv5 can reach ×0.00 (max 100% decay).
+            Affects the opponent ONLY. Track their “same-length success streak” (increments on each successful word of the same length; resets to 1 when the next successful word has a different length). Once the opponent reaches streak ≥2, multiply their score by 1.00 − step × (streak−1) after combo and before their other multipliers, capping the decay at the level’s Max decay (see table) so the multiplier never drops below the floor. Lv4 bottoms at ×0.25 (max 75% decay); Lv5 can reach ×0.00 (max 100% decay).
           </div>
           <table class="skillRefTable">
-            <tr><th>Level</th><th>Decay step</th><th>Min multiplier</th></tr>
-            <tr><td>Lv1</td><td>8%</td><td>×0.40</td></tr>
-            <tr><td>Lv2</td><td>12%</td><td>×0.40</td></tr>
-            <tr><td>Lv3</td><td>15%</td><td>×0.40</td></tr>
-            <tr><td>Lv4</td><td>20%</td><td>×0.25</td></tr>
-            <tr><td>Lv5</td><td>20%</td><td>×0.00</td></tr>
+            <tr><th>Level</th><th>Decay step</th><th>Max decay</th></tr>
+            <tr><td>Lv1</td><td>8%</td><td>60%</td></tr>
+            <tr><td>Lv2</td><td>12%</td><td>60%</td></tr>
+            <tr><td>Lv3</td><td>15%</td><td>60%</td></tr>
+            <tr><td>Lv4</td><td>20%</td><td>75%</td></tr>
+            <tr><td>Lv5</td><td>20%</td><td>100%</td></tr>
           </table>
         </div>
 

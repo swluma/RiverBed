@@ -46,6 +46,7 @@ const FOUNTAIN_BONUS     = [0, 5, 8, 12, 18, 25];
 
 const DECAY_STEP         = [0, 0.08, 0.12, 0.15, 0.20, 0.20];
 const DECAY_MIN_MULT     = [1, 0.40, 0.40, 0.40, 0.25, 0.00];
+const DECAY_MAX_DECAY_PCT = DECAY_MIN_MULT.map(m => Math.round((1 - m) * 100));
 
 const GOLD_MAX_TILES     = [0, 1, 1, 2, 2, 3];
 const GOLD_BONUS         = [0, 6, 10, 10, 15, 15];
@@ -1335,8 +1336,8 @@ export function describeSkillCompact(p, skillId){
       return `self +${FOUNTAIN_BONUS[lv]} / opponent share 50%`;
     case "VALUE_DECAY": {
       const stepPct = Math.round(DECAY_STEP[lv] * 100);
-      const minMult = (DECAY_MIN_MULT[lv] ?? 0).toFixed(2);
-      return `step ${stepPct}% (min ×${minMult})`;
+      const maxDecay = DECAY_MAX_DECAY_PCT[lv] ?? 0;
+      return `step ${stepPct}% (max ${maxDecay}% decay)`;
     }
     case "WIN_FOOTSTEPS":
       return `gold max ${GOLD_MAX_TILES[lv]}, +${GOLD_BONUS[lv]} if used`;
@@ -1379,11 +1380,12 @@ export function describeSkill(p, skillId){
     case "VALUE_DECAY": {
       const stepPct = Math.round(DECAY_STEP[lv] * 100);
       const minMult = (DECAY_MIN_MULT[lv] ?? 0).toFixed(2);
+      const maxDecayPct = DECAY_MAX_DECAY_PCT[lv] ?? 0;
       const minNote =
         lv === 4 ? " At Lv4 the multiplier bottoms at ×0.25 (max 75% decay)." :
         lv === 5 ? " Lv5 can drive the multiplier down to ×0.00 (max 100% decay)." :
         "";
-      return `Lv${lv}/5 — Affects the opponent ONLY. Track their “same-length success streak” (increments on each successful word of the same length and resets to 1 when the next success has a different length). Once the opponent reaches streak ≥2, multiply their score by max(×${minMult}, 1.00 − ${stepPct}% × (streak−1)) after combo but before their other multipliers.${minNote}`;
+      return `Lv${lv}/5 — Affects the opponent ONLY. Track their “same-length success streak” (increments on each successful word of the same length and resets to 1 when the next success has a different length). Once the opponent reaches streak ≥2, multiply their score by 1.00 − ${stepPct}% × (streak−1), capped at ${maxDecayPct}% decay so the multiplier never drops below ×${minMult}.${minNote}`;
     }
     case "WIN_FOOTSTEPS": {
       const maxGold = GOLD_MAX_TILES[lv];
@@ -1435,8 +1437,8 @@ export function describeOffer(p, skillMeta){
     case "POINT_INCREASE": effect = `Next: ×${(1+POINT_INCREASE_PCT[next]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[next]*100)}%)`; break;
     case "POINT_FOUNTAIN": effect = `Next: self-use +${FOUNTAIN_BONUS[next]} pts`; break;
     case "VALUE_DECAY": {
-      const minMult = (DECAY_MIN_MULT[next] ?? 0).toFixed(2);
-      effect = `Next: decay step ${Math.round(DECAY_STEP[next] * 100)}% (min ×${minMult})`;
+      const maxDecay = DECAY_MAX_DECAY_PCT[next] ?? 0;
+      effect = `Next: decay step ${Math.round(DECAY_STEP[next] * 100)}% (max ${maxDecay}% decay)`;
       break;
     }
     case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]}`; break;
