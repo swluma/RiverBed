@@ -318,11 +318,11 @@ function makePlayer(id){
     // Fountain tile index (single)
     fountainIdx: null,
 
-    // Winner's Footsteps: triggered by opponent success -> on NEXT turn for this player
-    pendingGoldTrigger: false,
+  // Winner's Footsteps: triggered by opponent success -> on NEXT turn for this player
+  pendingGoldTrigger: false,
 
-  // Failure into Opportunity: random board tiles become silver for NEXT turn
-    pendingSilver: new Set(),
+  // Failure into Opportunity: when a turn ends without finding any word, random board tiles become silver for NEXT turn
+  pendingSilver: new Set(),
 
     // Color Cancellation: reduction to apply on opponent's NEXT turn (special tiles + fountain)
     imposeCancelOnOpponentNextTurn: 0,
@@ -807,12 +807,11 @@ function handleFailure(g, {reason, word}){
   }
 
   const foLv = ap.skills.FAIL_OPP;
-  if (foLv >= 1){
+  ap.pendingSilver = new Set();
+  if (foLv >= 1 && ended && !ap.hasFoundWordThisTurn){
     const maxSilver = SILVER_MAX_TILES[foLv];
     const chosen = pickDistinctIndices(maxSilver, SIZE * SIZE);
     ap.pendingSilver = new Set(chosen);
-  } else {
-    ap.pendingSilver = new Set();
   }
 
   const turnEnded = ended || g.gameOver;
@@ -1351,7 +1350,7 @@ export function describeSkillCompact(p, skillId){
       if (lv >= 5) return `+${EXTRA_CHANCE_ADD[lv]} attempts; combo kept on success`;
       return `+${EXTRA_CHANCE_ADD[lv]} attempts after fail`;
     case "FAIL_OPP":
-      return `silver max ${SILVER_MAX_TILES[lv]}, ×${formatSilverMult(SILVER_MULT[lv])} if ≥2 used`;
+      return `silver max ${SILVER_MAX_TILES[lv]} (after a failed turn without any found words), ×${formatSilverMult(SILVER_MULT[lv])} if ≥2 used`;
     case "SAFETY_NET":
       return `+${SAFETY_NET_POINTS[lv]} pts on fail`;
     case "SPELL_FINDER": {
@@ -1405,7 +1404,7 @@ export function describeSkill(p, skillId){
     case "FAIL_OPP": {
       const maxS = SILVER_MAX_TILES[lv];
       const mult = SILVER_MULT[lv];
-      return `Lv${lv}/5 — Trigger on failure: choose up to ${maxS} tiles uniformly at random from the entire board; those become SILVER on your NEXT turn. On that next turn, if your successful word uses ≥2 silver tiles, multiply that word’s score by ×${formatSilverMult(mult)}. Silver tiles are visible and disappear at the end of that next turn.`;
+      return `Lv${lv}/5 — Trigger when your turn ends without you finding any word: choose up to ${maxS} tiles uniformly at random from the entire board; those become SILVER on your NEXT turn. On that next turn, if your successful word uses ≥2 silver tiles, multiply that word’s score by ×${formatSilverMult(mult)}. Silver tiles are visible and disappear at the end of that next turn.`;
     }
     case "SAFETY_NET": {
       const bonus = SAFETY_NET_POINTS[lv];

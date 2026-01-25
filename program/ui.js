@@ -1026,7 +1026,7 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (Silver tiles)</div>
           <div class="rule">
-            Trigger: on a failed attempt, choose up to the max silver tiles uniformly at random from the entire board — those become silver for your NEXT turn.
+            Trigger: when your turn ends without you finding any word (out of attempts or otherwise). Choose up to the max silver tiles uniformly at random from the entire board — those become silver for your NEXT turn.
             On your NEXT turn, if your successful word uses at least 2 silver tiles, apply the multiplier.
             Silver tiles revert at the end of that next turn.
           </div>
