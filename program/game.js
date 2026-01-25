@@ -44,7 +44,8 @@ export const SKILLS = {
 const POINT_INCREASE_PCT = [0, 0.05, 0.10, 0.15, 0.20, 0.30];
 const FOUNTAIN_BONUS     = [0, 5, 8, 12, 18, 25];
 
-const DECAY_STEP         = [0, 0.06, 0.08, 0.10, 0.12, 0.15];
+const DECAY_STEP         = [0, 0.08, 0.12, 0.15, 0.20, 0.20];
+const DECAY_MIN_MULT     = [1, 0.40, 0.40, 0.40, 0.25, 0.00];
 
 const GOLD_MAX_TILES     = [0, 1, 1, 2, 2, 3];
 const GOLD_BONUS         = [0, 6, 10, 10, 15, 15];
@@ -339,12 +340,17 @@ function makePlayer(id){
 }
 
 function effectiveDecayPctFor(player, opponent){
+  return decayEffectDetails(player, opponent).pct;
+}
+
+function decayEffectDetails(player, opponent){
   const decayLv = opponent.skills.VALUE_DECAY || 0;
-  if (decayLv <= 0) return 0;
-  if (player.sameLenStreak < 2) return 0;
+  if (decayLv <= 0 || player.sameLenStreak <= 0) return { multiplier: 1, pct: 0 };
   const step = DECAY_STEP[decayLv] || 0;
-  const pct = step * 100 * (player.sameLenStreak - 1);
-  return Math.min(60, Math.round(pct));
+  const minMult = DECAY_MIN_MULT[decayLv] ?? 0;
+  const multiplier = Math.max(minMult, 1 - step * player.sameLenStreak);
+  const pct = Math.round((1 - multiplier) * 100);
+  return { multiplier, pct };
 }
 
 function updateDecaySteps(g){
@@ -828,23 +834,15 @@ function handleSuccess(g, word, wordLen){
   let score = baseLen * COMBO_MULT(ap.combo);
 
   const decayLv = op.skills.VALUE_DECAY;
-  if (decayLv > 0){
-    if (ap.sameLenLast === wordLen) ap.sameLenStreak += 1;
-    else ap.sameLenStreak = 1;
-    ap.sameLenLast = wordLen;
+  if (ap.sameLenLast === wordLen) ap.sameLenStreak += 1;
+  else ap.sameLenStreak = 1;
+  ap.sameLenLast = wordLen;
 
-    if (ap.sameLenStreak >= 2){
-      const step = DECAY_STEP[decayLv];
-      const decayMult = Math.max(0.40, 1.00 - step * (ap.sameLenStreak - 1));
-      score *= decayMult;
-    }
-    updateDecaySteps(g);
-  } else {
-    if (ap.sameLenLast === wordLen) ap.sameLenStreak += 1;
-    else ap.sameLenStreak = 1;
-    ap.sameLenLast = wordLen;
-    updateDecaySteps(g);
+  if (decayLv > 0){
+    const { multiplier } = decayEffectDetails(ap, op);
+    if (multiplier < 1) score *= multiplier;
   }
+  updateDecaySteps(g);
 
   const piLv = ap.skills.POINT_INCREASE;
   if (piLv > 0){
@@ -1330,8 +1328,11 @@ export function describeSkillCompact(p, skillId){
       return `×${(1+POINT_INCREASE_PCT[lv]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[lv]*100)}%)`;
     case "POINT_FOUNTAIN":
       return `self +${FOUNTAIN_BONUS[lv]} / opponent share 50%`;
-    case "VALUE_DECAY":
-      return `step ${Math.round(DECAY_STEP[lv] * 100)}% (min ×0.40)`;
+    case "VALUE_DECAY": {
+      const stepPct = Math.round(DECAY_STEP[lv] * 100);
+      const minMult = (DECAY_MIN_MULT[lv] ?? 0).toFixed(2);
+      return `step ${stepPct}% (min ×${minMult})`;
+    }
     case "WIN_FOOTSTEPS":
       return `gold max ${GOLD_MAX_TILES[lv]}, +${GOLD_BONUS[lv]} if used`;
     case "COLOR_CANCEL":
@@ -1372,7 +1373,12 @@ export function describeSkill(p, skillId){
     }
     case "VALUE_DECAY": {
       const stepPct = Math.round(DECAY_STEP[lv] * 100);
-      return `Lv${lv}/5 — Affects the opponent ONLY. Track opponent’s “same-length success streak” (counts only on their successful words; resets to 1 if length changes). If streak ≥2, multiply their score by max(0.40, 1.00 − ${stepPct}% × (streak−1)). Applied after combo, before their own multipliers.`;
+      const minMult = (DECAY_MIN_MULT[lv] ?? 0).toFixed(2);
+      const minNote =
+        lv === 4 ? " At Lv4 the multiplier bottoms at ×0.25 (max 75% decay)." :
+        lv === 5 ? " Lv5 can drive the multiplier down to ×0.00 (max 100% decay)." :
+        "";
+      return `Lv${lv}/5 — Affects the opponent ONLY. Track their “same-length success streak” (increments on each successful word of the same length and resets to 1 when the next success has a different length). Starting with streak=1, multiply their word score by max(×${minMult}, 1.00 − ${stepPct}% × streak) after combo but before their other multipliers.${minNote}`;
     }
     case "WIN_FOOTSTEPS": {
       const maxGold = GOLD_MAX_TILES[lv];
@@ -1423,7 +1429,11 @@ export function describeOffer(p, skillMeta){
   switch(id){
     case "POINT_INCREASE": effect = `Next: ×${(1+POINT_INCREASE_PCT[next]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[next]*100)}%)`; break;
     case "POINT_FOUNTAIN": effect = `Next: self-use +${FOUNTAIN_BONUS[next]} pts`; break;
-    case "VALUE_DECAY":    effect = `Next: decay step ${Math.round(DECAY_STEP[next] * 100)}% (min ×0.40)`; break;
+    case "VALUE_DECAY": {
+      const minMult = (DECAY_MIN_MULT[next] ?? 0).toFixed(2);
+      effect = `Next: decay step ${Math.round(DECAY_STEP[next] * 100)}% (min ×${minMult})`;
+      break;
+    }
     case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]}`; break;
     case "COLOR_CANCEL": {
       const cancelText =
