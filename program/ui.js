@@ -557,7 +557,7 @@ export function renderCategoryBonuses(p){
   const items = [];
 
   if (pTier > 0){
-    const bonus = (pTier === 1) ? "+8 end of turn" : "+15 end of turn";
+    const bonus = (pTier === 1) ? "+5 end of turn" : "+10 end of turn";
     items.push(`
       <div class="bonusItem point">
         <div class="tag"><span class="dot"></span>Point Tier ${pTier}</div>
