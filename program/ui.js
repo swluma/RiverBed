@@ -5,6 +5,59 @@ import {
   canUseHint, totalSkillLevels, comboMultiplier
 } from "./game.js";
 
+let topRightMenusInitialized = false;
+
+function initTopRightMenus(){
+  if (topRightMenusInitialized) return;
+  topRightMenusInitialized = true;
+
+  const entries = Array.from(document.querySelectorAll(".menuGroup"))
+    .map((group) => {
+      const trigger = group.querySelector(".menuTrigger");
+      if (!trigger) return null;
+      const items = Array.from(group.querySelectorAll(".menuPanel button"));
+      return { group, trigger, items };
+    })
+    .filter(Boolean);
+
+  if (entries.length === 0) return;
+
+  const closeMenus = () => {
+    entries.forEach(({ group, trigger }) => {
+      group.classList.remove("menuOpen");
+      trigger.setAttribute("aria-expanded", "false");
+    });
+  };
+
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".menuGroup")){
+      closeMenus();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape"){
+      closeMenus();
+    }
+  });
+
+  entries.forEach(({ group, trigger, items }) => {
+    trigger.addEventListener("click", (event) => {
+      event.preventDefault();
+      const currentlyOpen = group.classList.contains("menuOpen");
+      closeMenus();
+      if (!currentlyOpen){
+        group.classList.add("menuOpen");
+        trigger.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    items.forEach((button) => {
+      button.addEventListener("click", () => closeMenus());
+    });
+  });
+}
+
 export function bindUI(handlers){
   const el = {
     grid: document.getElementById("grid"),
@@ -394,6 +447,8 @@ export function bindUI(handlers){
   if (el.confirmBtn && handlers.onConfirm){
     el.confirmBtn.addEventListener("click", () => handlers.onConfirm());
   }
+
+  initTopRightMenus();
 
   return el;
 }

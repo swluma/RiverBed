@@ -34,16 +34,26 @@
     <div class="top-right">
       <div class="top-right-row">
         <button id="hintBtn" class="ghost">Hint (-3 Lv)</button>
-        <button id="winScoreBtn" class="ghost">Win Score</button>
-        <button id="timeLimitBtn" class="ghost">Time Limit</button>
-        <button id="shuffleBtn" class="ghost">Shuffle Board</button>
-        <button id="newMatchBtn" class="primary" disabled>New Match</button>
-      </div>
-      <div class="top-right-row">
-        <button id="tutorialBtn" class="ghost">Tutorial</button>
-        <button id="scoreInfoBtn" class="ghost">Scoring</button>
-        <button id="legendBtn" class="ghost">Legend</button>
-        <button id="skillRefBtn" class="ghost">Skill Reference</button>
+
+        <div class="menuGroup">
+          <button class="ghost menuTrigger" type="button" aria-haspopup="true" aria-expanded="false">Guide</button>
+          <div class="menuPanel" role="menu" aria-label="Guide actions">
+            <button id="tutorialBtn" class="ghost" type="button" role="menuitem">Tutorial</button>
+            <button id="scoreInfoBtn" class="ghost" type="button" role="menuitem">Scoring</button>
+            <button id="legendBtn" class="ghost" type="button" role="menuitem">Legend</button>
+            <button id="skillRefBtn" class="ghost" type="button" role="menuitem">Skill Reference</button>
+          </div>
+        </div>
+
+        <div class="menuGroup">
+          <button class="ghost menuTrigger" type="button" aria-haspopup="true" aria-expanded="false">Settings</button>
+          <div class="menuPanel" role="menu" aria-label="Settings actions">
+            <button id="winScoreBtn" class="ghost" type="button" role="menuitem">Win Score</button>
+            <button id="timeLimitBtn" class="ghost" type="button" role="menuitem">Time Limit</button>
+            <button id="shuffleBtn" class="ghost" type="button" role="menuitem">Shuffle Board</button>
+            <button id="newMatchBtn" class="primary" disabled type="button" role="menuitem">New Match</button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
