@@ -999,10 +999,10 @@ function buildSkillReferenceHtml(){
           <table class="skillRefTable">
             <tr><th>Level</th><th>Effect</th></tr>
             <tr><td>Lv1</td><td>×1.05 (+5%)</td></tr>
-            <tr><td>Lv2</td><td>×1.10 (+10%)</td></tr>
-            <tr><td>Lv3</td><td>×1.15 (+15%)</td></tr>
-            <tr><td>Lv4</td><td>×1.20 (+20%)</td></tr>
-            <tr><td>Lv5</td><td>×1.30 (+30%)</td></tr>
+            <tr><td>Lv2</td><td>×1.08 (+8%)</td></tr>
+            <tr><td>Lv3</td><td>×1.12 (+12%)</td></tr>
+            <tr><td>Lv4</td><td>×1.15 (+15%)</td></tr>
+            <tr><td>Lv5</td><td>×1.20 (+20%)</td></tr>
           </table>
         </div>
 
@@ -1045,8 +1045,8 @@ function buildSkillReferenceHtml(){
           <div class="rule">Based on total Point-skill levels you own. Added at the end of each of your turns.</div>
           <table class="skillRefTable">
             <tr><th>Tier</th><th>Requirement</th><th>Effect</th></tr>
-            <tr><td>Tier 1</td><td>3 total Point-skill levels</td><td>+8 points at end of each turn</td></tr>
-            <tr><td>Tier 2</td><td>6 total Point-skill levels</td><td>+15 points at end of each turn</td></tr>
+            <tr><td>Tier 1</td><td>3 total Point-skill levels</td><td>+5 points at end of each turn</td></tr>
+            <tr><td>Tier 2</td><td>6 total Point-skill levels</td><td>+10 points at end of each turn</td></tr>
           </table>
         </div>
       </div>

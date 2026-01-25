@@ -41,7 +41,7 @@ export const SKILLS = {
   SPELL_FINDER:   { id:"SPELL_FINDER",   cat:"TECH", name:"Spell Finder",               max:5 },
 };
 
-const POINT_INCREASE_PCT = [0, 0.05, 0.10, 0.15, 0.20, 0.30];
+const POINT_INCREASE_PCT = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
 const FOUNTAIN_BONUS     = [0, 5, 8, 12, 18, 25];
 
 const DECAY_STEP         = [0, 0.08, 0.12, 0.15, 0.20, 0.20];
@@ -328,6 +328,7 @@ function makePlayer(id){
 
     // Technical category bonus: skill destruction can happen max once per turn
     destroyedThisTurn: false,
+    hasFoundWordThisTurn: false,
 
     // Spell Finder: fixed target + hint tiles
     spellFinder: {
@@ -554,6 +555,7 @@ export function startTurn(g){
 
   const ap = g.players[g.active];
   const op = g.players[1 - g.active];
+  ap.hasFoundWordThisTurn = false;
   if (ap.spellFinder){
     ap.spellFinder.tileLimitThisTurn = null;
   }
@@ -645,10 +647,10 @@ export function endTurn(g, reason){
   // Point category bonus (end of your turn)
   const pTier = pointTier(ap);
   if (pTier === 1){
-    ap.score += 8;
+    ap.score += 5;
     if (checkVictory(g)) return;
   } else if (pTier === 2){
-    ap.score += 15;
+    ap.score += 10;
     if (checkVictory(g)) return;
   }
 
@@ -790,7 +792,7 @@ function handleFailure(g, {reason, word}){
   updateDecaySteps(g);
 
   const snLv = ap.skills.SAFETY_NET || 0;
-  if (snLv >= 1){
+  if (snLv >= 1 && ended && !ap.hasFoundWordThisTurn){
     const safetyPts = SAFETY_NET_POINTS[snLv] || 0;
     if (safetyPts > 0){
       ap.score += safetyPts;
@@ -827,6 +829,8 @@ function handleFailure(g, {reason, word}){
 function handleSuccess(g, word, wordLen){
   const ap = g.players[g.active];
   const op = g.players[1 - g.active];
+
+  ap.hasFoundWordThisTurn = true;
 
   ap.combo += 1;
 
