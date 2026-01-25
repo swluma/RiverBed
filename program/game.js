@@ -30,6 +30,7 @@ export const SKILLS = {
   POINT_ABSORB:   { id:"POINT_ABSORB",   cat:"POINT", name:"Point Absorption", max:5 },
   POINT_FOUNTAIN: { id:"POINT_FOUNTAIN", cat:"POINT", name:"Point Fountain",   max:5 },
   FAIL_OPP:       { id:"FAIL_OPP",       cat:"POINT", name:"Failure into Opportunity",  max:5 },
+  SAFETY_NET:     { id:"SAFETY_NET",     cat:"TECH",  name:"Safety Net",             max:5 },
 
   // Counter
   VALUE_DECAY:    { id:"VALUE_DECAY",    cat:"COUNTER", name:"Value Decay",         max:5 },
@@ -69,6 +70,8 @@ const EXTRA_CHANCE_ADD   = [0, 1, 2, 3, 4, 5];
 
 const SILVER_MAX_TILES   = [0, 2, 3, 3, 4, 6];
 const SILVER_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
+
+const SAFETY_NET_POINTS  = [0, 5, 8, 10, 15, 20];
 
 const INVEST_PENALTY     = [0, 3, 5, 7, 10, 14];
 const INVEST_MULT        = [1, 1.2, 1.45, 1.8, 2.3, 3.0];
@@ -313,6 +316,7 @@ function makePlayer(id){
       COLOR_CANCEL: 0,
       EXTRA_CHANCE: 0,
       FAIL_OPP: 0,
+      SAFETY_NET: 0,
       SELF_INVEST: 0,
       SPELL_FINDER: 0,
     },
@@ -793,6 +797,20 @@ function handleFailure(g, {reason, word}){
   ap.sameLenLast = 0;
   updateDecaySteps(g);
 
+  const snLv = ap.skills.SAFETY_NET || 0;
+  if (snLv >= 1){
+    const safetyPts = SAFETY_NET_POINTS[snLv] || 0;
+    if (safetyPts > 0){
+      ap.score += safetyPts;
+      g.log.push({
+        word: "Safety Net",
+        player: ap.id,
+        pts: safetyPts,
+      });
+      checkVictory(g);
+    }
+  }
+
   const foLv = ap.skills.FAIL_OPP;
   if (foLv >= 1){
     const maxSilver = SILVER_MAX_TILES[foLv];
@@ -802,11 +820,12 @@ function handleFailure(g, {reason, word}){
     ap.pendingSilver = new Set();
   }
 
-  if (ended){
-    endTurn(g, "OUT_OF_ATTEMPTS");
+  const turnEnded = ended || g.gameOver;
+  if (turnEnded){
+    endTurn(g, g.gameOver ? "VICTORY" : "OUT_OF_ATTEMPTS");
   }
 
-  return { ended, reason };
+  return { ended: turnEnded, reason };
 }
 
 /* ------------------------
@@ -1191,7 +1210,8 @@ export function techTier(p){
   const total =
     p.skills.EXTRA_CHANCE +
     p.skills.SELF_INVEST +
-    p.skills.SPELL_FINDER;
+    p.skills.SPELL_FINDER +
+    p.skills.SAFETY_NET;
 
   if (total >= 10) return 2;
   if (total >= 5) return 1;
@@ -1357,6 +1377,8 @@ export function describeSkillCompact(p, skillId){
       return `+${EXTRA_CHANCE_ADD[lv]} attempts after fail`;
     case "FAIL_OPP":
       return `silver max ${SILVER_MAX_TILES[lv]}, ×${formatSilverMult(SILVER_MULT[lv])} if ≥2 used`;
+    case "SAFETY_NET":
+      return `+${SAFETY_NET_POINTS[lv]} pts on fail`;
     case "SELF_INVEST":
       return `-${INVEST_PENALTY[lv]}/turn, 5+ ×${INVEST_MULT[lv].toFixed(2)}`;
     case "SPELL_FINDER": {
@@ -1410,6 +1432,10 @@ export function describeSkill(p, skillId){
       const mult = SILVER_MULT[lv];
       return `Lv${lv}/5 — Trigger on failure: choose up to ${maxS} tiles uniformly at random from the entire board; those become SILVER on your NEXT turn. On that next turn, if your successful word uses ≥2 silver tiles, multiply that word’s score by ×${formatSilverMult(mult)}. Silver tiles are visible and disappear at the end of that next turn.`;
     }
+    case "SAFETY_NET": {
+      const bonus = SAFETY_NET_POINTS[lv];
+      return `Lv${lv}/5 — On every failed attempt (invalid word / duplicate / timeout): gain +${bonus} flat points immediately. This bonus bypasses combo, multipliers, and any other point-modifying skills, so the award is always the stated value.`;
+    }
     case "SELF_INVEST": {
       const lose = INVEST_PENALTY[lv];
       const mult = INVEST_MULT[lv];
@@ -1459,6 +1485,7 @@ export function describeOffer(p, skillMeta){
       break;
     }
     case "FAIL_OPP":       effect = `Next: max silver ${SILVER_MAX_TILES[next]}, silver mult ×${formatSilverMult(SILVER_MULT[next])}`; break;
+    case "SAFETY_NET":     effect = `Next: +${SAFETY_NET_POINTS[next]} pts on failure (fixed)`; break;
     case "SELF_INVEST":    effect = `Next: -${INVEST_PENALTY[next]} / turn, 5+ ×${INVEST_MULT[next].toFixed(2)}`; break;
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(next);

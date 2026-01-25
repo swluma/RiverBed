@@ -524,7 +524,7 @@ function renderSkills(p){
   const order = [
     "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN","FAIL_OPP",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
-    "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER"
+    "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER","SAFETY_NET"
   ];
 
   const owned = order.filter(id => (p.skills[id] ?? 0) >= 1);
@@ -856,7 +856,7 @@ export function showTestSkillsModal(el, initialSkills){
   const order = [
     "POINT_INCREASE","POINT_ABSORB","POINT_FOUNTAIN","FAIL_OPP",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
-    "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER"
+    "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER","SAFETY_NET"
   ];
 
   const getValue = (playerKey, skillId) => {
@@ -1183,6 +1183,21 @@ function buildSkillReferenceHtml(){
             <tr><td>Lv3</td><td>4+</td><td>2</td><td>No</td></tr>
             <tr><td>Lv4</td><td>5+</td><td>2</td><td>No</td></tr>
             <tr><td>Lv5</td><td>5+</td><td>2</td><td>Yes (50%)</td></tr>
+          </table>
+        </div>
+
+        <div class="skillRefItem">
+          <div class="name"><span class="skillCatDot"></span>Safety Net (Failure bonus)</div>
+          <div class="rule">
+            Trigger: on every failed attempt (invalid / duplicate / timeout). Gain a flat point reward that ignores combo, multipliers, and other point modifiers.
+          </div>
+          <table class="skillRefTable">
+            <tr><th>Level</th><th>Points per failure</th></tr>
+            <tr><td>Lv1</td><td>+5</td></tr>
+            <tr><td>Lv2</td><td>+8</td></tr>
+            <tr><td>Lv3</td><td>+10</td></tr>
+            <tr><td>Lv4</td><td>+15</td></tr>
+            <tr><td>Lv5</td><td>+20</td></tr>
           </table>
         </div>
 

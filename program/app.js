@@ -561,6 +561,11 @@ async function handleEvaluationResult(result){
     shakeFeedback(ui);
     await animateAttemptsFail(ui, g);
     renderNow();
+    if (g.gameOver){
+      showEndModal(ui, g);
+      locked = true;
+      return;
+    }
     if (result.ended){
       await openSkillSelectIfNeeded();
     }
