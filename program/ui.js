@@ -524,7 +524,7 @@ function renderSkills(p){
   const order = [
     "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
-    "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER","SAFETY_NET"
+    "EXTRA_CHANCE","SPELL_FINDER","SAFETY_NET"
   ];
 
   const owned = order.filter(id => (p.skills[id] ?? 0) >= 1);
@@ -856,7 +856,7 @@ export function showTestSkillsModal(el, initialSkills){
   const order = [
     "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
-    "EXTRA_CHANCE","SELF_INVEST","SPELL_FINDER","SAFETY_NET"
+    "EXTRA_CHANCE","SPELL_FINDER","SAFETY_NET"
   ];
 
   const getValue = (playerKey, skillId) => {
@@ -1042,7 +1042,7 @@ function buildSkillReferenceHtml(){
 
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Point Skills Category Bonus</div>
-          <div class="rule">Based on total Point-skill levels you own. Added at the end of each of your turns (after turn-end effects like Self Investment penalty).</div>
+          <div class="rule">Based on total Point-skill levels you own. Added at the end of each of your turns.</div>
           <table class="skillRefTable">
             <tr><th>Tier</th><th>Requirement</th><th>Effect</th></tr>
             <tr><td>Tier 1</td><td>3 total Point-skill levels</td><td>+8 points at end of each turn</td></tr>
@@ -1136,23 +1136,6 @@ function buildSkillReferenceHtml(){
             <tr><td>Lv3</td><td>+3</td></tr>
             <tr><td>Lv4</td><td>+4</td></tr>
             <tr><td>Lv5</td><td>+5 (combo preserved on success)</td></tr>
-          </table>
-        </div>
-
-
-        <div class="skillRefItem">
-          <div class="name"><span class="skillCatDot"></span>Self Investment</div>
-          <div class="rule">
-            End of each of your turns: lose points (score cannot go below 0).
-            In exchange, words of length 5+ gain a multiplier (applied after combo).
-          </div>
-          <table class="skillRefTable">
-            <tr><th>Level</th><th>Turn penalty</th><th>5+ letter multiplier</th></tr>
-            <tr><td>Lv1</td><td>−3</td><td>×1.2</td></tr>
-            <tr><td>Lv2</td><td>−5</td><td>×1.45</td></tr>
-            <tr><td>Lv3</td><td>−7</td><td>×1.8</td></tr>
-            <tr><td>Lv4</td><td>−10</td><td>×2.3</td></tr>
-            <tr><td>Lv5</td><td>−14</td><td>×3.0</td></tr>
           </table>
         </div>
 

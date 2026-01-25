@@ -38,7 +38,6 @@ export const SKILLS = {
 
   // Technical
   EXTRA_CHANCE:   { id:"EXTRA_CHANCE",   cat:"TECH", name:"Extra Chance",               max:5 },
-  SELF_INVEST:    { id:"SELF_INVEST",    cat:"TECH", name:"Self Investment",            max:5 },
   SPELL_FINDER:   { id:"SPELL_FINDER",   cat:"TECH", name:"Spell Finder",               max:5 },
 };
 
@@ -70,9 +69,6 @@ const SILVER_MAX_TILES   = [0, 2, 3, 3, 4, 6];
 const SILVER_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
 
 const SAFETY_NET_POINTS  = [0, 5, 8, 10, 15, 20];
-
-const INVEST_PENALTY     = [0, 3, 5, 7, 10, 14];
-const INVEST_MULT        = [1, 1.2, 1.45, 1.8, 2.3, 3.0];
 
 const SPELL_FINDER_MINLEN = (lv) => {
   if (lv <= 0) return 0;
@@ -314,7 +310,6 @@ function makePlayer(id){
       EXTRA_CHANCE: 0,
       FAIL_OPP: 0,
       SAFETY_NET: 0,
-      SELF_INVEST: 0,
       SPELL_FINDER: 0,
     },
 
@@ -640,13 +635,6 @@ export function endTurn(g, reason){
 
   const ap = g.players[g.active];
 
-  // Self Investment penalty (end of your turn)
-  const invLv = ap.skills.SELF_INVEST;
-  if (invLv > 0){
-    ap.score = Math.max(0, ap.score - INVEST_PENALTY[invLv]);
-    if (checkVictory(g)) return;
-  }
-
   // Point category bonus (end of your turn)
   const pTier = pointTier(ap);
   if (pTier === 1){
@@ -861,11 +849,6 @@ function handleSuccess(g, word, wordLen){
   const piLv = ap.skills.POINT_INCREASE;
   if (piLv > 0){
     score *= (1 + POINT_INCREASE_PCT[piLv]);
-  }
-
-  const invLv = ap.skills.SELF_INVEST;
-  if (invLv > 0 && wordLen >= 5){
-    score *= INVEST_MULT[invLv];
   }
 
   const foLv = ap.skills.FAIL_OPP;
@@ -1197,7 +1180,6 @@ export function counterTier(p){
 export function techTier(p){
   const total =
     p.skills.EXTRA_CHANCE +
-    p.skills.SELF_INVEST +
     p.skills.SPELL_FINDER +
     p.skills.SAFETY_NET;
 
@@ -1365,8 +1347,6 @@ export function describeSkillCompact(p, skillId){
       return `silver max ${SILVER_MAX_TILES[lv]}, ×${formatSilverMult(SILVER_MULT[lv])} if ≥2 used`;
     case "SAFETY_NET":
       return `+${SAFETY_NET_POINTS[lv]} pts on fail`;
-    case "SELF_INVEST":
-      return `-${INVEST_PENALTY[lv]}/turn, 5+ ×${INVEST_MULT[lv].toFixed(2)}`;
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(lv);
       const tiles = SPELL_FINDER_HINT_TILES(lv);
@@ -1418,11 +1398,6 @@ export function describeSkill(p, skillId){
       const bonus = SAFETY_NET_POINTS[lv];
       return `Lv${lv}/5 — On every failed attempt (invalid word / duplicate / timeout): gain +${bonus} flat points immediately. This bonus bypasses combo, multipliers, and any other point-modifying skills, so the award is always the stated value.`;
     }
-    case "SELF_INVEST": {
-      const lose = INVEST_PENALTY[lv];
-      const mult = INVEST_MULT[lv];
-      return `Lv${lv}/5 — End of each of YOUR turns: lose ${lose} points (score can’t go below 0). In return, for words of length 5+ you multiply your score by ×${mult.toFixed(2)} (applied after combo and after Point Increase, if you have it).`;
-    }
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(lv);
       const tiles = SPELL_FINDER_HINT_TILES(lv);
@@ -1467,7 +1442,6 @@ export function describeOffer(p, skillMeta){
     }
     case "FAIL_OPP":       effect = `Next: max silver ${SILVER_MAX_TILES[next]}, silver mult ×${formatSilverMult(SILVER_MULT[next])}`; break;
     case "SAFETY_NET":     effect = `Next: +${SAFETY_NET_POINTS[next]} pts on failure (fixed)`; break;
-    case "SELF_INVEST":    effect = `Next: -${INVEST_PENALTY[next]} / turn, 5+ ×${INVEST_MULT[next].toFixed(2)}`; break;
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(next);
       const tiles = SPELL_FINDER_HINT_TILES(next);
