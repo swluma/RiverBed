@@ -345,10 +345,11 @@ function effectiveDecayPctFor(player, opponent){
 
 function decayEffectDetails(player, opponent){
   const decayLv = opponent.skills.VALUE_DECAY || 0;
-  if (decayLv <= 0 || player.sameLenStreak <= 0) return { multiplier: 1, pct: 0 };
+  if (decayLv <= 0 || player.sameLenStreak <= 1) return { multiplier: 1, pct: 0 };
   const step = DECAY_STEP[decayLv] || 0;
   const minMult = DECAY_MIN_MULT[decayLv] ?? 0;
-  const multiplier = Math.max(minMult, 1 - step * player.sameLenStreak);
+  const streakSteps = player.sameLenStreak - 1;
+  const multiplier = Math.max(minMult, 1 - step * streakSteps);
   const pct = Math.round((1 - multiplier) * 100);
   return { multiplier, pct };
 }
@@ -1378,7 +1379,7 @@ export function describeSkill(p, skillId){
         lv === 4 ? " At Lv4 the multiplier bottoms at ×0.25 (max 75% decay)." :
         lv === 5 ? " Lv5 can drive the multiplier down to ×0.00 (max 100% decay)." :
         "";
-      return `Lv${lv}/5 — Affects the opponent ONLY. Track their “same-length success streak” (increments on each successful word of the same length and resets to 1 when the next success has a different length). Starting with streak=1, multiply their word score by max(×${minMult}, 1.00 − ${stepPct}% × streak) after combo but before their other multipliers.${minNote}`;
+      return `Lv${lv}/5 — Affects the opponent ONLY. Track their “same-length success streak” (increments on each successful word of the same length and resets to 1 when the next success has a different length). Once the opponent reaches streak ≥2, multiply their score by max(×${minMult}, 1.00 − ${stepPct}% × (streak−1)) after combo but before their other multipliers.${minNote}`;
     }
     case "WIN_FOOTSTEPS": {
       const maxGold = GOLD_MAX_TILES[lv];
