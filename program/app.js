@@ -42,6 +42,11 @@ let initialSkills = createInitialSkillState();
 
 const COMPUTER_PLAYER_INDEX = 1;
 const COMPUTER_OPTIONS = {
+  normal: {
+    label: "Normal",
+    sampleSize: 250,
+    stopScore: 280,
+  },
   strong: {
     label: "Strong",
     sampleSize: 420,

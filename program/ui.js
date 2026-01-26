@@ -361,7 +361,7 @@ export function bindUI(handlers){
   // VS Computer modal
   if (el.vsComputerBtn && el.vsComputerModal){
     const resetStrengthSelection = () => {
-      const defaultRadio = el.vsComputerModal.querySelector('input[name="vsComputerStrength"][value="strong"]');
+      const defaultRadio = el.vsComputerModal.querySelector('input[name="vsComputerStrength"][value="normal"]');
       if (defaultRadio) defaultRadio.checked = true;
     };
     el.vsComputerBtn.addEventListener("click", () => {
