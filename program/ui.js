@@ -666,7 +666,7 @@ function renderGrid(gridEl, g){
       : null;
     t.classList.toggle("spellHint", !!spellTiles && spellTiles.has(idx));
 
-    // segments: fountain (red/blue), gold, silver
+    // segments: fountain (red/blue), gold, white
     const segColors = [];
 
     // Fountain: each player max 1
@@ -676,7 +676,7 @@ function renderGrid(gridEl, g){
     if (p2F === idx) segColors.push("rgba(75,134,255,0.65)");
 
     if (g.gold.has(idx)) segColors.push("rgba(240,197,74,0.55)");
-    if (g.silver.has(idx)) segColors.push("rgba(185,198,255,0.55)");
+    if (g.white.has(idx)) segColors.push("rgba(255,255,255,0.75)");
 
     if (segColors.length > 0){
       const seg = conicSegments(segColors);
@@ -1024,14 +1024,14 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (Silver tiles)</div>
+          <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (White tiles)</div>
           <div class="rule">
-            Trigger: when your turn ends without you finding any word (out of attempts or otherwise). Choose up to the max silver tiles uniformly at random from the entire board — those become silver for your NEXT turn.
-            On your NEXT turn, if your successful word uses at least 2 silver tiles, apply the multiplier.
-            Silver tiles revert at the end of that next turn.
+            Trigger: when your turn ends without you finding any word (out of attempts or otherwise). Choose up to the max white tiles uniformly at random from the entire board — those become white for your NEXT turn.
+            On your NEXT turn, if your successful word uses at least 2 white tiles, apply the multiplier.
+            White tiles revert at the end of that next turn.
           </div>
           <table class="skillRefTable">
-            <tr><th>Level</th><th>Max silver tiles</th><th>Silver multiplier (if ≥2 used)</th></tr>
+            <tr><th>Level</th><th>Max white tiles</th><th>White multiplier (if ≥2 used)</th></tr>
             <tr><td>Lv1</td><td>2</td><td>×1.3</td></tr>
             <tr><td>Lv2</td><td>3</td><td>×1.5</td></tr>
             <tr><td>Lv3</td><td>3</td><td>×1.7</td></tr>

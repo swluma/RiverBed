@@ -12,7 +12,7 @@
   --skill-counter:#8fd9ff;
   --skill-tech:#9bffa6;
   --gold:#f0c54a;
-  --silver:#b9c6ff;
+  --white:#ffffff;
   --gray:#3a3d45;
   --shadow:0 14px 40px rgba(0,0,0,0.35);
   --r:18px;
@@ -828,13 +828,13 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 }
 .legendTile.demo.fountainRed{ background: conic-gradient(from 90deg, rgba(255,75,75,0.65) 0 50%, rgba(255,255,255,0.08) 50% 100%); }
 .legendTile.demo.gold{ background: rgba(240,197,74,0.35); }
-.legendTile.demo.silver{ background: rgba(185,198,255,0.35); }
+.legendTile.demo.white{ background: rgba(255,255,255,0.35); }
 .legendTile.demo.gray{ background: rgba(40,40,48,0.7); filter: grayscale(1); }
 .legendTile.demo.spellHint{ background: rgba(96,255,156,0.35); border-color: rgba(96,255,156,0.65); }
 .legendTile.demo.multi{ background: conic-gradient(from 90deg,
   rgba(255,75,75,0.65) 0 33%,
   rgba(240,197,74,0.55) 33% 66%,
-  rgba(185,198,255,0.55) 66% 100%); }
+  rgba(255,255,255,0.55) 66% 100%); }
 
 .tutorialIntro{
   font-weight:800;

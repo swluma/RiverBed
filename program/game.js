@@ -67,8 +67,8 @@ const CANCEL_REDUCTION = (lv) => {
 
 const EXTRA_CHANCE_ADD   = [0, 1, 2, 3, 4, 5];
 
-const SILVER_MAX_TILES   = [0, 2, 3, 3, 4, 6];
-const SILVER_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
+const WHITE_MAX_TILES   = [0, 2, 3, 3, 4, 6];
+const WHITE_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
 
 const SAFETY_NET_POINTS  = [0, 5, 8, 10, 15, 20];
 
@@ -113,7 +113,7 @@ function roundInt(x){
   return Math.round(x);
 }
 
-function formatSilverMult(mult){
+function formatWhiteMult(mult){
   const s = mult.toFixed(2);
   if (s.endsWith(".00")) return s.slice(0, -3);
   if (s.endsWith("0")) return s.slice(0, -1);
@@ -216,7 +216,7 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
 
     // Turn-local tile states
     gold: new Set(),
-    silver: new Set(),
+    white: new Set(),
     gray: new Set(),
 
     // Hint state (per turn)
@@ -262,7 +262,7 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
 
   updateDecaySteps(g);
 
-  // Start-of-turn tile spawns (gold/silver/gray)
+  // Start-of-turn tile spawns (gold/white/gray)
   startTurn(g);
 
   return g;
@@ -321,8 +321,8 @@ function makePlayer(id){
   // Winner's Footsteps: triggered by opponent success -> on NEXT turn for this player
   pendingGoldTrigger: false,
 
-  // Failure into Opportunity: when a turn ends without finding any word, random board tiles become silver for NEXT turn
-  pendingSilver: new Set(),
+  // Failure into Opportunity: when a turn ends without finding any word, random board tiles become white for NEXT turn
+  pendingWhite: new Set(),
 
     // Color Cancellation: reduction to apply on opponent's NEXT turn (special tiles + fountain)
     imposeCancelOnOpponentNextTurn: 0,
@@ -551,7 +551,7 @@ export function startTurn(g){
 
   g.attempts = 1;
   g.gold.clear();
-  g.silver.clear();
+  g.white.clear();
   g.gray.clear();
 
   const ap = g.players[g.active];
@@ -578,9 +578,9 @@ export function startTurn(g){
     goldCount = GOLD_MAX_TILES[wfLv];
   }
 
-  // Failure into Opportunity silver from pending
-  let silverIndices = Array.from(ap.pendingSilver);
-  ap.pendingSilver.clear();
+  // Failure into Opportunity white from pending
+  let whiteIndices = Array.from(ap.pendingWhite);
+  ap.pendingWhite.clear();
 
   // Place gold uniformly random
   let goldIndices = [];
@@ -594,7 +594,7 @@ export function startTurn(g){
 
   updateSpellFinderForPlayer(g, g.active);
   const spellTiles = ap.spellFinder?.tiles ? Array.from(ap.spellFinder.tiles) : [];
-  const union = new Set([...goldIndices, ...silverIndices, ...spellTiles]);
+  const union = new Set([...goldIndices, ...whiteIndices, ...spellTiles]);
   const unionArr = Array.from(union);
   shuffle(unionArr);
 
@@ -606,8 +606,8 @@ export function startTurn(g){
   for (const idx of goldIndices){
     if (union.has(idx)) g.gold.add(idx);
   }
-  for (const idx of silverIndices){
-    if (union.has(idx)) g.silver.add(idx);
+  for (const idx of whiteIndices){
+    if (union.has(idx)) g.white.add(idx);
   }
 
   if (ap.spellFinder && ap.spellFinder.tiles){
@@ -633,9 +633,9 @@ export function endTurn(g, reason){
   clearSelection(g);
   g.pendingConfirm = false;
 
-  // End-of-turn revert: gold/silver/gray do NOT persist into skill selection
+  // End-of-turn revert: gold/white/gray do NOT persist into skill selection
   g.gold.clear();
-  g.silver.clear();
+  g.white.clear();
   g.gray.clear();
   if (g.hint){
     g.hint.tiles.clear();
@@ -807,11 +807,11 @@ function handleFailure(g, {reason, word}){
   }
 
   const foLv = ap.skills.FAIL_OPP;
-  ap.pendingSilver = new Set();
+  ap.pendingWhite = new Set();
   if (foLv >= 1 && ended && !ap.hasFoundWordThisTurn){
-    const maxSilver = SILVER_MAX_TILES[foLv];
-    const chosen = pickDistinctIndices(maxSilver, SIZE * SIZE);
-    ap.pendingSilver = new Set(chosen);
+    const maxWhite = WHITE_MAX_TILES[foLv];
+    const chosen = pickDistinctIndices(maxWhite, SIZE * SIZE);
+    ap.pendingWhite = new Set(chosen);
   }
 
   const turnEnded = ended || g.gameOver;
@@ -855,9 +855,9 @@ function handleSuccess(g, word, wordLen){
   }
 
   const foLv = ap.skills.FAIL_OPP;
-  const usedSilverCount = countOverlap(g.selectionSet, g.silver);
-  if (foLv > 0 && usedSilverCount >= 2){
-    score *= SILVER_MULT[foLv];
+  const usedWhiteCount = countOverlap(g.selectionSet, g.white);
+  if (foLv > 0 && usedWhiteCount >= 2){
+    score *= WHITE_MULT[foLv];
   }
 
   const pfLv = ap.skills.POINT_FOUNTAIN;
@@ -1350,7 +1350,7 @@ export function describeSkillCompact(p, skillId){
       if (lv >= 5) return `+${EXTRA_CHANCE_ADD[lv]} attempts; combo kept on success`;
       return `+${EXTRA_CHANCE_ADD[lv]} attempts after fail`;
     case "FAIL_OPP":
-      return `silver max ${SILVER_MAX_TILES[lv]} (after a failed turn without any found words), ×${formatSilverMult(SILVER_MULT[lv])} if ≥2 used`;
+      return `white max ${WHITE_MAX_TILES[lv]} (after a failed turn without any found words), ×${formatWhiteMult(WHITE_MULT[lv])} if ≥2 used`;
     case "SAFETY_NET":
       return `+${SAFETY_NET_POINTS[lv]} pts on fail`;
     case "SPELL_FINDER": {
@@ -1392,7 +1392,7 @@ export function describeSkill(p, skillId){
       return `Lv${lv}/5 — Trigger: if the opponent finds a word, then on YOUR NEXT turn spawn up to ${maxGold} visible GOLD tiles (uniform random among all 36). If your found word uses ≥1 gold tile: add +${bonus} flat points. Gold tiles are visible to both players and disappear at the end of your turn.`;
     }
     case "COLOR_CANCEL": {
-      return `Lv${lv}/5 — When you find a word, the opponent’s NEXT turn spawns fewer “special tiles” (GOLD from Winner’s Footsteps, SILVER from Failure into Opportunity, and GREEN Spell Finder hints). Gray tiles are NOT reduced. If the opponent has a Fountain tile, it is removed before their next turn begins. Reduction: Lv1 −1, Lv2 −1 (50% chance −2), Lv3 −2, Lv4 −2 (50% chance −3), Lv5 −3.`;
+      return `Lv${lv}/5 — When you find a word, the opponent’s NEXT turn spawns fewer “special tiles” (GOLD from Winner’s Footsteps, WHITE from Failure into Opportunity, and GREEN Spell Finder hints). Gray tiles are NOT reduced. If the opponent has a Fountain tile, it is removed before their next turn begins. Reduction: Lv1 −1, Lv2 −1 (50% chance −2), Lv3 −2, Lv4 −2 (50% chance −3), Lv5 −3.`;
     }
     case "EXTRA_CHANCE": {
       const add = EXTRA_CHANCE_ADD[lv];
@@ -1402,9 +1402,9 @@ export function describeSkill(p, skillId){
       return `Lv${lv}/5 — After a failed attempt (invalid word / duplicate / not in dictionary): immediately gain +${add} extra attempts for the SAME turn.${comboNote}`;
     }
     case "FAIL_OPP": {
-      const maxS = SILVER_MAX_TILES[lv];
-      const mult = SILVER_MULT[lv];
-      return `Lv${lv}/5 — Trigger when your turn ends without you finding any word: choose up to ${maxS} tiles uniformly at random from the entire board; those become SILVER on your NEXT turn. On that next turn, if your successful word uses ≥2 silver tiles, multiply that word’s score by ×${formatSilverMult(mult)}. Silver tiles are visible and disappear at the end of that next turn.`;
+      const maxW = WHITE_MAX_TILES[lv];
+      const mult = WHITE_MULT[lv];
+      return `Lv${lv}/5 — Trigger when your turn ends without you finding any word: choose up to ${maxW} tiles uniformly at random from the entire board; those become WHITE on your NEXT turn. On that next turn, if your successful word uses ≥2 white tiles, multiply that word’s score by ×${formatWhiteMult(mult)}. White tiles are visible and disappear at the end of that next turn.`;
     }
     case "SAFETY_NET": {
       const bonus = SAFETY_NET_POINTS[lv];
@@ -1448,7 +1448,7 @@ export function describeOffer(p, skillMeta){
         next === 3 ? "-2 special tiles" :
         next === 4 ? "-2 special tiles (50% chance of -3)" :
         "-3 special tiles";
-      effect = `Next: ${cancelText} (gold/silver + remove fountain if present)`;
+      effect = `Next: ${cancelText} (gold/white + remove fountain if present)`;
       break;
     }
     case "EXTRA_CHANCE": {
@@ -1456,7 +1456,7 @@ export function describeOffer(p, skillMeta){
       effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure${comboTag}`;
       break;
     }
-    case "FAIL_OPP":       effect = `Next: max silver ${SILVER_MAX_TILES[next]}, silver mult ×${formatSilverMult(SILVER_MULT[next])}`; break;
+    case "FAIL_OPP":       effect = `Next: max white ${WHITE_MAX_TILES[next]}, white mult ×${formatWhiteMult(WHITE_MULT[next])}`; break;
     case "SAFETY_NET":     effect = `Next: +${SAFETY_NET_POINTS[next]} pts on failure (fixed)`; break;
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(next);
