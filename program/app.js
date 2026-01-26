@@ -46,33 +46,11 @@ const COMPUTER_OPTIONS = {
     label: "Strong",
     sampleSize: 420,
     stopScore: 360,
-    skillPreset: {
-      POINT_INCREASE: 3,
-      POINT_FOUNTAIN: 3,
-      FAIL_OPP: 2,
-      VALUE_DECAY: 3,
-      WIN_FOOTSTEPS: 3,
-      COLOR_CANCEL: 3,
-      EXTRA_CHANCE: 3,
-      SPELL_FINDER: 2,
-      SAFETY_NET: 2,
-    },
   },
   "very-strong": {
     label: "Very Strong",
     sampleSize: 900,
     stopScore: 520,
-    skillPreset: {
-      POINT_INCREASE: 4,
-      POINT_FOUNTAIN: 4,
-      FAIL_OPP: 3,
-      VALUE_DECAY: 4,
-      WIN_FOOTSTEPS: 4,
-      COLOR_CANCEL: 4,
-      EXTRA_CHANCE: 4,
-      SPELL_FINDER: 3,
-      SAFETY_NET: 3,
-    },
   },
 };
 const COMPUTER_SKILL_PRIORITY = {
@@ -346,10 +324,6 @@ function buildMatchInitialSkills(){
     p1: { ...initialSkills.p1 },
     p2: { ...initialSkills.p2 },
   };
-  const config = vsComputerMode ? COMPUTER_OPTIONS[vsComputerMode.key] : null;
-  if (config && config.skillPreset){
-    payload.p2 = { ...config.skillPreset };
-  }
   return payload;
 }
 
