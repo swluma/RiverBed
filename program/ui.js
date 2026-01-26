@@ -577,7 +577,7 @@ export function renderCategoryBonuses(p){
   }
 
   if (tTier > 0){
-    const reduction = (tTier === 1) ? "Always reduce 1 level" : "Always reduce 2 levels";
+    const reduction = (tTier === 1) ? "50% chance to reduce 1 level" : "Always reduce 1 level";
     items.push(`
       <div class="bonusItem tech">
         <div class="tag"><span class="dot"></span>Tech Tier ${tTier}</div>
@@ -1172,13 +1172,13 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Technical Skills Category Bonus: Skill Destruction</div>
           <div class="rule">
-            When you successfully find a word: always reduce the level of a random opponent skill.
+            When you successfully find a word: have a chance to reduce the level of a random opponent skill.
             Skills at level 1 are never selected. Max once per turn.
           </div>
           <table class="skillRefTable">
             <tr><th>Tier</th><th>Effect</th><th>Activation chance</th></tr>
-            <tr><td>Tier 1</td><td>Reduce 1 level</td><td>100%</td></tr>
-            <tr><td>Tier 2</td><td>Reduce 2 levels</td><td>100%</td></tr>
+                <tr><td>Tier 1</td><td>Reduce 1 level</td><td>50%</td></tr>
+            <tr><td>Tier 2</td><td>Reduce 1 level</td><td>100%</td></tr>
           </table>
         </div>
       </div>
