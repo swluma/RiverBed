@@ -68,6 +68,7 @@ let nextVsComputerMode = null;
 let vsComputerMode = null;
 let computerTimer = null;
 let computerRunning = false;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function createInitialSkillState(){
   const base = {};
@@ -691,6 +692,24 @@ function setSelectionFromPath(path){
   g.pendingConfirm = true;
 }
 
+async function animateComputerSwipe(path){
+  g.selection = [];
+  g.selectionSet = new Set();
+  g.selectionWord = "";
+  g.pendingConfirm = false;
+  for (let i=0; i<path.length; i++){
+    const idx = path[i];
+    g.selection.push(idx);
+    g.selectionSet.add(idx);
+    g.selectionWord += g.board[idx];
+    g.pendingConfirm = i === path.length - 1;
+    renderNow();
+    await sleep(220);
+  }
+  g.pendingConfirm = true;
+  renderNow();
+}
+
 function cancelScheduledComputerTurn(){
   if (computerTimer){
     clearTimeout(computerTimer);
@@ -728,8 +747,9 @@ async function runComputerTurn(){
       stopScore: config?.stopScore,
     });
     if (candidate && Array.isArray(candidate.path) && candidate.path.length >= MIN_WORD_LEN){
-      setSelectionFromPath(candidate.path);
-      renderNow();
+      await animateComputerSwipe(candidate.path);
+      setFeedback(ui, "Computer found", `Word: ${candidate.word}`);
+      await sleep(3000);
       const result = confirmSwipe(g);
       await handleEvaluationResult(result);
       return;
