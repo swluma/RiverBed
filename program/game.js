@@ -938,7 +938,7 @@ function countOverlap(setA, setB){
   return n;
 }
 
-export function projectWordScore(g, playerIndex, wordLen, path){
+export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
   if (!g || !Array.isArray(g.players) || !Array.isArray(path) || wordLen < MIN_WORD_LEN){
     return 0;
   }
@@ -979,12 +979,19 @@ export function projectWordScore(g, playerIndex, wordLen, path){
   if (wfLv > 0 && countOverlap(pathSet, g.gold) >= 1){
     baseScore += GOLD_BONUS[wfLv];
   }
-
+  const tilePreference = options.tilePreference || {};
   const beneficialGold = countOverlap(pathSet, g.gold);
   const beneficialWhite = countOverlap(pathSet, g.white);
   const usedFountainSelf = (ap.fountainIdx != null && pathSet.has(ap.fountainIdx));
-  const tilePreferenceBonus = (beneficialGold * 12) + (beneficialWhite * 8) + (usedFountainSelf ? 10 : 0);
+  const tilePreferenceBonus =
+    (beneficialGold * (tilePreference.gold || 0)) +
+    (beneficialWhite * (tilePreference.white || 0)) +
+    (usedFountainSelf ? (tilePreference.fountain || 0) : 0);
   baseScore += tilePreferenceBonus;
+  const opponentFountain = op.fountainIdx;
+  if (options.opponentFountainPenalty && opponentFountain != null && pathSet.has(opponentFountain)){
+    baseScore -= options.opponentFountainPenalty;
+  }
 
   return Math.round(baseScore);
 }
@@ -1020,7 +1027,10 @@ export function findComputerWord(g, playerIndex, options = {}){
       const path = findWordPathOnBoard(g.board, word, g.gray);
       if (!path) continue;
 
-      const score = projectWordScore(g, playerIndex, path.length, path);
+      const score = projectWordScore(g, playerIndex, path.length, path, {
+        tilePreference: options.tilePreference,
+        opponentFountainPenalty: options.opponentFountainPenalty,
+      });
       if (!best || score > best.score || (score === best.score && path.length > best.path.length)){
         best = { word, path, score };
       }
@@ -1036,7 +1046,10 @@ export function findComputerWord(g, playerIndex, options = {}){
 
   const fallback = findHintWordAndPath(g);
   if (!fallback) return null;
-  const fallbackScore = projectWordScore(g, playerIndex, fallback.path.length, fallback.path);
+  const fallbackScore = projectWordScore(g, playerIndex, fallback.path.length, fallback.path, {
+    tilePreference: options.tilePreference,
+    opponentFountainPenalty: options.opponentFountainPenalty,
+  });
   return { word: fallback.word, path: fallback.path, score: fallbackScore };
 }
 
