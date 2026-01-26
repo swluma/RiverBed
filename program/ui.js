@@ -70,6 +70,8 @@ export function bindUI(handlers){
     activePlayer: document.getElementById("activePlayer"),
     attemptsLeft: document.getElementById("attemptsLeft"),
     winScoreValue: document.getElementById("winScoreValue"),
+    modePill: document.getElementById("modePill"),
+    modeValue: document.getElementById("modeValue"),
 
     dictDot: document.getElementById("dictDot"),
     dictText: document.getElementById("dictText"),
@@ -99,6 +101,8 @@ export function bindUI(handlers){
     p2Bonus: document.getElementById("p2Bonus"),
     p1Skills: document.getElementById("p1Skills"),
     p2Skills: document.getElementById("p2Skills"),
+    p2Title: document.getElementById("p2Title"),
+    player2Role: document.getElementById("player2Role"),
     // Dynamic skill reference (created if missing)
     skillReferenceRoot: document.getElementById("skillReferenceRoot"),
 
@@ -513,6 +517,23 @@ export function renderAll(el, g){
   }
   el.attemptsLeft.textContent = String(getAttemptsLeftDisplay(g));
   if (el.winScoreValue) el.winScoreValue.textContent = String(g.winScore);
+  if (el.p2Title){
+    el.p2Title.textContent = g.computerOpponent
+      ? `Computer (${g.computerStrengthLabel || "Blue"})`
+      : "Player 2";
+  }
+
+  if (el.modePill){
+    if (g.computerOpponent){
+      el.modePill.classList.remove("hidden");
+      if (el.modeValue){
+        const suffix = g.computerStrengthLabel ? ` · ${g.computerStrengthLabel}` : "";
+        el.modeValue.textContent = `Vs Computer${suffix}`;
+      }
+    } else {
+      el.modePill.classList.add("hidden");
+    }
+  }
 
   // Current word
   el.currentWord.textContent = g.selectionWord ? g.selectionWord : "—";
@@ -526,6 +547,11 @@ export function renderAll(el, g){
   if (el.p2ComboMult) el.p2ComboMult.textContent = formatComboMultiplier(g.players[1].combo);
   if (el.p1DecayStep) el.p1DecayStep.textContent = `${g.players[0].decayStepPct ?? 0}%`;
   if (el.p2DecayStep) el.p2DecayStep.textContent = `${g.players[1].decayStepPct ?? 0}%`;
+  if (el.player2Role){
+    el.player2Role.textContent = g.computerOpponent
+      ? `Computer (${g.computerStrengthLabel || "Normal"})`
+      : "Local opponent";
+  }
 
   // Skills panels (compact: only level + current effect)
   el.p1Bonus.innerHTML = renderCategoryBonuses(g.players[0]);

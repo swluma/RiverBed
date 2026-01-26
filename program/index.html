@@ -25,6 +25,10 @@
         <span class="k">Target</span>
         <span class="v" id="winScoreValue">300</span>
       </div>
+      <div class="pill hidden" id="modePill">
+        <span class="k">Mode</span>
+        <span class="v" id="modeValue">Vs Computer</span>
+      </div>
       <div class="pill" id="dictPill">
         <span class="dot wait" id="dictDot"></span>
         <span class="k" id="dictText">Loading dictionary…</span>
@@ -127,9 +131,12 @@
     </section>
 
     <section class="side card" id="p2Panel">
-      <div class="panelHead blue">
-        <div class="panelTitle">Player 2</div>
-        <div class="panelSub">Theme: <b class="blueText">Blue</b></div>
+        <div class="panelHead blue">
+        <div class="panelTitle" id="p2Title">Player 2</div>
+        <div class="panelSub">
+          Theme: <b class="blueText">Blue</b>
+          <span class="panelSubRole" id="player2Role">Local opponent</span>
+        </div>
       </div>
       <div class="panelBody">
         <div class="statRow">
