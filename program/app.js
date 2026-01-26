@@ -1,4 +1,4 @@
-import { COMMON_WORDS_URL, DICT_URL, WIN_SCORE } from "./config.js";
+import { COMMON_WORDS_URL, DICT_URL, WIN_SCORE, MIN_WORD_LEN } from "./config.js";
 import {
   createNewGame,
   beginSwipe, extendSwipe, releaseSwipe, confirmSwipe,
@@ -7,7 +7,8 @@ import {
   setWinScore,
   timeoutTurn,
   shuffleBoard,
-  SKILLS
+  SKILLS,
+  findComputerWord
 } from "./game.js";
 import {
   bindUI, setDictStatus, renderAll,
@@ -16,6 +17,7 @@ import {
   showSkillModal, onChooseSkill,
   showHintModal, onApplyHint, onCancelHint,
   showEndModal, onApplyWinScore, onApplyTimeLimit,
+  onApplyVsComputer,
   showShuffleModal, onConfirmShuffle, onCancelShuffle,
   showTestSkillsModal, onApplyTestSkills, onCancelTestSkills
 } from "./ui.js";
@@ -37,6 +39,57 @@ let timeLimitRemainingSec = null;
 let timeLimitCoverActive = false;
 let lastTurnKey = null;
 let initialSkills = createInitialSkillState();
+
+const COMPUTER_PLAYER_INDEX = 1;
+const COMPUTER_OPTIONS = {
+  strong: {
+    label: "Strong",
+    sampleSize: 420,
+    stopScore: 360,
+    skillPreset: {
+      POINT_INCREASE: 3,
+      POINT_FOUNTAIN: 3,
+      FAIL_OPP: 2,
+      VALUE_DECAY: 3,
+      WIN_FOOTSTEPS: 3,
+      COLOR_CANCEL: 3,
+      EXTRA_CHANCE: 3,
+      SPELL_FINDER: 2,
+      SAFETY_NET: 2,
+    },
+  },
+  "very-strong": {
+    label: "Very Strong",
+    sampleSize: 900,
+    stopScore: 520,
+    skillPreset: {
+      POINT_INCREASE: 4,
+      POINT_FOUNTAIN: 4,
+      FAIL_OPP: 3,
+      VALUE_DECAY: 4,
+      WIN_FOOTSTEPS: 4,
+      COLOR_CANCEL: 4,
+      EXTRA_CHANCE: 4,
+      SPELL_FINDER: 3,
+      SAFETY_NET: 3,
+    },
+  },
+};
+const COMPUTER_SKILL_PRIORITY = {
+  POINT_INCREASE: 6,
+  POINT_FOUNTAIN: 5,
+  FAIL_OPP: 5,
+  VALUE_DECAY: 6,
+  WIN_FOOTSTEPS: 5,
+  COLOR_CANCEL: 4,
+  EXTRA_CHANCE: 3,
+  SPELL_FINDER: 4,
+  SAFETY_NET: 3,
+};
+let nextVsComputerMode = null;
+let vsComputerMode = null;
+let computerTimer = null;
+let computerRunning = false;
 
 function createInitialSkillState(){
   const base = {};
@@ -180,6 +233,13 @@ onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
   setFeedback(ui, "Time limit updated", "Settings applied. Resume play.");
 });
 
+onApplyVsComputer(ui, ({ strength } = {}) => {
+  const config = COMPUTER_OPTIONS[strength];
+  if (!config) return;
+  nextVsComputerMode = { key: strength };
+  onNewMatch();
+});
+
 onConfirmShuffle(ui, () => {
   if (!g || g.gameOver) return;
   const ok = shuffleBoard(g);
@@ -248,9 +308,17 @@ async function loadDictionary(){
 }
 
 function onNewMatch(){
+  cancelScheduledComputerTurn();
+  if (nextVsComputerMode){
+    vsComputerMode = nextVsComputerMode;
+    nextVsComputerMode = null;
+  } else {
+    vsComputerMode = null;
+  }
   if (!dictSet || !dictWords) return;
+  const matchSkills = buildMatchInitialSkills();
   try{
-    g = createNewGame(dictSet, dictWords, embedWords, targetWinScore, initialSkills);
+    g = createNewGame(dictSet, dictWords, embedWords, targetWinScore, matchSkills);
   } catch(e){
     console.error(e);
     setFeedback(ui, "ERROR", "Field generation failed. Try again (New Match).");
@@ -258,6 +326,9 @@ function onNewMatch(){
   }
   if (g){
     g.timeLimits = [timeLimitSettings[0] || 0, timeLimitSettings[1] || 0];
+    const config = vsComputerMode ? COMPUTER_OPTIONS[vsComputerMode.key] : null;
+    g.computerOpponent = !!config;
+    g.computerStrengthLabel = config?.label || null;
   }
   syncTimeLimitModalDefaults();
   locked = false;
@@ -268,6 +339,18 @@ function onNewMatch(){
   setGridCoverVisible(false);
   renderNow();
   setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
+}
+
+function buildMatchInitialSkills(){
+  const payload = {
+    p1: { ...initialSkills.p1 },
+    p2: { ...initialSkills.p2 },
+  };
+  const config = vsComputerMode ? COMPUTER_OPTIONS[vsComputerMode.key] : null;
+  if (config && config.skillPreset){
+    payload.p2 = { ...config.skillPreset };
+  }
+  return payload;
 }
 
 function normalizeWinScore(value){
@@ -490,6 +573,22 @@ async function openSkillSelectIfNeeded(){
     return;
   }
 
+  if (isComputerActivePlayer()){
+    locked = true;
+    const skillId = chooseComputerSkill(offers);
+    locked = false;
+    if (skillId){
+      upgradeSkill(g, skillId);
+      renderNow();
+      const skillName = SKILLS[skillId]?.name || skillId;
+      setFeedback(ui, "Computer upgraded", `Computer increased ${skillName}. Your turn.`);
+    } else {
+      renderNow();
+      setFeedback(ui, "Computer skipped", "No skill upgrade chosen.");
+    }
+    return;
+  }
+
   locked = true;
   showSkillModal(ui, g, offers);
 }
@@ -590,6 +689,88 @@ function renderNow(){
   syncTimeLimitState();
   syncTimeLimitModalDefaults();
   setConfirmState(ui, g.pendingConfirm, isLocked());
+  maybeScheduleComputerTurn();
+}
+
+function isComputerActivePlayer(playerIndex = (g && g.active)){
+  return !!(vsComputerMode && playerIndex === COMPUTER_PLAYER_INDEX);
+}
+
+function chooseComputerSkill(offers){
+  if (!offers || offers.length === 0) return null;
+  let best = null;
+  let bestScore = -Infinity;
+  for (const offer of offers){
+    const score = COMPUTER_SKILL_PRIORITY[offer.id] ?? 0;
+    if (!best || score > bestScore){
+      best = offer;
+      bestScore = score;
+    }
+  }
+  return best ? best.id : null;
+}
+
+function setSelectionFromPath(path){
+  g.selection = path.slice();
+  g.selectionSet = new Set(path);
+  g.selectionWord = path.map(idx => g.board[idx]).join("");
+  g.pendingConfirm = true;
+}
+
+function cancelScheduledComputerTurn(){
+  if (computerTimer){
+    clearTimeout(computerTimer);
+    computerTimer = null;
+  }
+}
+
+function shouldAutoPlayComputer(){
+  return !!(vsComputerMode && g && !g.gameOver &&
+    g.active === COMPUTER_PLAYER_INDEX &&
+    (!g.skillSelect || !g.skillSelect.pending));
+}
+
+function maybeScheduleComputerTurn(){
+  if (!shouldAutoPlayComputer()){
+    cancelScheduledComputerTurn();
+    return;
+  }
+  if (computerTimer || computerRunning) return;
+  computerTimer = setTimeout(() => {
+    computerTimer = null;
+    void runComputerTurn();
+  }, 420);
+}
+
+async function runComputerTurn(){
+  if (!shouldAutoPlayComputer()) return;
+  computerRunning = true;
+  try{
+    locked = true;
+    setFeedback(ui, "Computer thinking", "Looking for a word...");
+    const config = vsComputerMode ? COMPUTER_OPTIONS[vsComputerMode.key] : null;
+    const candidate = findComputerWord(g, COMPUTER_PLAYER_INDEX, {
+      sampleSize: config?.sampleSize,
+      stopScore: config?.stopScore,
+    });
+    if (candidate && Array.isArray(candidate.path) && candidate.path.length >= MIN_WORD_LEN){
+      setSelectionFromPath(candidate.path);
+      renderNow();
+      const result = confirmSwipe(g);
+      await handleEvaluationResult(result);
+      return;
+    }
+    const result = timeoutTurn(g);
+    renderNow();
+    setFeedback(ui, "Computer passed", "No valid word was found.");
+    if (result.ended){
+      await openSkillSelectIfNeeded();
+    } else {
+      locked = false;
+    }
+  } finally {
+    computerRunning = false;
+  }
 }
 
 loadDictionary();

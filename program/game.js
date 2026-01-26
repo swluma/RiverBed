@@ -938,6 +938,102 @@ function countOverlap(setA, setB){
   return n;
 }
 
+export function projectWordScore(g, playerIndex, wordLen, path){
+  if (!g || !Array.isArray(g.players) || !Array.isArray(path) || wordLen < MIN_WORD_LEN){
+    return 0;
+  }
+  const ap = g.players[playerIndex];
+  const op = g.players[1 - playerIndex];
+  if (!ap || !op){
+    return 0;
+  }
+
+  const pathSet = new Set(path);
+  let combo = (Number.isFinite(ap.combo) ? ap.combo : 0) + 1;
+  let baseScore = LEN_TABLE(wordLen) * COMBO_MULT(combo);
+
+  const newStreak = (ap.sameLenLast === wordLen) ? (ap.sameLenStreak + 1) : 1;
+  if ((op.skills.VALUE_DECAY || 0) > 0 && newStreak > 1){
+    const details = decayEffectDetails({ ...ap, sameLenStreak: newStreak }, op);
+    if (details.multiplier < 1){
+      baseScore *= details.multiplier;
+    }
+  }
+
+  const piLv = ap.skills.POINT_INCREASE || 0;
+  if (piLv > 0){
+    baseScore *= (1 + POINT_INCREASE_PCT[piLv]);
+  }
+
+  const foLv = ap.skills.FAIL_OPP || 0;
+  if (foLv > 0 && countOverlap(pathSet, g.white) >= 2){
+    baseScore *= WHITE_MULT[foLv];
+  }
+
+  const pfLv = ap.skills.POINT_FOUNTAIN || 0;
+  if (pfLv > 0 && ap.fountainIdx != null && pathSet.has(ap.fountainIdx)){
+    baseScore += FOUNTAIN_BONUS[pfLv];
+  }
+
+  const wfLv = ap.skills.WIN_FOOTSTEPS || 0;
+  if (wfLv > 0 && countOverlap(pathSet, g.gold) >= 1){
+    baseScore += GOLD_BONUS[wfLv];
+  }
+
+  return Math.round(baseScore);
+}
+
+export function findComputerWord(g, playerIndex, options = {}){
+  if (!g || !Array.isArray(g.dictWords) || g.dictWords.length === 0) return null;
+
+  const sampleSize = Number.isFinite(options.sampleSize) ? Math.max(1, options.sampleSize) : 400;
+  const stopScore = Number.isFinite(options.stopScore) ? options.stopScore : 0;
+
+  const pools = [];
+  if (Array.isArray(g.commonWords) && g.commonWords.length > 0){
+    pools.push(g.commonWords);
+  }
+  pools.push(g.dictWords);
+
+  let tries = 0;
+  let best = null;
+
+  for (const pool of pools){
+    if (!Array.isArray(pool) || pool.length === 0) continue;
+    const poolLen = pool.length;
+    const start = randInt(poolLen);
+    for (let offset = 0; offset < poolLen && tries < sampleSize; offset++){
+      const idx = (start + offset) % poolLen;
+      const rawWord = pool[idx];
+      tries += 1;
+      if (!rawWord) continue;
+      const word = String(rawWord).toLowerCase();
+      if (word.length < MIN_WORD_LEN) continue;
+      if (g.foundWords.has(word)) continue;
+
+      const path = findWordPathOnBoard(g.board, word, g.gray);
+      if (!path) continue;
+
+      const score = projectWordScore(g, playerIndex, path.length, path);
+      if (!best || score > best.score || (score === best.score && path.length > best.path.length)){
+        best = { word, path, score };
+      }
+      if (stopScore > 0 && best && best.score >= stopScore){
+        return best;
+      }
+    }
+  }
+
+  if (best){
+    return best;
+  }
+
+  const fallback = findHintWordAndPath(g);
+  if (!fallback) return null;
+  const fallbackScore = projectWordScore(g, playerIndex, fallback.path.length, fallback.path);
+  return { word: fallback.word, path: fallback.path, score: fallbackScore };
+}
+
 export function totalSkillLevels(p){
   let total = 0;
   for (const v of Object.values(p.skills)) total += v;

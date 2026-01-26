@@ -50,6 +50,7 @@
           <div class="menuPanel" role="menu" aria-label="Settings actions">
             <button id="winScoreBtn" class="ghost" type="button" role="menuitem">Win Score</button>
             <button id="timeLimitBtn" class="ghost" type="button" role="menuitem">Time Limit</button>
+            <button id="vsComputerBtn" class="ghost" type="button" role="menuitem">Vs Computer</button>
             <button id="shuffleBtn" class="ghost" type="button" role="menuitem">Shuffle Board</button>
             <button id="newMatchBtn" class="primary" disabled type="button" role="menuitem">New Match</button>
           </div>
@@ -427,6 +428,41 @@
             <button class="ghost" id="timeLimitApplyBtn">Apply & Resume</button>
             <button class="primary" id="timeLimitApplyNewBtn">Apply & New Match</button>
           </div>
+        </div>
+      </div>
+  </div>
+  </div>
+
+  <!-- VS Computer Modal -->
+  <div class="modalOverlay hidden" id="vsComputerModal">
+    <div class="modal card">
+      <div class="modalHead">
+        <div class="modalTitle">Play Against Computer</div>
+        <button class="ghost" id="vsComputerCloseBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="vsComputerIntro muted">
+          Choose the strength of the computer opponent and start a fresh match.
+        </div>
+        <div class="vsComputerOptions">
+          <label class="vsComputerOption">
+            <input type="radio" name="vsComputerStrength" value="strong" checked />
+            <div class="vsComputerOptionBody">
+              <div class="vsComputerName">Strong</div>
+              <div class="muted">Balanced skillset with greedy searching for consistent scoring.</div>
+            </div>
+          </label>
+          <label class="vsComputerOption">
+            <input type="radio" name="vsComputerStrength" value="very-strong" />
+            <div class="vsComputerOptionBody">
+              <div class="vsComputerName">Very Strong</div>
+              <div class="muted">Heavier skills and deeper board search for a tougher challenge.</div>
+            </div>
+          </label>
+        </div>
+        <div class="vsComputerActions">
+          <button class="ghost" id="vsComputerCancelBtn">Cancel</button>
+          <button class="primary" id="vsComputerConfirmBtn">Confirm & New Match</button>
         </div>
       </div>
     </div>

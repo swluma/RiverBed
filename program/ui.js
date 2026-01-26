@@ -80,6 +80,7 @@ export function bindUI(handlers){
     scoreInfoBtn: document.getElementById("scoreInfoBtn"),
     winScoreBtn: document.getElementById("winScoreBtn"),
     timeLimitBtn: document.getElementById("timeLimitBtn"),
+    vsComputerBtn: document.getElementById("vsComputerBtn"),
     shuffleBtn: document.getElementById("shuffleBtn"),
 
     fbTitle: document.getElementById("fbTitle"),
@@ -134,11 +135,15 @@ export function bindUI(handlers){
     winScoreCancelBtn: document.getElementById("winScoreCancelBtn"),
 
     timeLimitModal: document.getElementById("timeLimitModal"),
+    vsComputerModal: document.getElementById("vsComputerModal"),
     timeLimitP1Input: document.getElementById("timeLimitP1Input"),
     timeLimitP2Input: document.getElementById("timeLimitP2Input"),
     timeLimitApplyBtn: document.getElementById("timeLimitApplyBtn"),
     timeLimitApplyNewBtn: document.getElementById("timeLimitApplyNewBtn"),
     timeLimitCancelBtn: document.getElementById("timeLimitCancelBtn"),
+    vsComputerCloseBtn: document.getElementById("vsComputerCloseBtn"),
+    vsComputerConfirmBtn: document.getElementById("vsComputerConfirmBtn"),
+    vsComputerCancelBtn: document.getElementById("vsComputerCancelBtn"),
 
     shuffleModal: document.getElementById("shuffleModal"),
     shuffleP1Agree: document.getElementById("shuffleP1Agree"),
@@ -353,6 +358,41 @@ export function bindUI(handlers){
     }
   }
 
+  // VS Computer modal
+  if (el.vsComputerBtn && el.vsComputerModal){
+    const resetStrengthSelection = () => {
+      const defaultRadio = el.vsComputerModal.querySelector('input[name="vsComputerStrength"][value="strong"]');
+      if (defaultRadio) defaultRadio.checked = true;
+    };
+    el.vsComputerBtn.addEventListener("click", () => {
+      resetStrengthSelection();
+      show(el.vsComputerModal);
+    });
+  }
+  const emitVsComputer = () => {
+    if (!el.vsComputerModal) return;
+    const selected = el.vsComputerModal.querySelector('input[name="vsComputerStrength"]:checked');
+    const strength = selected?.value || "strong";
+    hide(el.vsComputerModal);
+    el.vsComputerModal.dispatchEvent(new CustomEvent("apply-vs-computer", { detail: { strength } }));
+  };
+  if (el.vsComputerCloseBtn){
+    el.vsComputerCloseBtn.addEventListener("click", () => hide(el.vsComputerModal));
+  }
+  if (el.vsComputerCancelBtn){
+    el.vsComputerCancelBtn.addEventListener("click", () => hide(el.vsComputerModal));
+  }
+  if (el.vsComputerConfirmBtn){
+    el.vsComputerConfirmBtn.addEventListener("click", emitVsComputer);
+  }
+  if (el.vsComputerModal){
+    el.vsComputerModal.addEventListener("click", (e) => {
+      if (e.target === el.vsComputerModal){
+        hide(el.vsComputerModal);
+      }
+    });
+  }
+
   // Shuffle modal
   if (el.shuffleBtn && handlers.onShuffle){
     el.shuffleBtn.addEventListener("click", handlers.onShuffle);
@@ -462,7 +502,10 @@ export function setDictStatus(el, state, text){
 export function renderAll(el, g){
   // Header
   el.turnNo.textContent = String(g.turnNo);
-  el.activePlayer.textContent = (g.active === 0) ? "Player 1 (Red)" : "Player 2 (Blue)";
+  const activeLabel = (g.active === 0)
+    ? "Player 1 (Red)"
+    : ((g.computerOpponent && g.active === 1) ? "Computer (Blue)" : "Player 2 (Blue)");
+  el.activePlayer.textContent = activeLabel;
   const activePill = el.activePlayer.closest(".pill");
   if (activePill){
     activePill.classList.remove("active-red","active-blue");
@@ -940,6 +983,11 @@ export function onApplyWinScore(el, handler){
 export function onApplyTimeLimit(el, handler){
   if (!el.timeLimitModal) return;
   el.timeLimitModal.addEventListener("apply-time-limit", (e) => handler(e.detail));
+}
+
+export function onApplyVsComputer(el, handler){
+  if (!el.vsComputerModal) return;
+  el.vsComputerModal.addEventListener("apply-vs-computer", (e) => handler(e.detail));
 }
 
 export function showShuffleModal(el){
