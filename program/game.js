@@ -980,6 +980,12 @@ export function projectWordScore(g, playerIndex, wordLen, path){
     baseScore += GOLD_BONUS[wfLv];
   }
 
+  const beneficialGold = countOverlap(pathSet, g.gold);
+  const beneficialWhite = countOverlap(pathSet, g.white);
+  const usedFountainSelf = (ap.fountainIdx != null && pathSet.has(ap.fountainIdx));
+  const tilePreferenceBonus = (beneficialGold * 12) + (beneficialWhite * 8) + (usedFountainSelf ? 10 : 0);
+  baseScore += tilePreferenceBonus;
+
   return Math.round(baseScore);
 }
 
