@@ -1200,7 +1200,9 @@ function attemptSkillDestruction(g){
   const tTier = techTier(ap);
   if (tTier === 0) return;
 
-  const reduction = (tTier === 1) ? 1 : 2;
+  const chance = (tTier === 1) ? 0.5 : 1;
+  if (Math.random() > chance) return;
+  const reduction = 1;
 
   const reducible = [];
   for (const k of Object.keys(op.skills)){
