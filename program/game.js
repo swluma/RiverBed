@@ -993,6 +993,22 @@ export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
     baseScore -= options.opponentFountainPenalty;
   }
 
+  const lengthPreference = options.lengthPreference;
+  if (lengthPreference){
+    const minLen = Number.isFinite(lengthPreference.min) ? lengthPreference.min : MIN_WORD_LEN;
+    const maxLen = Number.isFinite(lengthPreference.max) ? lengthPreference.max : Infinity;
+    if (wordLen >= minLen && wordLen <= maxLen){
+      if (typeof lengthPreference.bonus === "number"){
+        baseScore += lengthPreference.bonus;
+      }
+    } else if (typeof lengthPreference.penaltyPerStep === "number" && lengthPreference.penaltyPerStep > 0){
+      const under = Math.max(0, minLen - wordLen);
+      const over = Math.max(0, wordLen - maxLen);
+      const penaltySteps = under + over;
+      baseScore -= penaltySteps * lengthPreference.penaltyPerStep;
+    }
+  }
+
   return Math.round(baseScore);
 }
 
