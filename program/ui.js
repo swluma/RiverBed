@@ -368,8 +368,13 @@ export function bindUI(handlers){
       const defaultRadio = el.vsComputerModal.querySelector('input[name="vsComputerStrength"][value="normal"]');
       if (defaultRadio) defaultRadio.checked = true;
     };
+    const resetSkillPreferenceSelection = () => {
+      const defaultPref = el.vsComputerModal.querySelector('input[name="vsComputerSkillPref"][value="balanced"]');
+      if (defaultPref) defaultPref.checked = true;
+    };
     el.vsComputerBtn.addEventListener("click", () => {
       resetStrengthSelection();
+      resetSkillPreferenceSelection();
       show(el.vsComputerModal);
     });
   }
@@ -377,8 +382,12 @@ export function bindUI(handlers){
     if (!el.vsComputerModal) return;
     const selected = el.vsComputerModal.querySelector('input[name="vsComputerStrength"]:checked');
     const strength = selected?.value || "strong";
+    const prefSelected = el.vsComputerModal.querySelector('input[name="vsComputerSkillPref"]:checked');
+    const skillPreference = prefSelected?.value || "balanced";
     hide(el.vsComputerModal);
-    el.vsComputerModal.dispatchEvent(new CustomEvent("apply-vs-computer", { detail: { strength } }));
+    el.vsComputerModal.dispatchEvent(new CustomEvent("apply-vs-computer", {
+      detail: { strength, skillPreference }
+    }));
   };
   if (el.vsComputerCloseBtn){
     el.vsComputerCloseBtn.addEventListener("click", () => hide(el.vsComputerModal));
@@ -528,7 +537,8 @@ export function renderAll(el, g){
       el.modePill.classList.remove("hidden");
       if (el.modeValue){
         const suffix = g.computerStrengthLabel ? ` · ${g.computerStrengthLabel}` : "";
-        el.modeValue.textContent = `Vs Computer${suffix}`;
+        const prefSuffix = g.computerSkillPreferenceLabel ? ` · ${g.computerSkillPreferenceLabel}` : "";
+        el.modeValue.textContent = `Vs Computer${suffix}${prefSuffix}`;
       }
     } else {
       el.modePill.classList.add("hidden");

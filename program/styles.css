@@ -605,6 +605,12 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   gap:10px;
   margin-bottom:16px;
 }
+.vsComputerPreference{
+  margin-bottom:16px;
+}
+.vsComputerPrefOption{
+  padding-left:34px;
+}
 .vsComputerOption{
   display:flex;
   gap:12px;

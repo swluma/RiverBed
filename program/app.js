@@ -78,6 +78,18 @@ const COMPUTER_SKILL_PRIORITY = {
   SPELL_FINDER: 4,
   SAFETY_NET: 3,
 };
+const COMPUTER_SKILL_PREF_BONUS = {
+  balanced: {},
+  point: { POINT: 3 },
+  counter: { COUNTER: 3 },
+  technical: { TECH: 3 },
+};
+const COMPUTER_SKILL_PREF_LABEL = {
+  balanced: "Balanced",
+  point: "Point skills",
+  counter: "Counter skills",
+  technical: "Technical skills",
+};
 let nextVsComputerMode = null;
 let vsComputerMode = null;
 let computerTimer = null;
@@ -226,10 +238,11 @@ onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
   setFeedback(ui, "Time limit updated", "Settings applied. Resume play.");
 });
 
-onApplyVsComputer(ui, ({ strength } = {}) => {
+onApplyVsComputer(ui, ({ strength, skillPreference } = {}) => {
   const config = COMPUTER_OPTIONS[strength];
   if (!config) return;
-  nextVsComputerMode = { key: strength };
+  const pref = skillPreference || "balanced";
+  nextVsComputerMode = { key: strength, skillPreference: pref };
   onNewMatch();
 });
 
@@ -322,6 +335,8 @@ function onNewMatch(){
     const config = vsComputerMode ? COMPUTER_OPTIONS[vsComputerMode.key] : null;
     g.computerOpponent = !!config;
     g.computerStrengthLabel = config?.label || null;
+    g.computerSkillPreference = vsComputerMode?.skillPreference || "balanced";
+    g.computerSkillPreferenceLabel = COMPUTER_SKILL_PREF_LABEL[g.computerSkillPreference] || "Balanced";
   }
   syncTimeLimitModalDefaults();
   locked = false;
@@ -564,7 +579,7 @@ async function openSkillSelectIfNeeded(){
 
   if (isComputerActivePlayer()){
     locked = true;
-    const skillId = chooseComputerSkill(offers);
+    const skillId = chooseComputerSkill(offers, vsComputerMode?.skillPreference);
     locked = false;
     if (skillId){
       upgradeSkill(g, skillId);
@@ -685,12 +700,17 @@ function isComputerActivePlayer(playerIndex = (g && g.active)){
   return !!(vsComputerMode && playerIndex === COMPUTER_PLAYER_INDEX);
 }
 
-function chooseComputerSkill(offers){
+function chooseComputerSkill(offers, skillPreference = "balanced"){
   if (!offers || offers.length === 0) return null;
   let best = null;
   let bestScore = -Infinity;
+  const pref = COMPUTER_SKILL_PREF_BONUS[skillPreference] || COMPUTER_SKILL_PREF_BONUS.balanced;
   for (const offer of offers){
-    const score = COMPUTER_SKILL_PRIORITY[offer.id] ?? 0;
+    const base = COMPUTER_SKILL_PRIORITY[offer.id] ?? 0;
+    const meta = SKILLS[offer.id];
+    const cat = meta?.cat;
+    const bonus = (cat && Object.prototype.hasOwnProperty.call(pref, cat)) ? pref[cat] : 0;
+    const score = base + bonus;
     if (!best || score > bestScore){
       best = offer;
       bestScore = score;

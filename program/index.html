@@ -474,6 +474,37 @@
             </div>
           </label>
         </div>
+        <div class="vsComputerPreference">
+          <div class="vsComputerPreferenceTitle">Computer skill preference</div>
+          <label class="vsComputerOption vsComputerPrefOption">
+            <input type="radio" name="vsComputerSkillPref" value="balanced" checked />
+            <div class="vsComputerOptionBody">
+              <div class="vsComputerName">Balanced</div>
+              <div class="muted">No bias—the computer picks whichever skill gives the most points.</div>
+            </div>
+          </label>
+          <label class="vsComputerOption vsComputerPrefOption">
+            <input type="radio" name="vsComputerSkillPref" value="point" />
+            <div class="vsComputerOptionBody">
+              <div class="vsComputerName">Prefer Point Skills</div>
+              <div class="muted">Favors Point category upgrades (Point Increase, Fountain, Failure into Opportunity).</div>
+            </div>
+          </label>
+          <label class="vsComputerOption vsComputerPrefOption">
+            <input type="radio" name="vsComputerSkillPref" value="counter" />
+            <div class="vsComputerOptionBody">
+              <div class="vsComputerName">Prefer Counter Skills</div>
+              <div class="muted">Chooses Value Decay, Winner's Footsteps, or Color Cancellation when possible.</div>
+            </div>
+          </label>
+          <label class="vsComputerOption vsComputerPrefOption">
+            <input type="radio" name="vsComputerSkillPref" value="technical" />
+            <div class="vsComputerOptionBody">
+              <div class="vsComputerName">Prefer Technical Skills</div>
+              <div class="muted">Pulls from Spell Finder, Extra Chance, and Safety Net more often.</div>
+            </div>
+          </label>
+        </div>
         <div class="vsComputerActions">
           <button class="ghost" id="vsComputerCancelBtn">Cancel</button>
           <button class="primary" id="vsComputerConfirmBtn">Confirm & New Match</button>
