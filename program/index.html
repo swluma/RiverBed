@@ -476,34 +476,38 @@
         </div>
         <div class="vsComputerPreference">
           <div class="vsComputerPreferenceTitle">Computer skill preference</div>
-          <label class="vsComputerOption vsComputerPrefOption">
-            <input type="radio" name="vsComputerSkillPref" value="balanced" checked />
-            <div class="vsComputerOptionBody">
-              <div class="vsComputerName">Balanced</div>
-              <div class="muted">No bias—the computer picks whichever skill gives the most points.</div>
-            </div>
-          </label>
-          <label class="vsComputerOption vsComputerPrefOption">
-            <input type="radio" name="vsComputerSkillPref" value="point" />
-            <div class="vsComputerOptionBody">
-              <div class="vsComputerName">Prefer Point Skills</div>
-              <div class="muted">Favors Point category upgrades (Point Increase, Fountain, Failure into Opportunity).</div>
-            </div>
-          </label>
-          <label class="vsComputerOption vsComputerPrefOption">
-            <input type="radio" name="vsComputerSkillPref" value="counter" />
-            <div class="vsComputerOptionBody">
-              <div class="vsComputerName">Prefer Counter Skills</div>
-              <div class="muted">Chooses Value Decay, Winner's Footsteps, or Color Cancellation when possible.</div>
-            </div>
-          </label>
-          <label class="vsComputerOption vsComputerPrefOption">
-            <input type="radio" name="vsComputerSkillPref" value="technical" />
-            <div class="vsComputerOptionBody">
-              <div class="vsComputerName">Prefer Technical Skills</div>
-              <div class="muted">Pulls from Spell Finder, Extra Chance, and Safety Net more often.</div>
-            </div>
-          </label>
+          <div class="vsComputerPrefDescription muted">
+            Choose which skill category the computer leans toward, then drag the slider from Balanced to Specialist to control how strictly it follows that bias.
+          </div>
+          <div class="vsComputerSkillCategories">
+            <label class="vsComputerOption vsComputerSkillOption">
+              <input type="radio" name="vsComputerSkillCategory" value="point" checked />
+              <div class="vsComputerOptionBody">
+                <div class="vsComputerName">Point skills</div>
+                <div class="muted">Point Increase, Point Fountain, Failure into Opportunity.</div>
+              </div>
+            </label>
+            <label class="vsComputerOption vsComputerSkillOption">
+              <input type="radio" name="vsComputerSkillCategory" value="counter" />
+              <div class="vsComputerOptionBody">
+                <div class="vsComputerName">Counter skills</div>
+                <div class="muted">Value Decay, Winner’s Footsteps, Color Cancellation.</div>
+              </div>
+            </label>
+            <label class="vsComputerOption vsComputerSkillOption">
+              <input type="radio" name="vsComputerSkillCategory" value="technical" />
+              <div class="vsComputerOptionBody">
+                <div class="vsComputerName">Technical skills</div>
+                <div class="muted">Extra Chance, Spell Finder, Safety Net.</div>
+              </div>
+            </label>
+          </div>
+          <div class="vsComputerSkillSliderRow">
+            <span class="vsComputerSliderLabel">Balanced</span>
+            <input type="range" id="vsComputerSkillPrefSlider" min="0" max="100" value="0" />
+            <span class="vsComputerSliderLabel">Specialist</span>
+          </div>
+          <div class="vsComputerSkillSliderStatus" id="vsComputerSkillPrefSliderStatus">Balanced (no preference)</div>
         </div>
         <div class="vsComputerActions">
           <button class="ghost" id="vsComputerCancelBtn">Cancel</button>

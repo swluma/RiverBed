@@ -78,18 +78,38 @@ const COMPUTER_SKILL_PRIORITY = {
   SPELL_FINDER: 4,
   SAFETY_NET: 3,
 };
-const COMPUTER_SKILL_PREF_BONUS = {
-  balanced: {},
-  point: { POINT: 3 },
-  counter: { COUNTER: 3 },
-  technical: { TECH: 3 },
+const COMPUTER_SKILL_PREF_CATEGORIES = {
+  point: { cat: "POINT", label: "Point skills", bonus: 3 },
+  counter: { cat: "COUNTER", label: "Counter skills", bonus: 3 },
+  technical: { cat: "TECH", label: "Technical skills", bonus: 3 },
 };
-const COMPUTER_SKILL_PREF_LABEL = {
-  balanced: "Balanced",
-  point: "Point skills",
-  counter: "Counter skills",
-  technical: "Technical skills",
-};
+function normalizeSkillPreference(input){
+  if (!input) return null;
+  if (typeof input === "string"){
+    if (input === "balanced") return null;
+    if (Object.prototype.hasOwnProperty.call(COMPUTER_SKILL_PREF_CATEGORIES, input)){
+      return { category: input, intensity: 1 };
+    }
+    return null;
+  }
+  const category = input?.category;
+  const meta = COMPUTER_SKILL_PREF_CATEGORIES[category];
+  if (!meta) return null;
+  const raw = Number(input.intensity);
+  if (!Number.isFinite(raw)) return null;
+  const intensity = Math.max(0, Math.min(1, raw));
+  if (intensity <= 0) return null;
+  return { category, intensity };
+}
+function describeSkillPreferenceLabel(pref){
+  if (!pref) return "Balanced";
+  const meta = COMPUTER_SKILL_PREF_CATEGORIES[pref.category];
+  if (!meta) return "Balanced";
+  if (pref.intensity >= 1) return `${meta.label} specialist`;
+  if (pref.intensity >= 0.66) return `${meta.label} (strong focus)`;
+  if (pref.intensity >= 0.33) return `${meta.label} (preference)`;
+  return `${meta.label} (lean bias)`;
+}
 let nextVsComputerMode = null;
 let vsComputerMode = null;
 let computerTimer = null;
@@ -241,7 +261,7 @@ onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
 onApplyVsComputer(ui, ({ strength, skillPreference } = {}) => {
   const config = COMPUTER_OPTIONS[strength];
   if (!config) return;
-  const pref = skillPreference || "balanced";
+  const pref = normalizeSkillPreference(skillPreference);
   nextVsComputerMode = { key: strength, skillPreference: pref };
   onNewMatch();
 });
@@ -335,8 +355,12 @@ function onNewMatch(){
     const config = vsComputerMode ? COMPUTER_OPTIONS[vsComputerMode.key] : null;
     g.computerOpponent = !!config;
     g.computerStrengthLabel = config?.label || null;
-    g.computerSkillPreference = vsComputerMode?.skillPreference || "balanced";
-    g.computerSkillPreferenceLabel = COMPUTER_SKILL_PREF_LABEL[g.computerSkillPreference] || "Balanced";
+    const normalizedPref = normalizeSkillPreference(vsComputerMode?.skillPreference);
+    if (vsComputerMode){
+      vsComputerMode.skillPreference = normalizedPref;
+    }
+    g.computerSkillPreference = normalizedPref;
+    g.computerSkillPreferenceLabel = describeSkillPreferenceLabel(normalizedPref);
   }
   syncTimeLimitModalDefaults();
   locked = false;
@@ -700,17 +724,41 @@ function isComputerActivePlayer(playerIndex = (g && g.active)){
   return !!(vsComputerMode && playerIndex === COMPUTER_PLAYER_INDEX);
 }
 
-function chooseComputerSkill(offers, skillPreference = "balanced"){
+function chooseComputerSkill(offers, skillPreference = null){
   if (!offers || offers.length === 0) return null;
-  let best = null;
-  let bestScore = -Infinity;
-  const pref = COMPUTER_SKILL_PREF_BONUS[skillPreference] || COMPUTER_SKILL_PREF_BONUS.balanced;
-  for (const offer of offers){
+  const normalizedPref = normalizeSkillPreference(skillPreference);
+  const prefMeta = normalizedPref ? COMPUTER_SKILL_PREF_CATEGORIES[normalizedPref.category] : null;
+  const intensity = normalizedPref?.intensity ?? 0;
+  const getScore = (offer) => {
     const base = COMPUTER_SKILL_PRIORITY[offer.id] ?? 0;
     const meta = SKILLS[offer.id];
     const cat = meta?.cat;
-    const bonus = (cat && Object.prototype.hasOwnProperty.call(pref, cat)) ? pref[cat] : 0;
-    const score = base + bonus;
+    let bonus = 0;
+    if (prefMeta && cat === prefMeta.cat){
+      bonus = prefMeta.bonus * intensity;
+    }
+    return base + bonus;
+  };
+
+  if (prefMeta && intensity >= 1){
+    let bestPref = null;
+    let bestPrefScore = -Infinity;
+    for (const offer of offers){
+      const meta = SKILLS[offer.id];
+      if (meta?.cat !== prefMeta.cat) continue;
+      const score = getScore(offer);
+      if (!bestPref || score > bestPrefScore){
+        bestPref = offer;
+        bestPrefScore = score;
+      }
+    }
+    if (bestPref) return bestPref.id;
+  }
+
+  let best = null;
+  let bestScore = -Infinity;
+  for (const offer of offers){
+    const score = getScore(offer);
     if (!best || score > bestScore){
       best = offer;
       bestScore = score;

@@ -148,6 +148,8 @@ export function bindUI(handlers){
     vsComputerCloseBtn: document.getElementById("vsComputerCloseBtn"),
     vsComputerConfirmBtn: document.getElementById("vsComputerConfirmBtn"),
     vsComputerCancelBtn: document.getElementById("vsComputerCancelBtn"),
+    vsComputerSkillPrefSlider: document.getElementById("vsComputerSkillPrefSlider"),
+    vsComputerSkillPrefSliderStatus: document.getElementById("vsComputerSkillPrefSliderStatus"),
 
     shuffleModal: document.getElementById("shuffleModal"),
     shuffleP1Agree: document.getElementById("shuffleP1Agree"),
@@ -364,26 +366,63 @@ export function bindUI(handlers){
 
   // VS Computer modal
   if (el.vsComputerBtn && el.vsComputerModal){
+    const vsSkillCategoryInputs = Array.from(el.vsComputerModal.querySelectorAll('input[name="vsComputerSkillCategory"]'));
+    const getActiveCategoryLabel = () => {
+      const active = vsSkillCategoryInputs.find((input) => input.checked);
+      const labelEl = active?.closest(".vsComputerOption")?.querySelector(".vsComputerName");
+      return labelEl?.textContent?.trim() || "Point skills";
+    };
+    const formatSkillPrefStatus = (value, label) => {
+      if (!Number.isFinite(value) || value <= 0) return "Balanced (no preference)";
+      if (value >= 100) return `${label} specialist`;
+      if (value >= 70) return `${label} strong focus`;
+      if (value >= 40) return `${label} preference`;
+      return `${label} slight bias`;
+    };
+    const updateSkillPrefStatus = () => {
+      if (!el.vsComputerSkillPrefSlider || !el.vsComputerSkillPrefSliderStatus) return;
+      const value = Number(el.vsComputerSkillPrefSlider.value) || 0;
+      el.vsComputerSkillPrefSliderStatus.textContent =
+        formatSkillPrefStatus(value, getActiveCategoryLabel());
+    };
+
+    if (el.vsComputerSkillPrefSlider){
+      el.vsComputerSkillPrefSlider.addEventListener("input", updateSkillPrefStatus);
+    }
+    vsSkillCategoryInputs.forEach((input) => {
+      input.addEventListener("change", updateSkillPrefStatus);
+    });
+
     const resetStrengthSelection = () => {
       const defaultRadio = el.vsComputerModal.querySelector('input[name="vsComputerStrength"][value="normal"]');
       if (defaultRadio) defaultRadio.checked = true;
     };
     const resetSkillPreferenceSelection = () => {
-      const defaultPref = el.vsComputerModal.querySelector('input[name="vsComputerSkillPref"][value="balanced"]');
-      if (defaultPref) defaultPref.checked = true;
+      const defaultCat = vsSkillCategoryInputs.find((input) => input.value === "point");
+      if (defaultCat) defaultCat.checked = true;
+      if (el.vsComputerSkillPrefSlider) el.vsComputerSkillPrefSlider.value = "0";
+      updateSkillPrefStatus();
     };
     el.vsComputerBtn.addEventListener("click", () => {
       resetStrengthSelection();
       resetSkillPreferenceSelection();
       show(el.vsComputerModal);
     });
+
+    updateSkillPrefStatus();
   }
   const emitVsComputer = () => {
     if (!el.vsComputerModal) return;
     const selected = el.vsComputerModal.querySelector('input[name="vsComputerStrength"]:checked');
     const strength = selected?.value || "strong";
-    const prefSelected = el.vsComputerModal.querySelector('input[name="vsComputerSkillPref"]:checked');
-    const skillPreference = prefSelected?.value || "balanced";
+    const categoryInput = el.vsComputerModal.querySelector('input[name="vsComputerSkillCategory"]:checked');
+    const slider = el.vsComputerSkillPrefSlider;
+    const rawValue = Number(slider?.value ?? 0);
+    const normalized = Math.max(0, Math.min(100, rawValue)) / 100;
+    const skillPreference = {
+      category: categoryInput?.value || "point",
+      intensity: normalized,
+    };
     hide(el.vsComputerModal);
     el.vsComputerModal.dispatchEvent(new CustomEvent("apply-vs-computer", {
       detail: { strength, skillPreference }
