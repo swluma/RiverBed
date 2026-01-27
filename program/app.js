@@ -18,7 +18,7 @@ import {
   showHintModal, onApplyHint, onCancelHint,
   showEndModal, onApplyWinScore, onApplyTimeLimit,
   onApplyVsComputer,
-  showShuffleModal, onConfirmShuffle, onCancelShuffle,
+  showShuffleModal, showNoWordsModal, onConfirmShuffle, onCancelShuffle,
   showTestSkillsModal, onApplyTestSkills, onCancelTestSkills
 } from "./ui.js";
 
@@ -182,6 +182,9 @@ onApplyHint(ui, (allocations) => {
       result.reason === "TOTAL_NOT_THREE" ? "Select exactly 3 skill levels to sacrifice." :
       "Hint unavailable.";
     setFeedback(ui, "Hint failed", reasonText);
+    if (result.reason === "NO_HINT_AVAILABLE"){
+      showNoWordsModal(ui);
+    }
     renderNow();
     return;
   }

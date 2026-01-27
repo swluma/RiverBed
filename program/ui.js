@@ -85,6 +85,10 @@ export function bindUI(handlers){
     vsComputerBtn: document.getElementById("vsComputerBtn"),
     shuffleBtn: document.getElementById("shuffleBtn"),
 
+    noWordsModal: document.getElementById("noWordsModal"),
+    closeNoWordsBtn: document.getElementById("closeNoWordsBtn"),
+    shuffleFromNoWordsBtn: document.getElementById("shuffleFromNoWordsBtn"),
+
     fbTitle: document.getElementById("fbTitle"),
     fbSub: document.getElementById("fbSub"),
     feedback: document.getElementById("feedback"),
@@ -472,6 +476,23 @@ export function bindUI(handlers){
       if (e.target === el.shuffleModal){
         hide(el.shuffleModal);
         el.shuffleModal.dispatchEvent(new CustomEvent("cancel-shuffle"));
+      }
+    });
+  }
+
+  if (el.closeNoWordsBtn){
+    el.closeNoWordsBtn.addEventListener("click", () => hide(el.noWordsModal));
+  }
+  if (el.shuffleFromNoWordsBtn){
+    el.shuffleFromNoWordsBtn.addEventListener("click", () => {
+      hide(el.noWordsModal);
+      if (handlers.onShuffle) handlers.onShuffle();
+    });
+  }
+  if (el.noWordsModal){
+    el.noWordsModal.addEventListener("click", (e) => {
+      if (e.target === el.noWordsModal){
+        hide(el.noWordsModal);
       }
     });
   }
@@ -1081,6 +1102,11 @@ export function onConfirmShuffle(el, handler){
 export function onCancelShuffle(el, handler){
   if (!el.shuffleModal) return;
   el.shuffleModal.addEventListener("cancel-shuffle", () => handler());
+}
+
+export function showNoWordsModal(el){
+  if (!el.noWordsModal) return;
+  show(el.noWordsModal);
 }
 
 export function showEndModal(el, g){

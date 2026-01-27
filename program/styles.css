@@ -691,6 +691,12 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   gap:8px;
   flex-wrap:wrap;
 }
+.modalActions{
+  margin-top:16px;
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
 .modalHead{
   display:flex;
   justify-content:space-between;
