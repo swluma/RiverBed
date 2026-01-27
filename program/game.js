@@ -42,7 +42,7 @@ export const SKILLS = {
 };
 
 const POINT_INCREASE_PCT = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
-const FOUNTAIN_BONUS     = [0, 5, 8, 12, 18, 25];
+  const FOUNTAIN_BONUS     = [0, 3, 5, 10, 15, 20];
 
 const DECAY_STEP         = [0, 0.08, 0.12, 0.15, 0.20, 0.20];
 const DECAY_MIN_MULT     = [1, 0.40, 0.40, 0.40, 0.25, 0.00];
