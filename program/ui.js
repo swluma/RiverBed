@@ -731,7 +731,7 @@ function renderLog(g){
       `;
     }
     const shared = (it.shared && it.shared > 0)
-      ? `<div class="pts shared">-${it.shared} pts</div>`
+      ? `<div class="pts shared">${it.shared} pts shared</div>`
       : "";
     return `
       <div class="${cls}">
