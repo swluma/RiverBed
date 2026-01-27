@@ -1167,9 +1167,9 @@ function buildSkillReferenceHtml(){
           <div class="name"><span class="skillCatDot"></span>Point Skills Category Bonus</div>
           <div class="rule">Based on total Point-skill levels you own. Added at the end of each of your turns.</div>
           <table class="skillRefTable">
-            <tr><th>Tier</th><th>Requirement</th><th>Effect</th></tr>
-            <tr><td>Tier 1</td><td>3 total Point-skill levels</td><td>+5 points at end of each turn</td></tr>
-            <tr><td>Tier 2</td><td>6 total Point-skill levels</td><td>+10 points at end of each turn</td></tr>
+            <tr><th>Tier</th><th>Effect</th></tr>
+            <tr><td>Tier 1</td><td>+5 points at end of each turn</td></tr>
+            <tr><td>Tier 2</td><td>+10 points at end of each turn</td></tr>
           </table>
         </div>
       </div>
