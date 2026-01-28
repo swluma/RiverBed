@@ -154,6 +154,15 @@ export function bindUI(handlers){
     vsComputerCancelBtn: document.getElementById("vsComputerCancelBtn"),
     vsComputerSkillPrefSlider: document.getElementById("vsComputerSkillPrefSlider"),
     vsComputerSkillPrefSliderStatus: document.getElementById("vsComputerSkillPrefSliderStatus"),
+    spectatorBtn: document.getElementById("spectatorBtn"),
+    spectatorModal: document.getElementById("spectatorModal"),
+    spectatorCloseBtn: document.getElementById("spectatorCloseBtn"),
+    spectatorConfirmBtn: document.getElementById("spectatorConfirmBtn"),
+    spectatorCancelBtn: document.getElementById("spectatorCancelBtn"),
+    spectatorSkillPrefSliderP1: document.getElementById("spectatorSkillPrefSliderP1"),
+    spectatorSkillPrefSliderStatusP1: document.getElementById("spectatorSkillPrefSliderStatusP1"),
+    spectatorSkillPrefSliderP2: document.getElementById("spectatorSkillPrefSliderP2"),
+    spectatorSkillPrefSliderStatusP2: document.getElementById("spectatorSkillPrefSliderStatusP2"),
 
     shuffleModal: document.getElementById("shuffleModal"),
     shuffleP1Agree: document.getElementById("shuffleP1Agree"),
@@ -168,6 +177,11 @@ export function bindUI(handlers){
     testSkillsResetBtn: document.getElementById("testSkillsResetBtn"),
     testSkillsCancelBtn: document.getElementById("testSkillsCancelBtn"),
 
+    spectatorControls: document.getElementById("spectatorControls"),
+    spectatorPauseBtn: document.getElementById("spectatorPauseBtn"),
+    spectatorResumeBtn: document.getElementById("spectatorResumeBtn"),
+    spectatorInterruptBtn: document.getElementById("spectatorInterruptBtn"),
+    spectatorStatus: document.getElementById("spectatorStatus"),
     hintBtn: document.getElementById("hintBtn"),
     hintModal: document.getElementById("hintModal"),
     hintSkillList: document.getElementById("hintSkillList"),
@@ -360,78 +374,86 @@ export function bindUI(handlers){
       el.timeLimitModal.dispatchEvent(new CustomEvent("apply-time-limit", { detail: { mode, p1, p2 } }));
     };
 
-    if (el.timeLimitApplyBtn){
-      el.timeLimitApplyBtn.addEventListener("click", () => emitTimeLimit("resume"));
-    }
-    if (el.timeLimitApplyNewBtn){
-      el.timeLimitApplyNewBtn.addEventListener("click", () => emitTimeLimit("new"));
-    }
+  if (el.timeLimitApplyBtn){
+    el.timeLimitApplyBtn.addEventListener("click", () => emitTimeLimit("resume"));
+  }
+  if (el.timeLimitApplyNewBtn){
+    el.timeLimitApplyNewBtn.addEventListener("click", () => emitTimeLimit("new"));
+  }
+}
+
+  function getCategoryLabel(modal, categoryName){
+    if (!modal) return "Point skills";
+    const active = modal.querySelector(`input[name="${categoryName}"]:checked`);
+    const labelEl = active?.closest(".vsComputerOption")?.querySelector(".vsComputerName");
+    return labelEl?.textContent?.trim() || "Point skills";
   }
 
-  // VS Computer modal
-  if (el.vsComputerBtn && el.vsComputerModal){
-    const vsSkillCategoryInputs = Array.from(el.vsComputerModal.querySelectorAll('input[name="vsComputerSkillCategory"]'));
-    const getActiveCategoryLabel = () => {
-      const active = vsSkillCategoryInputs.find((input) => input.checked);
-      const labelEl = active?.closest(".vsComputerOption")?.querySelector(".vsComputerName");
-      return labelEl?.textContent?.trim() || "Point skills";
-    };
-    const formatSkillPrefStatus = (value, label) => {
-      if (!Number.isFinite(value) || value <= 0) return "Balanced (no preference)";
-      if (value >= 100) return `${label} specialist`;
-      if (value >= 70) return `${label} strong focus`;
-      if (value >= 40) return `${label} preference`;
-      return `${label} slight bias`;
-    };
-    const updateSkillPrefStatus = () => {
-      if (!el.vsComputerSkillPrefSlider || !el.vsComputerSkillPrefSliderStatus) return;
-      const value = Number(el.vsComputerSkillPrefSlider.value) || 0;
-      el.vsComputerSkillPrefSliderStatus.textContent =
-        formatSkillPrefStatus(value, getActiveCategoryLabel());
-    };
-
-    if (el.vsComputerSkillPrefSlider){
-      el.vsComputerSkillPrefSlider.addEventListener("input", updateSkillPrefStatus);
-    }
-    vsSkillCategoryInputs.forEach((input) => {
-      input.addEventListener("change", updateSkillPrefStatus);
-    });
-
-    const resetStrengthSelection = () => {
-      const defaultRadio = el.vsComputerModal.querySelector('input[name="vsComputerStrength"][value="normal"]');
-      if (defaultRadio) defaultRadio.checked = true;
-    };
-    const resetSkillPreferenceSelection = () => {
-      const defaultCat = vsSkillCategoryInputs.find((input) => input.value === "point");
-      if (defaultCat) defaultCat.checked = true;
-      if (el.vsComputerSkillPrefSlider) el.vsComputerSkillPrefSlider.value = "0";
-      updateSkillPrefStatus();
-    };
-    el.vsComputerBtn.addEventListener("click", () => {
-      resetStrengthSelection();
-      resetSkillPreferenceSelection();
-      show(el.vsComputerModal);
-    });
-
-    updateSkillPrefStatus();
+  function formatSkillPrefStatus(value, label){
+    if (!Number.isFinite(value) || value <= 0) return "Balanced (no preference)";
+    if (value >= 100) return `${label} specialist`;
+    if (value >= 70) return `${label} strong focus`;
+    if (value >= 40) return `${label} preference`;
+    return `${label} slight bias`;
   }
-  const emitVsComputer = () => {
-    if (!el.vsComputerModal) return;
-    const selected = el.vsComputerModal.querySelector('input[name="vsComputerStrength"]:checked');
-    const strength = selected?.value || "strong";
-    const categoryInput = el.vsComputerModal.querySelector('input[name="vsComputerSkillCategory"]:checked');
-    const slider = el.vsComputerSkillPrefSlider;
-    const rawValue = Number(slider?.value ?? 0);
-    const normalized = Math.max(0, Math.min(100, rawValue)) / 100;
-    const skillPreference = {
-      category: categoryInput?.value || "point",
-      intensity: normalized,
+
+  function createSkillPrefController({ slider, status, modal, categoryName }){
+    if (!slider || !status || !modal) return null;
+    const inputs = Array.from(modal.querySelectorAll(`input[name="${categoryName}"]`));
+    const update = () => {
+      const value = Number(slider.value) || 0;
+      status.textContent = formatSkillPrefStatus(value, getCategoryLabel(modal, categoryName));
     };
-    hide(el.vsComputerModal);
-    el.vsComputerModal.dispatchEvent(new CustomEvent("apply-vs-computer", {
-      detail: { strength, skillPreference }
-    }));
+    slider.addEventListener("input", update);
+    inputs.forEach((input) => input.addEventListener("change", update));
+    update();
+    return {
+      value: () => Number(slider.value) || 0,
+      category: () => modal.querySelector(`input[name="${categoryName}"]:checked`)?.value || "point",
+      update,
+    };
+  }
+
+// VS Computer modal
+let vsSkillPrefController = null;
+if (el.vsComputerBtn && el.vsComputerModal){
+  vsSkillPrefController = createSkillPrefController({
+    slider: el.vsComputerSkillPrefSlider,
+    status: el.vsComputerSkillPrefSliderStatus,
+    modal: el.vsComputerModal,
+    categoryName: "vsComputerSkillCategory",
+  });
+  const resetStrengthSelection = () => {
+    const defaultRadio = el.vsComputerModal.querySelector('input[name="vsComputerStrength"][value="normal"]');
+    if (defaultRadio) defaultRadio.checked = true;
   };
+  const resetSkillPreferenceSelection = () => {
+    const defaultCat = el.vsComputerModal.querySelector('input[name="vsComputerSkillCategory"][value="point"]');
+    if (defaultCat) defaultCat.checked = true;
+    if (el.vsComputerSkillPrefSlider) el.vsComputerSkillPrefSlider.value = "0";
+    vsSkillPrefController?.update();
+  };
+  el.vsComputerBtn.addEventListener("click", () => {
+    resetStrengthSelection();
+    resetSkillPreferenceSelection();
+    show(el.vsComputerModal);
+  });
+  resetStrengthSelection();
+  resetSkillPreferenceSelection();
+}
+const emitVsComputer = () => {
+  if (!el.vsComputerModal) return;
+  const selected = el.vsComputerModal.querySelector('input[name="vsComputerStrength"]:checked');
+  const strength = selected?.value || "strong";
+  const skillPreference = {
+    category: vsSkillPrefController?.category() || "point",
+    intensity: Math.max(0, Math.min(100, vsSkillPrefController?.value() ?? 0)) / 100,
+  };
+  hide(el.vsComputerModal);
+  el.vsComputerModal.dispatchEvent(new CustomEvent("apply-vs-computer", {
+    detail: { strength, skillPreference }
+  }));
+};
   if (el.vsComputerCloseBtn){
     el.vsComputerCloseBtn.addEventListener("click", () => hide(el.vsComputerModal));
   }
@@ -445,6 +467,79 @@ export function bindUI(handlers){
     el.vsComputerModal.addEventListener("click", (e) => {
       if (e.target === el.vsComputerModal){
         hide(el.vsComputerModal);
+      }
+    });
+  }
+
+  let spectatorPrefControllers = null;
+  if (el.spectatorBtn && el.spectatorModal){
+    spectatorPrefControllers = {
+      0: createSkillPrefController({
+        slider: el.spectatorSkillPrefSliderP1,
+        status: el.spectatorSkillPrefSliderStatusP1,
+        modal: el.spectatorModal,
+        categoryName: "spectatorSkillCategoryP1",
+      }),
+      1: createSkillPrefController({
+        slider: el.spectatorSkillPrefSliderP2,
+        status: el.spectatorSkillPrefSliderStatusP2,
+        modal: el.spectatorModal,
+        categoryName: "spectatorSkillCategoryP2",
+      }),
+    };
+    const resetSpectatorSection = (player) => {
+      const suffix = player === 0 ? "P1" : "P2";
+      const strengthRadio = el.spectatorModal.querySelector(`input[name="spectatorStrength${suffix}"][value="normal"]`);
+      if (strengthRadio) strengthRadio.checked = true;
+      const skillRadio = el.spectatorModal.querySelector(`input[name="spectatorSkillCategory${suffix}"][value="point"]`);
+      if (skillRadio) skillRadio.checked = true;
+      const slider = player === 0 ? el.spectatorSkillPrefSliderP1 : el.spectatorSkillPrefSliderP2;
+      if (slider) slider.value = "0";
+      spectatorPrefControllers[player]?.update();
+    };
+    const resetSpectatorSelections = () => {
+      resetSpectatorSection(0);
+      resetSpectatorSection(1);
+    };
+    el.spectatorBtn.addEventListener("click", () => {
+      resetSpectatorSelections();
+      show(el.spectatorModal);
+    });
+    resetSpectatorSelections();
+  }
+  const emitSpectatorMode = () => {
+    if (!el.spectatorModal) return;
+    const players = {};
+    for (const player of [0, 1]){
+      const suffix = player === 0 ? "P1" : "P2";
+      const strength = el.spectatorModal.querySelector(`input[name="spectatorStrength${suffix}"]:checked`)?.value || "normal";
+      const controller = spectatorPrefControllers?.[player];
+      players[player] = {
+        strength,
+        skillPreference: {
+          category: controller?.category() || "point",
+          intensity: Math.max(0, Math.min(100, controller?.value() ?? 0)) / 100,
+        },
+      };
+    }
+    hide(el.spectatorModal);
+    el.spectatorModal.dispatchEvent(new CustomEvent("apply-spectator-mode", {
+      detail: { players }
+    }));
+  };
+  if (el.spectatorCloseBtn){
+    el.spectatorCloseBtn.addEventListener("click", () => hide(el.spectatorModal));
+  }
+  if (el.spectatorCancelBtn){
+    el.spectatorCancelBtn.addEventListener("click", () => hide(el.spectatorModal));
+  }
+  if (el.spectatorConfirmBtn){
+    el.spectatorConfirmBtn.addEventListener("click", emitSpectatorMode);
+  }
+  if (el.spectatorModal){
+    el.spectatorModal.addEventListener("click", (e) => {
+      if (e.target === el.spectatorModal){
+        hide(el.spectatorModal);
       }
     });
   }
@@ -575,9 +670,11 @@ export function setDictStatus(el, state, text){
 export function renderAll(el, g){
   // Header
   el.turnNo.textContent = String(g.turnNo);
-  const activeLabel = (g.active === 0)
-    ? "Player 1 (Red)"
-    : ((g.computerOpponent && g.active === 1) ? "Computer (Blue)" : "Player 2 (Blue)");
+  const autoPlayers = g.autoPlayers || {};
+  const activeAuto = autoPlayers[g.active];
+  const activeLabel = activeAuto
+    ? `Computer (${g.active === 0 ? "Red" : "Blue"})`
+    : (g.active === 0 ? "Player 1 (Red)" : "Player 2 (Blue)");
   el.activePlayer.textContent = activeLabel;
   const activePill = el.activePlayer.closest(".pill");
   if (activePill){
@@ -587,18 +684,34 @@ export function renderAll(el, g){
   el.attemptsLeft.textContent = String(getAttemptsLeftDisplay(g));
   if (el.winScoreValue) el.winScoreValue.textContent = String(g.winScore);
   if (el.p2Title){
-    el.p2Title.textContent = g.computerOpponent
-      ? `Computer (${g.computerStrengthLabel || "Blue"})`
+    const p2Auto = autoPlayers[1];
+    el.p2Title.textContent = p2Auto
+      ? `Computer (${p2Auto.label || "Blue"})`
       : "Player 2";
   }
-
   if (el.modePill){
-    if (g.computerOpponent){
+    const modeText = (() => {
+      if (!g.autoMode) return null;
+      if (g.autoMode === "spectator"){
+        const p1Label = autoPlayers[0]?.label || "Computer";
+        const p2Label = autoPlayers[1]?.label || "Computer";
+        const p1Pref = autoPlayers[0]?.skillPreferenceLabel || "Balanced";
+        const p2Pref = autoPlayers[1]?.skillPreferenceLabel || "Balanced";
+        return `Spectator Mode · Red ${p1Label} vs Blue ${p2Label} · ${p1Pref} vs ${p2Pref}`;
+      }
+      if (g.autoMode === "vsComputer"){
+        const label = autoPlayers[1]?.label;
+        const pref = autoPlayers[1]?.skillPreferenceLabel;
+        const suffix = label ? ` · ${label}` : "";
+        const prefSuffix = pref ? ` · ${pref}` : "";
+        return `Vs Computer${suffix}${prefSuffix}`;
+      }
+      return null;
+    })();
+    if (modeText){
       el.modePill.classList.remove("hidden");
       if (el.modeValue){
-        const suffix = g.computerStrengthLabel ? ` · ${g.computerStrengthLabel}` : "";
-        const prefSuffix = g.computerSkillPreferenceLabel ? ` · ${g.computerSkillPreferenceLabel}` : "";
-        el.modeValue.textContent = `Vs Computer${suffix}${prefSuffix}`;
+        el.modeValue.textContent = modeText;
       }
     } else {
       el.modePill.classList.add("hidden");
@@ -618,9 +731,26 @@ export function renderAll(el, g){
   if (el.p1DecayStep) el.p1DecayStep.textContent = `${g.players[0].decayStepPct ?? 0}%`;
   if (el.p2DecayStep) el.p2DecayStep.textContent = `${g.players[1].decayStepPct ?? 0}%`;
   if (el.player2Role){
-    el.player2Role.textContent = g.computerOpponent
-      ? `Computer (${g.computerStrengthLabel || "Normal"})`
+    const p2Auto = autoPlayers[1];
+    el.player2Role.textContent = p2Auto
+      ? `Computer (${p2Auto.label || "Normal"})`
       : "Local opponent";
+  }
+
+  if (el.spectatorControls){
+    const spectatorActive = g.autoMode === "spectator";
+    el.spectatorControls.classList.toggle("hidden", !spectatorActive);
+    if (spectatorActive){
+      const paused = g.spectatorState?.paused;
+      const interrupted = g.spectatorState?.interrupted;
+      const spectatorRunning = !paused && !interrupted && !g.gameOver;
+      if (el.spectatorPauseBtn) el.spectatorPauseBtn.disabled = !spectatorRunning;
+      if (el.spectatorResumeBtn) el.spectatorResumeBtn.disabled = !spectatorActive || (!paused && !interrupted) || g.gameOver;
+      if (el.spectatorInterruptBtn) el.spectatorInterruptBtn.disabled = !spectatorActive || g.gameOver;
+      if (el.spectatorStatus){
+        el.spectatorStatus.textContent = interrupted ? "Interrupted" : (paused ? "Paused" : "Running");
+      }
+    }
   }
 
   // Skills panels (compact: only level + current effect)
@@ -1084,6 +1214,26 @@ export function onApplyTimeLimit(el, handler){
 export function onApplyVsComputer(el, handler){
   if (!el.vsComputerModal) return;
   el.vsComputerModal.addEventListener("apply-vs-computer", (e) => handler(e.detail));
+}
+
+export function onApplySpectatorMode(el, handler){
+  if (!el.spectatorModal) return;
+  el.spectatorModal.addEventListener("apply-spectator-mode", (e) => handler(e.detail));
+}
+
+export function onSpectatorPause(el, handler){
+  if (!el.spectatorPauseBtn) return;
+  el.spectatorPauseBtn.addEventListener("click", () => handler());
+}
+
+export function onSpectatorResume(el, handler){
+  if (!el.spectatorResumeBtn) return;
+  el.spectatorResumeBtn.addEventListener("click", () => handler());
+}
+
+export function onSpectatorInterrupt(el, handler){
+  if (!el.spectatorInterruptBtn) return;
+  el.spectatorInterruptBtn.addEventListener("click", () => handler());
 }
 
 export function showShuffleModal(el){

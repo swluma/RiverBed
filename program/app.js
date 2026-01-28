@@ -18,6 +18,10 @@ import {
   showHintModal, onApplyHint, onCancelHint,
   showEndModal, onApplyWinScore, onApplyTimeLimit,
   onApplyVsComputer,
+  onApplySpectatorMode,
+  onSpectatorPause,
+  onSpectatorResume,
+  onSpectatorInterrupt,
   showShuffleModal, showNoWordsModal, onConfirmShuffle, onCancelShuffle,
   showTestSkillsModal, onApplyTestSkills, onCancelTestSkills
 } from "./ui.js";
@@ -40,7 +44,6 @@ let timeLimitCoverActive = false;
 let lastTurnKey = null;
 let initialSkills = createInitialSkillState();
 
-const COMPUTER_PLAYER_INDEX = 1;
 const COMPUTER_OPTIONS = {
   normal: {
     label: "Normal",
@@ -110,8 +113,27 @@ function describeSkillPreferenceLabel(pref){
   if (pref.intensity >= 0.33) return `${meta.label} (preference)`;
   return `${meta.label} (lean bias)`;
 }
-let nextVsComputerMode = null;
-let vsComputerMode = null;
+
+function buildAutoPlayerConfig(strength, skillPreference){
+  const option = COMPUTER_OPTIONS[strength];
+  if (!option) return null;
+  const normalizedPref = normalizeSkillPreference(skillPreference);
+  return {
+    key: strength,
+    label: option.label || "Computer",
+    skillPreference: normalizedPref,
+    skillPreferenceLabel: describeSkillPreferenceLabel(normalizedPref),
+  };
+}
+
+function getAutoPlayerConfig(playerIndex = (g && g.active)){
+  return autoPlayers[playerIndex] || null;
+}
+let nextAutoMode = null;
+let autoMode = null;
+let autoPlayers = { 0: null, 1: null };
+let spectatorPaused = false;
+let spectatorInterrupted = false;
 let computerTimer = null;
 let computerRunning = false;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -262,11 +284,58 @@ onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
 });
 
 onApplyVsComputer(ui, ({ strength, skillPreference } = {}) => {
-  const config = COMPUTER_OPTIONS[strength];
+  const config = buildAutoPlayerConfig(strength, skillPreference);
   if (!config) return;
-  const pref = normalizeSkillPreference(skillPreference);
-  nextVsComputerMode = { key: strength, skillPreference: pref };
+  nextAutoMode = {
+    mode: "vsComputer",
+    players: { 0: null, 1: config },
+  };
+  spectatorPaused = false;
+  spectatorInterrupted = false;
   onNewMatch();
+});
+
+onApplySpectatorMode(ui, ({ players } = {}) => {
+  if (!players) return;
+  const p1Config = buildAutoPlayerConfig(players[0]?.strength, players[0]?.skillPreference);
+  const p2Config = buildAutoPlayerConfig(players[1]?.strength, players[1]?.skillPreference);
+  if (!p1Config || !p2Config) return;
+  nextAutoMode = {
+    mode: "spectator",
+    players: { 0: p1Config, 1: p2Config },
+  };
+  spectatorPaused = false;
+  spectatorInterrupted = false;
+  onNewMatch();
+});
+
+onSpectatorPause(ui, () => {
+  if (!g || g.gameOver || autoMode !== "spectator") return;
+  spectatorPaused = true;
+  spectatorInterrupted = false;
+  cancelScheduledComputerTurn();
+  locked = false;
+  setFeedback(ui, "Spectator paused", "Computers stopped. Press Resume to continue.");
+  renderNow();
+});
+
+onSpectatorResume(ui, () => {
+  if (!g || g.gameOver || autoMode !== "spectator") return;
+  spectatorPaused = false;
+  spectatorInterrupted = false;
+  locked = true;
+  setFeedback(ui, "Spectator resuming", "Computers are back in play.");
+  renderNow();
+});
+
+onSpectatorInterrupt(ui, () => {
+  if (!g || g.gameOver || autoMode !== "spectator") return;
+  spectatorPaused = true;
+  spectatorInterrupted = true;
+  cancelScheduledComputerTurn();
+  locked = false;
+  setFeedback(ui, "Spectator interrupted", "Computers stopped. Press Resume to continue.");
+  renderNow();
 });
 
 onConfirmShuffle(ui, () => {
@@ -338,11 +407,17 @@ async function loadDictionary(){
 
 function onNewMatch(){
   cancelScheduledComputerTurn();
-  if (nextVsComputerMode){
-    vsComputerMode = nextVsComputerMode;
-    nextVsComputerMode = null;
-  } else {
-    vsComputerMode = null;
+  autoPlayers = { 0: null, 1: null };
+  autoMode = null;
+  spectatorPaused = false;
+  spectatorInterrupted = false;
+  if (nextAutoMode){
+    autoMode = nextAutoMode.mode;
+    autoPlayers = {
+      0: nextAutoMode.players[0] || null,
+      1: nextAutoMode.players[1] || null,
+    };
+    nextAutoMode = null;
   }
   if (!dictSet || !dictWords) return;
   const matchSkills = buildMatchInitialSkills();
@@ -355,15 +430,7 @@ function onNewMatch(){
   }
   if (g){
     g.timeLimits = [timeLimitSettings[0] || 0, timeLimitSettings[1] || 0];
-    const config = vsComputerMode ? COMPUTER_OPTIONS[vsComputerMode.key] : null;
-    g.computerOpponent = !!config;
-    g.computerStrengthLabel = config?.label || null;
-    const normalizedPref = normalizeSkillPreference(vsComputerMode?.skillPreference);
-    if (vsComputerMode){
-      vsComputerMode.skillPreference = normalizedPref;
-    }
-    g.computerSkillPreference = normalizedPref;
-    g.computerSkillPreferenceLabel = describeSkillPreferenceLabel(normalizedPref);
+    syncAutoState();
   }
   syncTimeLimitModalDefaults();
   locked = false;
@@ -604,9 +671,10 @@ async function openSkillSelectIfNeeded(){
     return;
   }
 
-  if (isComputerActivePlayer()){
+  if (isAutoPlayerActive()){
+    const autoConfig = getAutoPlayerConfig();
     locked = true;
-    const skillId = chooseComputerSkill(offers, vsComputerMode?.skillPreference);
+    const skillId = chooseComputerSkill(offers, autoConfig?.skillPreference);
     locked = false;
     if (skillId){
       upgradeSkill(g, skillId);
@@ -714,8 +782,23 @@ async function handleEvaluationResult(result){
   }
 }
 
+function syncAutoState(){
+  if (!g) return;
+  g.autoMode = autoMode;
+  g.autoPlayers = {
+    0: autoPlayers[0],
+    1: autoPlayers[1],
+  };
+  g.spectatorState = {
+    active: autoMode === "spectator",
+    paused: spectatorPaused,
+    interrupted: spectatorInterrupted,
+  };
+}
+
 function renderNow(){
   if (!g) return;
+  syncAutoState();
   renderAll(ui, g);
   syncTimeLimitState();
   syncTimeLimitModalDefaults();
@@ -723,8 +806,8 @@ function renderNow(){
   maybeScheduleComputerTurn();
 }
 
-function isComputerActivePlayer(playerIndex = (g && g.active)){
-  return !!(vsComputerMode && playerIndex === COMPUTER_PLAYER_INDEX);
+function isAutoPlayerActive(playerIndex = (g && g.active)){
+  return !!getAutoPlayerConfig(playerIndex);
 }
 
 function chooseComputerSkill(offers, skillPreference = null){
@@ -803,9 +886,12 @@ function cancelScheduledComputerTurn(){
 }
 
 function shouldAutoPlayComputer(){
-  return !!(vsComputerMode && g && !g.gameOver &&
-    g.active === COMPUTER_PLAYER_INDEX &&
-    (!g.skillSelect || !g.skillSelect.pending));
+  if (!g || g.gameOver) return false;
+  if (g.skillSelect && g.skillSelect.pending) return false;
+  const config = getAutoPlayerConfig();
+  if (!config) return false;
+  if (autoMode === "spectator" && spectatorPaused) return false;
+  return true;
 }
 
 function maybeScheduleComputerTurn(){
@@ -826,13 +912,15 @@ async function runComputerTurn(){
   try{
     locked = true;
     setFeedback(ui, "Computer thinking", "Looking for a word...");
-    const config = vsComputerMode ? COMPUTER_OPTIONS[vsComputerMode.key] : null;
-    const candidate = findComputerWord(g, COMPUTER_PLAYER_INDEX, {
-      sampleSize: config?.sampleSize,
-      stopScore: config?.stopScore,
-      tilePreference: config?.tilePreference,
-      opponentFountainPenalty: config?.opponentFountainPenalty,
-      lengthPreference: config?.lengthPreference,
+    const playerIndex = g.active;
+    const config = getAutoPlayerConfig(playerIndex);
+    const options = config ? COMPUTER_OPTIONS[config.key] : null;
+    const candidate = findComputerWord(g, playerIndex, {
+      sampleSize: options?.sampleSize,
+      stopScore: options?.stopScore,
+      tilePreference: options?.tilePreference,
+      opponentFountainPenalty: options?.opponentFountainPenalty,
+      lengthPreference: options?.lengthPreference,
     });
     if (candidate && Array.isArray(candidate.path) && candidate.path.length >= MIN_WORD_LEN){
       await animateComputerSwipe(candidate.path);
