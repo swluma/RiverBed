@@ -940,6 +940,7 @@ async function runComputerTurn(){
     }
   } finally {
     computerRunning = false;
+    maybeScheduleComputerTurn();
   }
 }
 
