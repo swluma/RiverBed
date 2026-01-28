@@ -181,6 +181,7 @@ export function bindUI(handlers){
     spectatorPauseBtn: document.getElementById("spectatorPauseBtn"),
     spectatorResumeBtn: document.getElementById("spectatorResumeBtn"),
     spectatorInterruptBtn: document.getElementById("spectatorInterruptBtn"),
+    spectatorRematchBtn: document.getElementById("spectatorRematchBtn"),
     spectatorStatus: document.getElementById("spectatorStatus"),
     hintBtn: document.getElementById("hintBtn"),
     hintModal: document.getElementById("hintModal"),
@@ -737,8 +738,8 @@ export function renderAll(el, g){
       : "Local opponent";
   }
 
+  const spectatorActive = g.autoMode === "spectator";
   if (el.spectatorControls){
-    const spectatorActive = g.autoMode === "spectator";
     el.spectatorControls.classList.toggle("hidden", !spectatorActive);
     if (spectatorActive){
       const paused = g.spectatorState?.paused;
@@ -751,6 +752,9 @@ export function renderAll(el, g){
         el.spectatorStatus.textContent = interrupted ? "Interrupted" : (paused ? "Paused" : "Running");
       }
     }
+  }
+  if (el.spectatorRematchBtn){
+    el.spectatorRematchBtn.disabled = !spectatorActive || g.gameOver;
   }
 
   // Skills panels (compact: only level + current effect)
@@ -1234,6 +1238,11 @@ export function onSpectatorResume(el, handler){
 export function onSpectatorInterrupt(el, handler){
   if (!el.spectatorInterruptBtn) return;
   el.spectatorInterruptBtn.addEventListener("click", () => handler());
+}
+
+export function onSpectatorRematch(el, handler){
+  if (!el.spectatorRematchBtn) return;
+  el.spectatorRematchBtn.addEventListener("click", () => handler());
 }
 
 export function showShuffleModal(el){

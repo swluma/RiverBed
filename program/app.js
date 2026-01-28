@@ -22,6 +22,7 @@ import {
   onSpectatorPause,
   onSpectatorResume,
   onSpectatorInterrupt,
+  onSpectatorRematch,
   showShuffleModal, showNoWordsModal, onConfirmShuffle, onCancelShuffle,
   showTestSkillsModal, onApplyTestSkills, onCancelTestSkills
 } from "./ui.js";
@@ -336,6 +337,26 @@ onSpectatorInterrupt(ui, () => {
   locked = false;
   setFeedback(ui, "Spectator interrupted", "Computers stopped. Press Resume to continue.");
   renderNow();
+});
+
+onSpectatorRematch(ui, () => {
+  if (!g || autoMode !== "spectator") return;
+  const cloneConfig = (config) => config
+    ? {
+      ...config,
+      skillPreference: config.skillPreference ? { ...config.skillPreference } : null,
+    }
+    : null;
+  const p1Config = cloneConfig(autoPlayers[0]);
+  const p2Config = cloneConfig(autoPlayers[1]);
+  if (!p1Config || !p2Config) return;
+  nextAutoMode = {
+    mode: "spectator",
+    players: { 0: p1Config, 1: p2Config },
+  };
+  spectatorPaused = false;
+  spectatorInterrupted = false;
+  onNewMatch();
 });
 
 onConfirmShuffle(ui, () => {
