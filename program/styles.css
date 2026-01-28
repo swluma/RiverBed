@@ -630,11 +630,24 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   place-items:center;
   z-index:50;
   padding:16px;
+  overflow:auto;
 }
 .hidden{ display:none !important; }
 
-.modal{ width:min(760px, 96vw); }
+.modal{
+  width:min(760px, 96vw);
+  max-height: calc(100vh - 32px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
 .modal.wide{ width:min(980px, 96vw); }
+
+@media (max-width: 720px){
+  .modal{
+    width: calc(100vw - 32px);
+  }
+}
 .vsComputerIntro{ margin-bottom:12px; font-size:12px; }
 .vsComputerOptions{
   display:grid;
@@ -770,7 +783,11 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   background: linear-gradient(to bottom, rgba(255,255,255,0.08), transparent);
 }
 .modalTitle{ font-weight:1000; }
-.modalBody{ padding:12px; }
+.modalBody{
+  padding:12px;
+  flex:1 1 auto;
+  overflow:auto;
+}
 .scoreInfoModalBody{
   max-height: 64vh;
   overflow:auto;
