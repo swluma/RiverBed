@@ -808,7 +808,7 @@ function handleFailure(g, {reason, word}){
 
   const foLv = ap.skills.FAIL_OPP;
   ap.pendingWhite = new Set();
-  if (foLv >= 1 && ended && !ap.hasFoundWordThisTurn){
+  if (foLv >= 1 && !ap.hasFoundWordThisTurn){
     const maxWhite = WHITE_MAX_TILES[foLv];
     const chosen = pickDistinctIndices(maxWhite, SIZE * SIZE);
     ap.pendingWhite = new Set(chosen);
@@ -1537,7 +1537,7 @@ export function describeSkill(p, skillId){
     case "FAIL_OPP": {
       const maxW = WHITE_MAX_TILES[lv];
       const mult = WHITE_MULT[lv];
-      return `Lv${lv}/5 — Trigger when your turn ends without you finding any word: choose up to ${maxW} tiles uniformly at random from the entire board; those become WHITE on your NEXT turn. On that next turn, if your successful word uses ≥2 white tiles, multiply that word’s score by ×${formatWhiteMult(mult)}. White tiles are visible and disappear at the end of that next turn.`;
+      return `Lv${lv}/5 — Trigger whenever you fail an attempt before finding any word this turn (even if Extra Chance lets you recover): choose up to ${maxW} tiles uniformly at random from the entire board; those become WHITE on your NEXT turn. On that next turn, if your successful word uses ≥2 white tiles, multiply that word’s score by ×${formatWhiteMult(mult)}. White tiles are visible and disappear at the end of that next turn.`;
     }
     case "SAFETY_NET": {
       const bonus = SAFETY_NET_POINTS[lv];
