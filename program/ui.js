@@ -830,11 +830,11 @@ export function renderCategoryBonuses(p){
   const items = [];
 
   if (pTier > 0){
-    const bonus = (pTier === 1) ? "+5 end of turn" : "+10 end of turn";
+    const detail = (pTier === 1) ? "Final word points ×1.10" : "Final word points ×1.20";
     items.push(`
       <div class="bonusItem point">
         <div class="tag"><span class="dot"></span>Point Tier ${pTier}</div>
-        <div class="detail">${bonus}</div>
+        <div class="detail">${detail}</div>
       </div>
     `);
   }
