@@ -555,8 +555,8 @@ export function startTurn(g){
   const ap = g.players[g.active];
   const op = g.players[1 - g.active];
   g.purple.clear();
-  if (op && (op.skills.VALUE_DECAY || 0) > 0 && op.lastWordTiles){
-    for (const idx of op.lastWordTiles){
+  if (op && (op.skills.VALUE_DECAY || 0) > 0 && ap.lastWordTiles){
+    for (const idx of ap.lastWordTiles){
       if (Number.isInteger(idx) && idx >= 0 && idx < SIZE * SIZE){
         g.purple.add(idx);
       }
