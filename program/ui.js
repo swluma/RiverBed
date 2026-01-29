@@ -850,11 +850,11 @@ export function renderCategoryBonuses(p){
   }
 
   if (tTier > 0){
-    const reduction = (tTier === 1) ? "50% chance to reduce 1 level" : "Always reduce 1 level";
+    const detail = (tTier === 1) ? "End of turn +5 pts" : "End of turn +10 pts";
     items.push(`
       <div class="bonusItem tech">
         <div class="tag"><span class="dot"></span>Tech Tier ${tTier}</div>
-        <div class="detail">${reduction} on one random opponent skill (Lv2+)</div>
+        <div class="detail">${detail}</div>
       </div>
     `);
   }
@@ -870,21 +870,6 @@ function renderLog(g){
   const items = g.log.slice().reverse();
   return items.map(it => {
     const cls = (it.player === 0) ? "logItem redOutline" : "logItem blueOutline";
-    if (it.type === "SKILL_DESTROY"){
-      const meta = SKILLS[it.skillId];
-      const name = meta ? meta.name : it.skillId;
-      const targetLabel = (it.target === 0) ? "Player 1" : "Player 2";
-      const reduced = Math.max(1, (it.from ?? 0) - (it.to ?? 0));
-      return `
-        <div class="${cls}">
-          <div class="left">
-            <div class="word">Skill Destruction</div>
-            <div class="muted">${targetLabel} ${escapeHtml(name)} Lv${it.from}->Lv${it.to}</div>
-          </div>
-          <div class="pts">-${reduced} Lv</div>
-        </div>
-      `;
-    }
     const shared = (it.shared && it.shared > 0)
       ? `<div class="pts shared">${it.shared} pts shared</div>`
       : "";
@@ -1478,15 +1463,15 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name"><span class="skillCatDot"></span>Technical Skills Category Bonus: Skill Destruction</div>
+          <div class="name"><span class="skillCatDot"></span>Technical Skills Category Bonus</div>
           <div class="rule">
-            When you successfully find a word: have a chance to reduce the level of a random opponent skill.
-            Skills at level 1 are never selected. Max once per turn.
+            At the end of your turn you gain a flat point bonus. Tier 1 awards +5 points, Tier 2 awards +10 points.
+            This bonus is applied before skill selection and can trigger on both successful and failed turns.
           </div>
           <table class="skillRefTable">
-            <tr><th>Tier</th><th>Effect</th><th>Activation chance</th></tr>
-                <tr><td>Tier 1</td><td>Reduce 1 level</td><td>50%</td></tr>
-            <tr><td>Tier 2</td><td>Reduce 1 level</td><td>100%</td></tr>
+            <tr><th>Tier</th><th>Effect</th></tr>
+            <tr><td>Tier 1</td><td>+5 points</td></tr>
+            <tr><td>Tier 2</td><td>+10 points</td></tr>
           </table>
         </div>
       </div>

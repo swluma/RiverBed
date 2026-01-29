@@ -328,8 +328,6 @@ function makePlayer(id){
     // Color Cancellation: reduction to apply on opponent's NEXT turn (special tiles + fountain)
     imposeCancelOnOpponentNextTurn: 0,
 
-    // Technical category bonus: skill destruction can happen max once per turn
-    destroyedThisTurn: false,
     hasFoundWordThisTurn: false,
 
     // Spell Finder: fixed target + hint tiles
@@ -652,7 +650,6 @@ export function startTurn(g){
   }
 
   ap.pendingGoldTrigger = false;
-  ap.destroyedThisTurn = false;
 }
 
 export function endTurn(g, reason){
@@ -672,6 +669,8 @@ export function endTurn(g, reason){
   }
 
   const ap = g.players[g.active];
+  applyTechTierBonus(g);
+  if (g.gameOver) return;
 
   // Skill selection happens BEFORE the next turn begins.
   // Keep g.active as the player who just ended their turn.
@@ -940,8 +939,6 @@ function handleSuccess(g, word, wordLen){
   if (ccLv >= 1){
     op.imposeCancelOnOpponentNextTurn = CANCEL_REDUCTION(ccLv);
   }
-
-  attemptSkillDestruction(g);
 
   g.attempts = 0;
 
@@ -1342,6 +1339,7 @@ export function techTier(p){
 }
 
 const POINT_CATEGORY_MULTIPLIERS = [1, 1.1, 1.2];
+const TECH_CATEGORY_BONUS_POINTS = [0, 5, 10];
 
 function pointCategoryMultiplier(p){
   const tier = pointTier(p);
@@ -1351,38 +1349,25 @@ function pointCategoryMultiplier(p){
   return POINT_CATEGORY_MULTIPLIERS[tier];
 }
 
-function attemptSkillDestruction(g){
+function techTierBonusPoints(tier){
+  if (!Number.isFinite(tier)) return 0;
+  if (tier <= 0 || tier >= TECH_CATEGORY_BONUS_POINTS.length) return 0;
+  return TECH_CATEGORY_BONUS_POINTS[tier];
+}
+
+function applyTechTierBonus(g){
   const ap = g.players[g.active];
-  const op = g.players[1 - g.active];
-
-  if (ap.destroyedThisTurn) return;
-
-  const tTier = techTier(ap);
-  if (tTier === 0) return;
-
-  const chance = (tTier === 1) ? 0.5 : 1;
-  if (Math.random() > chance) return;
-  const reduction = 1;
-
-  const reducible = [];
-  for (const k of Object.keys(op.skills)){
-    if (op.skills[k] >= 2) reducible.push(k);
-  }
-  if (reducible.length === 0) return;
-
-  const chosen = reducible[randInt(reducible.length)];
-  const prev = op.skills[chosen];
-  op.skills[chosen] = Math.max(0, prev - reduction);
-  updateDecaySteps(g);
+  if (!ap) return;
+  const tier = techTier(ap);
+  const points = techTierBonusPoints(tier);
+  if (points <= 0) return;
+  ap.score += points;
   g.log.push({
-    type: "SKILL_DESTROY",
+    word: `Tech Tier ${tier} bonus`,
     player: ap.id,
-    target: op.id,
-    skillId: chosen,
-    from: prev,
-    to: op.skills[chosen],
+    pts: points,
   });
-  ap.destroyedThisTurn = true;
+  checkVictory(g);
 }
 
 /* ------------------------
