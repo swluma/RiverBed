@@ -1332,14 +1332,14 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (White tiles)</div>
+          <div class="name"><span class="skillCatDot"></span>Failure into Opportunity (Silver tiles)</div>
           <div class="rule">
-            Trigger: when your turn ends without you finding any word (out of attempts or otherwise). Choose up to the max white tiles uniformly at random from the entire board — those become white for your NEXT turn.
-            On your NEXT turn, if your successful word uses at least 2 white tiles, apply the multiplier.
-            White tiles revert at the end of that next turn.
+            Trigger: when you fail an attempt before finding any word (even if you later succeed in the same turn thanks to Extra Chance). Choose up to the max white/silver tiles — the skill first converts the tiles from your most recent failed swipe into silver, then fills any remaining slots with random tiles that aren’t already silver; those become silver for your NEXT turn.
+            On your NEXT turn, if your successful word uses at least 2 silver tiles, apply the multiplier.
+            Silver tiles revert at the end of that next turn.
           </div>
           <table class="skillRefTable">
-            <tr><th>Level</th><th>Max white tiles</th><th>White multiplier (if ≥2 used)</th></tr>
+            <tr><th>Level</th><th>Max silver tiles</th><th>Silver multiplier (if ≥2 used)</th></tr>
             <tr><td>Lv1</td><td>2</td><td>×1.3</td></tr>
             <tr><td>Lv2</td><td>3</td><td>×1.5</td></tr>
             <tr><td>Lv3</td><td>3</td><td>×1.7</td></tr>

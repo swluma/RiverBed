@@ -1510,7 +1510,7 @@ export function describeSkillCompact(p, skillId){
       if (lv >= 5) return `+${EXTRA_CHANCE_ADD[lv]} attempts; combo kept on success`;
       return `+${EXTRA_CHANCE_ADD[lv]} attempts after fail`;
     case "FAIL_OPP":
-      return `white max ${WHITE_MAX_TILES[lv]} (after a failed turn without any found words), ×${formatWhiteMult(WHITE_MULT[lv])} if ≥2 used`;
+      return `white max ${WHITE_MAX_TILES[lv]} (after failing; prioritizes tiles from your most recent failed swipe before filling the rest randomly), ×${formatWhiteMult(WHITE_MULT[lv])} if ≥2 used`;
     case "SAFETY_NET":
       return `+${SAFETY_NET_POINTS[lv]} pts on fail`;
     case "SPELL_FINDER": {
@@ -1564,7 +1564,7 @@ export function describeSkill(p, skillId){
     case "FAIL_OPP": {
       const maxW = WHITE_MAX_TILES[lv];
       const mult = WHITE_MULT[lv];
-      return `Lv${lv}/5 — Trigger whenever you fail an attempt before finding any word this turn (even if Extra Chance lets you recover): choose up to ${maxW} tiles uniformly at random from the entire board; those become WHITE on your NEXT turn. On that next turn, if your successful word uses ≥2 white tiles, multiply that word’s score by ×${formatWhiteMult(mult)}. White tiles are visible and disappear at the end of that next turn.`;
+      return `Lv${lv}/5 — Trigger whenever you fail an attempt before finding any word this turn (even if Extra Chance lets you recover): choose up to ${maxW} tiles for your NEXT turn by first marking the tiles from your most recent failed swipe and then filling any remaining slots with random board tiles that aren’t already white. On that next turn, if your successful word uses ≥2 white tiles, multiply that word’s score by ×${formatWhiteMult(mult)}. White tiles are visible and disappear at the end of that next turn.`;
     }
     case "SAFETY_NET": {
       const bonus = SAFETY_NET_POINTS[lv];
@@ -1616,7 +1616,7 @@ export function describeOffer(p, skillMeta){
       effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure${comboTag}`;
       break;
     }
-    case "FAIL_OPP":       effect = `Next: max white ${WHITE_MAX_TILES[next]}, white mult ×${formatWhiteMult(WHITE_MULT[next])}`; break;
+    case "FAIL_OPP":       effect = `Next: max white ${WHITE_MAX_TILES[next]} (failures prioritize your last failed-swipe tiles), white mult ×${formatWhiteMult(WHITE_MULT[next])}`; break;
     case "SAFETY_NET":     effect = `Next: +${SAFETY_NET_POINTS[next]} pts on failure (fixed)`; break;
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(next);
