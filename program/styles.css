@@ -619,6 +619,7 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 .logItem .word{ font-weight:1000; letter-spacing:0.6px; text-transform:uppercase; }
 .logItem .pts{ color:var(--green); font-weight:1000; }
 .logItem .pts.shared{ color:var(--red); margin-left:8px; }
+.logItem .pts.stolen{ color:rgba(178,144,255,0.95); margin-left:8px; }
 .logItem.redOutline{ outline: 2px solid rgba(255,75,75,0.55); }
 .logItem.blueOutline{ outline: 2px solid rgba(75,134,255,0.55); }
 

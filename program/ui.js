@@ -873,6 +873,9 @@ function renderLog(g){
     const shared = (it.shared && it.shared > 0)
       ? `<div class="pts shared">${it.shared} pts shared</div>`
       : "";
+    const stolen = (it.stolen && it.stolen > 0)
+      ? `<div class="pts stolen">${it.stolen} pts stolen</div>`
+      : "";
     return `
       <div class="${cls}">
         <div class="left">
@@ -880,6 +883,7 @@ function renderLog(g){
         </div>
         <div class="pts">+${it.pts} pts</div>
         ${shared}
+        ${stolen}
       </div>
     `;
   }).join("");

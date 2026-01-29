@@ -928,6 +928,7 @@ function handleSuccess(g, word, wordLen){
     player: ap.id,
     pts: finalWordPoints,
     shared: sharedTotal,
+    stolen: decayLoss,
   });
 
   if (ap.spellFinder && ap.spellFinder.word === word){
