@@ -321,8 +321,9 @@ function makePlayer(id){
   // Winner's Footsteps: triggered by opponent success -> on NEXT turn for this player
   pendingGoldTrigger: false,
 
-  // Failure into Opportunity: when a turn ends without finding any word, random board tiles become white for NEXT turn
-  pendingWhite: new Set(),
+    // Failure into Opportunity: when a turn ends without finding any word, random board tiles become white for NEXT turn
+    pendingWhiteCount: 0,
+    lastFailedTiles: new Set(),
 
     // Color Cancellation: reduction to apply on opponent's NEXT turn (special tiles + fountain)
     imposeCancelOnOpponentNextTurn: 0,
@@ -578,9 +579,36 @@ export function startTurn(g){
     goldCount = GOLD_MAX_TILES[wfLv];
   }
 
-  // Failure into Opportunity white from pending
-  let whiteIndices = Array.from(ap.pendingWhite);
-  ap.pendingWhite.clear();
+  // Failure into Opportunity white from pending (prioritize last failed swipe tiles)
+  const whiteCount = ap.pendingWhiteCount || 0;
+  ap.pendingWhiteCount = 0;
+  let whiteIndices = [];
+  if (whiteCount > 0){
+    const chosen = [];
+    const chosenSet = new Set();
+    for (const idx of ap.lastFailedTiles){
+      if (chosenSet.size >= whiteCount) break;
+      if (!Number.isInteger(idx) || idx < 0 || idx >= SIZE * SIZE) continue;
+      if (chosenSet.has(idx)) continue;
+      chosenSet.add(idx);
+      chosen.push(idx);
+    }
+    if (chosenSet.size < whiteCount){
+      const needed = whiteCount - chosenSet.size;
+      const available = [];
+      for (let i=0; i<SIZE * SIZE; i++){
+        if (chosenSet.has(i)) continue;
+        available.push(i);
+      }
+      shuffle(available);
+      for (let i=0; i<needed && i<available.length; i++){
+        chosenSet.add(available[i]);
+        chosen.push(available[i]);
+      }
+    }
+    whiteIndices = chosen;
+  }
+  ap.lastFailedTiles.clear();
 
   // Place gold uniformly random
   let goldIndices = [];
@@ -807,11 +835,10 @@ function handleFailure(g, {reason, word}){
   }
 
   const foLv = ap.skills.FAIL_OPP;
-  ap.pendingWhite = new Set();
+  ap.lastFailedTiles = new Set(g.selection);
+  ap.pendingWhiteCount = 0;
   if (foLv >= 1 && !ap.hasFoundWordThisTurn){
-    const maxWhite = WHITE_MAX_TILES[foLv];
-    const chosen = pickDistinctIndices(maxWhite, SIZE * SIZE);
-    ap.pendingWhite = new Set(chosen);
+    ap.pendingWhiteCount = WHITE_MAX_TILES[foLv];
   }
 
   const turnEnded = ended || g.gameOver;
