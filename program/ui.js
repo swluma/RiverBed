@@ -1455,15 +1455,15 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Safety Net (Failure bonus)</div>
           <div class="rule">
-            Trigger: on every failed attempt (invalid / duplicate / timeout). Gain a flat point reward that ignores combo, multipliers, and other point modifiers.
+            Trigger: on any failed attempt (invalid / duplicate / timeout) while your combo count is 0 or 1, limited to once per turn. Gain a flat point reward that ignores combo, multipliers, and other point modifiers.
           </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Points per failure</th></tr>
-            <tr><td>Lv1</td><td>+5</td></tr>
-            <tr><td>Lv2</td><td>+8</td></tr>
-            <tr><td>Lv3</td><td>+10</td></tr>
-            <tr><td>Lv4</td><td>+15</td></tr>
-            <tr><td>Lv5</td><td>+20</td></tr>
+            <tr><td>Lv1</td><td>+3</td></tr>
+            <tr><td>Lv2</td><td>+5</td></tr>
+            <tr><td>Lv3</td><td>+8</td></tr>
+            <tr><td>Lv4</td><td>+10</td></tr>
+            <tr><td>Lv5</td><td>+15</td></tr>
           </table>
         </div>
 

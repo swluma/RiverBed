@@ -70,7 +70,7 @@ const EXTRA_CHANCE_ADD   = [0, 1, 2, 3, 4, 5];
 const WHITE_MAX_TILES   = [0, 2, 3, 3, 4, 6];
 const WHITE_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
 
-const SAFETY_NET_POINTS  = [0, 5, 8, 10, 15, 20];
+const SAFETY_NET_POINTS  = [0, 3, 5, 8, 10, 15];
 
 const SPELL_FINDER_MINLEN = (lv) => {
   if (lv <= 0) return 0;
@@ -328,6 +328,7 @@ function makePlayer(id){
     imposeCancelOnOpponentNextTurn: 0,
 
     hasFoundWordThisTurn: false,
+    safetyNetUsed: false,
 
     // Spell Finder: fixed target + hint tiles
     spellFinder: {
@@ -563,6 +564,7 @@ export function startTurn(g){
     }
   }
   ap.hasFoundWordThisTurn = false;
+  ap.safetyNetUsed = false;
   if (ap.spellFinder){
     ap.spellFinder.tileLimitThisTurn = null;
   }
@@ -806,6 +808,7 @@ export function timeoutTurn(g){
 
 function handleFailure(g, {reason, word}){
   const ap = g.players[g.active];
+  const comboAtFailure = ap.combo;
 
   const ended = (g.attempts <= 0 && g.extraChanceLeft <= 0);
   const preserveCombo = (ap.skills.EXTRA_CHANCE >= 5) && !ended;
@@ -816,7 +819,7 @@ function handleFailure(g, {reason, word}){
   updateDecaySteps(g);
 
   const snLv = ap.skills.SAFETY_NET || 0;
-  if (snLv >= 1 && ended && !ap.hasFoundWordThisTurn){
+  if (snLv >= 1 && comboAtFailure <= 1 && !ap.safetyNetUsed){
     const safetyPts = SAFETY_NET_POINTS[snLv] || 0;
     if (safetyPts > 0){
       ap.score += safetyPts;
@@ -825,6 +828,7 @@ function handleFailure(g, {reason, word}){
         player: ap.id,
         pts: safetyPts,
       });
+      ap.safetyNetUsed = true;
       checkVictory(g);
     }
   }
@@ -1536,7 +1540,7 @@ export function describeSkillCompact(p, skillId){
     case "FAIL_OPP":
       return `white max ${WHITE_MAX_TILES[lv]} (after failing; prioritizes tiles from your most recent failed swipe before filling the rest randomly), ×${formatWhiteMult(WHITE_MULT[lv])} if ≥2 used`;
     case "SAFETY_NET":
-      return `+${SAFETY_NET_POINTS[lv]} pts on fail`;
+      return `+${SAFETY_NET_POINTS[lv]} pts on failure when combo is 0 or 1 (once per turn)`;
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(lv);
       const tiles = SPELL_FINDER_HINT_TILES(lv);
@@ -1588,7 +1592,7 @@ export function describeSkill(p, skillId){
     }
     case "SAFETY_NET": {
       const bonus = SAFETY_NET_POINTS[lv];
-      return `Lv${lv}/5 — On every failed attempt (invalid word / duplicate / timeout): gain +${bonus} flat points immediately. This bonus bypasses combo, multipliers, and any other point-modifying skills, so the award is always the stated value.`;
+      return `Lv${lv}/5 — Trigger: when you fail an attempt (invalid word / duplicate / timeout) while your combo count is 0 or 1, even if the turn continues. Gain +${bonus} flat points immediately (once per turn). This bonus bypasses combos, multipliers, and any other point-modifying skills, so the award is always the stated value.`;
     }
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(lv);
@@ -1637,7 +1641,7 @@ export function describeOffer(p, skillMeta){
       break;
     }
     case "FAIL_OPP":       effect = `Next: max white ${WHITE_MAX_TILES[next]} (failures prioritize your last failed-swipe tiles), white mult ×${formatWhiteMult(WHITE_MULT[next])}`; break;
-    case "SAFETY_NET":     effect = `Next: +${SAFETY_NET_POINTS[next]} pts on failure (fixed)`; break;
+    case "SAFETY_NET":     effect = `Next: +${SAFETY_NET_POINTS[next]} pts on failure when combo is 0 or 1 (once per turn, fixed)`; break;
     case "SPELL_FINDER": {
       const minLen = SPELL_FINDER_MINLEN(next);
       const tiles = SPELL_FINDER_HINT_TILES(next);
