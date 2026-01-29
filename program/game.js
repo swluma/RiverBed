@@ -673,16 +673,6 @@ export function endTurn(g, reason){
 
   const ap = g.players[g.active];
 
-  // Point category bonus (end of your turn)
-  const pTier = pointTier(ap);
-  if (pTier === 1){
-    ap.score += 5;
-    if (checkVictory(g)) return;
-  } else if (pTier === 2){
-    ap.score += 10;
-    if (checkVictory(g)) return;
-  }
-
   // Skill selection happens BEFORE the next turn begins.
   // Keep g.active as the player who just ended their turn.
   const offers = computeSkillOffersForPlayer(ap);
@@ -899,6 +889,7 @@ function handleSuccess(g, word, wordLen){
     score += GOLD_BONUS[wfLv];
   }
 
+  score *= pointCategoryMultiplier(ap);
   const finalWordPoints = roundInt(score);
   let fountainShared = 0;
 
@@ -1036,6 +1027,7 @@ export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
     }
   }
 
+  baseScore *= pointCategoryMultiplier(ap);
   return Math.round(baseScore);
 }
 
@@ -1347,6 +1339,16 @@ export function techTier(p){
   if (total >= 10) return 2;
   if (total >= 5) return 1;
   return 0;
+}
+
+const POINT_CATEGORY_MULTIPLIERS = [1, 1.1, 1.2];
+
+function pointCategoryMultiplier(p){
+  const tier = pointTier(p);
+  if (tier < 0 || tier >= POINT_CATEGORY_MULTIPLIERS.length){
+    return 1;
+  }
+  return POINT_CATEGORY_MULTIPLIERS[tier];
 }
 
 function attemptSkillDestruction(g){
