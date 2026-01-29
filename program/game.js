@@ -44,8 +44,8 @@ export const SKILLS = {
 const POINT_INCREASE_PCT = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
   const FOUNTAIN_BONUS     = [0, 3, 5, 10, 15, 20];
 
-const DECAY_STEP         = [0, 0.08, 0.12, 0.15, 0.20, 0.20];
-const DECAY_MIN_MULT     = [1, 0.40, 0.40, 0.40, 0.25, 0.00];
+const DECAY_STEP         = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
+const DECAY_MIN_MULT     = [1, 0.75, 0.60, 0.40, 0.25, 0.00];
 const DECAY_MAX_DECAY_PCT = DECAY_MIN_MULT.map(m => Math.round((1 - m) * 100));
 
 const GOLD_MAX_TILES     = [0, 1, 1, 2, 2, 3];
@@ -218,6 +218,7 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
     gold: new Set(),
     white: new Set(),
     gray: new Set(),
+    purple: new Set(),
 
     // Hint state (per turn)
     hint: {
@@ -297,10 +298,8 @@ function makePlayer(id){
     score: 0,
     combo: 0,
     decayStepPct: 0,
-
-    // For Value Decay tracking (same-length success streak)
-    sameLenStreak: 0,
-    sameLenLast: 0,
+    decaySteps: 0,
+    lastWordTiles: new Set(),
 
     // Skills levels
     skills: {
@@ -346,11 +345,11 @@ function effectiveDecayPctFor(player, opponent){
 
 function decayEffectDetails(player, opponent){
   const decayLv = opponent.skills.VALUE_DECAY || 0;
-  if (decayLv <= 0 || player.sameLenStreak <= 1) return { multiplier: 1, pct: 0 };
+  const steps = player.decaySteps || 0;
+  if (decayLv <= 0 || steps <= 0) return { multiplier: 1, pct: 0 };
   const step = DECAY_STEP[decayLv] || 0;
   const minMult = DECAY_MIN_MULT[decayLv] ?? 0;
-  const streakSteps = player.sameLenStreak - 1;
-  const multiplier = Math.max(minMult, 1 - step * streakSteps);
+  const multiplier = Math.max(minMult, 1 - step * steps);
   const pct = Math.round((1 - multiplier) * 100);
   return { multiplier, pct };
 }
@@ -555,6 +554,14 @@ export function startTurn(g){
 
   const ap = g.players[g.active];
   const op = g.players[1 - g.active];
+  g.purple.clear();
+  if (op && (op.skills.VALUE_DECAY || 0) > 0 && op.lastWordTiles){
+    for (const idx of op.lastWordTiles){
+      if (Number.isInteger(idx) && idx >= 0 && idx < SIZE * SIZE){
+        g.purple.add(idx);
+      }
+    }
+  }
   ap.hasFoundWordThisTurn = false;
   if (ap.spellFinder){
     ap.spellFinder.tileLimitThisTurn = null;
@@ -805,8 +812,7 @@ function handleFailure(g, {reason, word}){
   if (!preserveCombo){
     ap.combo = 0;
   }
-  ap.sameLenStreak = 0;
-  ap.sameLenLast = 0;
+  ap.decaySteps = 0;
   updateDecaySteps(g);
 
   const snLv = ap.skills.SAFETY_NET || 0;
@@ -847,51 +853,48 @@ function handleSuccess(g, word, wordLen){
   const op = g.players[1 - g.active];
 
   ap.hasFoundWordThisTurn = true;
-
   ap.combo += 1;
 
   const baseLen = LEN_TABLE(wordLen);
-
-  let score = baseLen * COMBO_MULT(ap.combo);
-
-  const decayLv = op.skills.VALUE_DECAY;
-  if (ap.sameLenLast === wordLen) ap.sameLenStreak += 1;
-  else ap.sameLenStreak = 1;
-  ap.sameLenLast = wordLen;
-
-  if (decayLv > 0){
-    const { multiplier } = decayEffectDetails(ap, op);
-    if (multiplier < 1) score *= multiplier;
+  const preDecayScore = baseLen * COMBO_MULT(ap.combo);
+  const decayLv = op.skills.VALUE_DECAY || 0;
+  const usedPurple = countOverlap(g.selectionSet, g.purple) >= 1;
+  if (decayLv > 0 && usedPurple){
+    ap.decaySteps += 1;
+  } else {
+    ap.decaySteps = 0;
   }
+
+  const { multiplier } = decayEffectDetails(ap, op);
+  const afterDecayBase = preDecayScore * multiplier;
   updateDecaySteps(g);
 
   const piLv = ap.skills.POINT_INCREASE;
-  if (piLv > 0){
-    score *= (1 + POINT_INCREASE_PCT[piLv]);
-  }
-
   const foLv = ap.skills.FAIL_OPP;
   const usedWhiteCount = countOverlap(g.selectionSet, g.white);
-  if (foLv > 0 && usedWhiteCount >= 2){
-    score *= WHITE_MULT[foLv];
-  }
-
   const pfLv = ap.skills.POINT_FOUNTAIN;
   const usedFountainSelf = (ap.fountainIdx != null && g.selectionSet.has(ap.fountainIdx));
-  if (pfLv > 0 && usedFountainSelf){
-    score += FOUNTAIN_BONUS[pfLv];
-  }
-
   const wfLv = ap.skills.WIN_FOOTSTEPS;
   const usedGold = countOverlap(g.selectionSet, g.gold) >= 1;
-  if (wfLv > 0 && usedGold){
-    score += GOLD_BONUS[wfLv];
-  }
 
-  score *= pointCategoryMultiplier(ap);
-  const finalWordPoints = roundInt(score);
+  const scoreContext = {
+    piLv,
+    foLv,
+    pfLv,
+    wfLv,
+    usedWhiteCount,
+    usedFountainSelf,
+    usedGold,
+  };
+
+  const scoreWithDecay = applyPostDecayScore(afterDecayBase, ap, scoreContext);
+  const scoreWithoutDecay = applyPostDecayScore(preDecayScore, ap, scoreContext);
+
+  const finalWordPoints = roundInt(scoreWithDecay);
+  const altFinalWordPoints = roundInt(scoreWithoutDecay);
+  const decayLoss = Math.max(0, altFinalWordPoints - finalWordPoints);
+
   let fountainShared = 0;
-
   const usedOpponentFountain = (op.fountainIdx != null && g.selectionSet.has(op.fountainIdx));
   if (usedOpponentFountain){
     const opponentBonus = roundInt(finalWordPoints * 0.5);
@@ -912,6 +915,11 @@ function handleSuccess(g, word, wordLen){
 
   ap.score += Math.max(0, finalWordPoints - spellFinderReduction);
   if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
+
+  if (decayLoss > 0){
+    op.score += decayLoss;
+    if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
+  }
 
   g.foundWords.add(word);
   const sharedTotal = fountainShared + spellFinderShared;
@@ -940,6 +948,8 @@ function handleSuccess(g, word, wordLen){
     op.imposeCancelOnOpponentNextTurn = CANCEL_REDUCTION(ccLv);
   }
 
+  ap.lastWordTiles = new Set(g.selection);
+
   g.attempts = 0;
 
   endTurn(g, "SUCCESS");
@@ -953,7 +963,31 @@ function countOverlap(setA, setB){
   return n;
 }
 
-export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
+function applyPostDecayScore(baseScore, ap, context){
+  let s = baseScore;
+  const piLv = context.piLv || 0;
+  const foLv = context.foLv || 0;
+  const usedWhiteCount = context.usedWhiteCount || 0;
+  if (piLv > 0){
+    s *= (1 + POINT_INCREASE_PCT[piLv]);
+  }
+  if (foLv > 0 && usedWhiteCount >= 2){
+    s *= WHITE_MULT[foLv];
+  }
+  const pfLv = context.pfLv || 0;
+  const usedFountainSelf = context.usedFountainSelf;
+  if (pfLv > 0 && usedFountainSelf){
+    s += FOUNTAIN_BONUS[pfLv];
+  }
+  const wfLv = context.wfLv || 0;
+  if (wfLv > 0 && context.usedGold){
+    s += GOLD_BONUS[wfLv];
+  }
+  s *= pointCategoryMultiplier(ap);
+  return s;
+}
+
+export function projectWordScore(g, playerIndex, wordLen, path, options = {}){ 
   if (!g || !Array.isArray(g.players) || !Array.isArray(path) || wordLen < MIN_WORD_LEN){
     return 0;
   }
@@ -967,9 +1001,11 @@ export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
   let combo = (Number.isFinite(ap.combo) ? ap.combo : 0) + 1;
   let baseScore = LEN_TABLE(wordLen) * COMBO_MULT(combo);
 
-  const newStreak = (ap.sameLenLast === wordLen) ? (ap.sameLenStreak + 1) : 1;
-  if ((op.skills.VALUE_DECAY || 0) > 0 && newStreak > 1){
-    const details = decayEffectDetails({ ...ap, sameLenStreak: newStreak }, op);
+  const usesPurple = countOverlap(pathSet, g.purple) >= 1;
+  const nextDecaySteps = usesPurple ? ((ap.decaySteps || 0) + 1) : 0;
+  if ((op.skills.VALUE_DECAY || 0) > 0 && nextDecaySteps > 0){
+    const projectedPlayer = { ...ap, decaySteps: nextDecaySteps };
+    const details = decayEffectDetails(projectedPlayer, op);
     if (details.multiplier < 1){
       baseScore *= details.multiplier;
     }
@@ -1483,7 +1519,7 @@ export function describeSkillCompact(p, skillId){
     case "VALUE_DECAY": {
       const stepPct = Math.round(DECAY_STEP[lv] * 100);
       const maxDecay = DECAY_MAX_DECAY_PCT[lv] ?? 0;
-      return `step ${stepPct}% (max ${maxDecay}% decay)`;
+      return `purple step ${stepPct}% (max ${maxDecay}% decay)`;
     }
     case "WIN_FOOTSTEPS":
       return `gold max ${GOLD_MAX_TILES[lv]}, +${GOLD_BONUS[lv]} if used`;
@@ -1527,11 +1563,7 @@ export function describeSkill(p, skillId){
       const stepPct = Math.round(DECAY_STEP[lv] * 100);
       const minMult = (DECAY_MIN_MULT[lv] ?? 0).toFixed(2);
       const maxDecayPct = DECAY_MAX_DECAY_PCT[lv] ?? 0;
-      const minNote =
-        lv === 4 ? " At Lv4 the multiplier bottoms at ×0.25 (max 75% decay)." :
-        lv === 5 ? " Lv5 can drive the multiplier down to ×0.00 (max 100% decay)." :
-        "";
-      return `Lv${lv}/5 — Affects the opponent ONLY. Track their “same-length success streak” (increments on each successful word of the same length and resets to 1 when the next success has a different length). Once the opponent reaches streak ≥2, multiply their score by 1.00 − ${stepPct}% × (streak−1), capped at ${maxDecayPct}% decay so the multiplier never drops below ×${minMult}.${minNote}`;
+      return `Lv${lv}/5 — Only the opponent is affected. On their turn, the tiles from your last word glow purple; using ≥1 of them to form a word multiplies that word’s score by 1.00 − ${stepPct}% × (consecutive purple hits) after combo and before point multipliers, with the decay capped at ${maxDecayPct}% so the multiplier never drops below ×${minMult}. The points shaved off are added to you instantly, and the purple tiles vanish after their turn ends.`;
     }
     case "WIN_FOOTSTEPS": {
       const maxGold = GOLD_MAX_TILES[lv];
@@ -1584,7 +1616,7 @@ export function describeOffer(p, skillMeta){
     case "POINT_FOUNTAIN": effect = `Next: self-use +${FOUNTAIN_BONUS[next]} pts`; break;
     case "VALUE_DECAY": {
       const maxDecay = DECAY_MAX_DECAY_PCT[next] ?? 0;
-      effect = `Next: decay step ${Math.round(DECAY_STEP[next] * 100)}% (max ${maxDecay}% decay)`;
+      effect = `Next: purple step ${Math.round(DECAY_STEP[next] * 100)}% (max ${maxDecay}% decay)`;
       break;
     }
     case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]}`; break;
