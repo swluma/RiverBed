@@ -1453,10 +1453,10 @@ function buildSkillReferenceHtml(){
         </div>
 
         <div class="skillRefItem">
-          <div class="name"><span class="skillCatDot"></span>Safety Net (Failure bonus)</div>
-          <div class="rule">
-            Trigger: on any failed attempt (invalid / duplicate / timeout) while your combo count is 0 or 1, limited to once per turn. Gain a flat point reward that ignores combo, multipliers, and other point modifiers.
-          </div>
+        <div class="name"><span class="skillCatDot"></span>Safety Net (Failure bonus)</div>
+        <div class="rule">
+          Trigger: at the end of your turn (success or failure) when your combo count is 0 or 1 and you failed at least one swipe earlier in that turn (later successes do not cancel it). Gain a flat point reward that ignores combos, multipliers, and other point modifiers.
+        </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Points per failure</th></tr>
             <tr><td>Lv1</td><td>+3</td></tr>
