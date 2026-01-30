@@ -979,13 +979,7 @@ function handleSuccess(g, word, wordLen){
   let fountainShared = 0;
   const usedOpponentFountain = (op.fountainIdx != null && g.selectionSet.has(op.fountainIdx));
   if (usedOpponentFountain){
-    const opponentBonus = roundInt(finalWordPoints * 0.5);
-    fountainShared = opponentBonus;
-    op.score += opponentBonus;
-    if (checkVictory(g)){
-      logTurnTotals(g, "VICTORY");
-      return { ended:true, finalWordPoints, endedByVictory:true };
-    }
+    fountainShared = roundInt(finalWordPoints * 0.5);
   }
 
   let spellFinderShared = 0;
@@ -994,11 +988,6 @@ function handleSuccess(g, word, wordLen){
   if (opSpellLv >= 5 && op.spellFinder && op.spellFinder.word === word){
     spellFinderShared = roundInt(finalWordPoints * 0.5);
     spellFinderReduction = spellFinderShared;
-    op.score += spellFinderShared;
-    if (checkVictory(g)){
-      logTurnTotals(g, "VICTORY");
-      return { ended:true, finalWordPoints, endedByVictory:true };
-    }
   }
 
   ap.score += Math.max(0, finalWordPoints - spellFinderReduction) + goldBonus;
@@ -1010,21 +999,20 @@ function handleSuccess(g, word, wordLen){
       pts: goldBonus,
     });
   }
+
+  const sharedTotal = fountainShared + spellFinderShared;
+  if (sharedTotal > 0){
+    op.score += sharedTotal;
+  }
+  if (decayLoss > 0){
+    op.score += decayLoss;
+  }
   if (checkVictory(g)){
     logTurnTotals(g, "VICTORY");
     return { ended:true, finalWordPoints, endedByVictory:true };
   }
 
-  if (decayLoss > 0){
-    op.score += decayLoss;
-    if (checkVictory(g)){
-      logTurnTotals(g, "VICTORY");
-      return { ended:true, finalWordPoints, endedByVictory:true };
-    }
-  }
-
   g.foundWords.add(word);
-  const sharedTotal = fountainShared + spellFinderShared;
   g.log.push({
     word,
     player: ap.id,
