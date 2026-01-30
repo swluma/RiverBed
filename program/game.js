@@ -49,7 +49,7 @@ const DECAY_MIN_MULT     = [1, 0.75, 0.60, 0.40, 0.25, 0.00];
 const DECAY_MAX_DECAY_PCT = DECAY_MIN_MULT.map(m => Math.round((1 - m) * 100));
 
 const GOLD_MAX_TILES     = [0, 1, 1, 2, 2, 3];
-  const GOLD_BONUS         = [0, 6, 10, 10, 15, 20];
+const GOLD_BONUS         = [0, 5, 8, 8, 15, 15];
 
 const CANCEL_REDUCTION = (lv) => {
   // Lv1 −1

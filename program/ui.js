@@ -1402,11 +1402,11 @@ function buildSkillReferenceHtml(){
           </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Max gold tiles</th><th>Gold bonus (flat)</th></tr>
-            <tr><td>Lv1</td><td>1</td><td>+6</td></tr>
-            <tr><td>Lv2</td><td>1</td><td>+10</td></tr>
-            <tr><td>Lv3</td><td>2</td><td>+10</td></tr>
+            <tr><td>Lv1</td><td>1</td><td>+5</td></tr>
+            <tr><td>Lv2</td><td>1</td><td>+8</td></tr>
+            <tr><td>Lv3</td><td>2</td><td>+8</td></tr>
             <tr><td>Lv4</td><td>2</td><td>+15</td></tr>
-            <tr><td>Lv5</td><td>3</td><td>+20</td></tr>
+            <tr><td>Lv5</td><td>3</td><td>+15</td></tr>
           </table>
         </div>
 
