@@ -1059,7 +1059,7 @@ function handleSuccess(g, word, wordLen){
   ap.lastWordTiles = new Set(g.selection);
 
   const esLv = ap.skills.EXTRA_SWIPE || 0;
-  if (firstSuccessThisTurn && esLv > 0 && wordLen > 5){
+  if (firstSuccessThisTurn && esLv > 0 && wordLen >= 5){
     const chance = EXTRA_SWIPE_CHANCE[esLv] || 0;
     if (Math.random() < chance){
       g.extraSwipeLeft = 1 + ((esLv >= 5 && Math.random() < EXTRA_SWIPE_BONUS_LV5_CHANCE) ? 1 : 0);
@@ -1700,8 +1700,8 @@ export function describeSkillCompact(p, skillId){
     case "FAIL_OPP":
       return `white max ${WHITE_MAX_TILES[lv]} (after failing; prioritizes tiles from your most recent failed swipe before filling the rest randomly), ×${formatWhiteMult(WHITE_MULT[lv])} if ≥2 used`;
     case "EXTRA_SWIPE":
-      if (lv >= 5) return `100% extra swipe (len>=6), 25% chance of a second`;
-      return `${Math.round((EXTRA_SWIPE_CHANCE[lv] || 0) * 100)}% extra swipe (len>=6)`;
+      if (lv >= 5) return `100% extra swipe (len>=5), 25% chance of a second`;
+      return `${Math.round((EXTRA_SWIPE_CHANCE[lv] || 0) * 100)}% extra swipe (len>=5)`;
     case "SAFETY_NET":
       return `+${SAFETY_NET_POINTS[lv]} pts at the end of the failed turn when combo is 0 or 1 (once per turn)`;
     case "SPELL_FINDER": {
@@ -1759,7 +1759,7 @@ export function describeSkill(p, skillId){
       const bonus = (lv >= 5)
         ? " At Lv5, there is also a 25% chance to gain one more additional swipe."
         : "";
-      return `Lv${lv}/5 — Trigger: when your FIRST successful word in a turn has length >=6, gain an extra swipe to attempt one more word in the same turn (${pct}% chance). Extra Chance does NOT apply to the extra swipe.${bonus}`;
+      return `Lv${lv}/5 — Trigger: when your FIRST successful word in a turn has length >=5, gain an extra swipe to attempt one more word in the same turn (${pct}% chance). Extra Chance does NOT apply to the extra swipe.${bonus}`;
     }
     case "SAFETY_NET": {
       const bonus = SAFETY_NET_POINTS[lv];
@@ -1818,7 +1818,7 @@ export function describeOffer(p, skillMeta){
     case "EXTRA_SWIPE": {
       const pct = Math.round((EXTRA_SWIPE_CHANCE[next] || 0) * 100);
       const bonus = (next >= 5) ? ", +25% chance of a second swipe" : "";
-      effect = `Next: ${pct}% extra swipe on len>=6 first word${bonus}`;
+      effect = `Next: ${pct}% extra swipe on len>=5 first word${bonus}`;
       break;
     }
     case "FAIL_OPP":       effect = `Next: max white ${WHITE_MAX_TILES[next]} (failures prioritize your last failed-swipe tiles), white mult ×${formatWhiteMult(WHITE_MULT[next])}`; break;

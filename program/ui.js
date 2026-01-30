@@ -1403,7 +1403,7 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Extra Swipe</div>
           <div class="rule">
-            Trigger: when your first successful word in a turn is length >=6 (including any Extra Chance attempts), you may gain an extra swipe to attempt another word in the same turn.
+            Trigger: when your first successful word in a turn is length >=5 (including any Extra Chance attempts), you may gain an extra swipe to attempt another word in the same turn.
             Combo increases on the extra swipe success, and Extra Chance does NOT apply to the extra swipe.
           </div>
           <table class="skillRefTable">
