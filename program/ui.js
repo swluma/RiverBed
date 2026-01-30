@@ -1440,6 +1440,8 @@ function buildSkillReferenceHtml(){
           <div class="rule">
             At the start of your turn, choose a random swipeable word not yet found in the match and not assigned to the opponent's Spell Finder.
             The word stays fixed until you find it. Highlight the first N tiles in green.
+            If no word meets the minimum length, Spell Finder keeps lowering the requirement by 1 until a match is found.
+            Starting at Lv4, every failed attempt (including Extra Chance) reveals one more hint tile until the marked word is fully displayed.
             If the opponent finds your marked word at Lv5, you gain 50% of that word's final points.
           </div>
           <table class="skillRefTable">
@@ -1447,8 +1449,8 @@ function buildSkillReferenceHtml(){
             <tr><td>Lv1</td><td>3+</td><td>1</td><td>No</td></tr>
             <tr><td>Lv2</td><td>3+</td><td>2</td><td>No</td></tr>
             <tr><td>Lv3</td><td>4+</td><td>2</td><td>No</td></tr>
-            <tr><td>Lv4</td><td>5+</td><td>2</td><td>No</td></tr>
-            <tr><td>Lv5</td><td>5+</td><td>2</td><td>Yes (50%)</td></tr>
+            <tr><td>Lv4</td><td>5+</td><td>2 (grows on failures)</td><td>No</td></tr>
+            <tr><td>Lv5</td><td>6+</td><td>2 (grows on failures)</td><td>Yes (50%)</td></tr>
           </table>
         </div>
 

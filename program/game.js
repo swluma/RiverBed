@@ -72,14 +72,16 @@ const WHITE_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
 
 const SAFETY_NET_POINTS  = [0, 3, 5, 8, 10, 15];
 
-const SPELL_FINDER_MINLEN = (lv) => {
-  if (lv <= 0) return 0;
-  if (lv <= 2) return 3;
-  if (lv === 3) return 4;
-  return 5;
+const SPELL_FINDER_MINLENS = [0, 3, 3, 4, 5, 6];
+const SPELL_FINDER_BASE_HINT_TILES = [0, 1, 2, 2, 2, 2];
+
+const clampSpellFinderLv = (lv) => {
+  if (!Number.isFinite(lv)) return 0;
+  return Math.max(0, Math.min(lv, SPELL_FINDER_MINLENS.length - 1));
 };
 
-const SPELL_FINDER_HINT_TILES = (lv) => (lv >= 2 ? 2 : 1);
+const SPELL_FINDER_MINLEN = (lv) => SPELL_FINDER_MINLENS[clampSpellFinderLv(lv)] ?? 0;
+const SPELL_FINDER_HINT_TILES = (lv) => SPELL_FINDER_BASE_HINT_TILES[clampSpellFinderLv(lv)] ?? 0;
 
 // Length table: total before combo/skills (already includes base)
 const LEN_TABLE = (len) => {
@@ -816,6 +818,7 @@ function handleFailure(g, {reason, word}){
   const swipeFailedAttempt = Boolean(reason && reason !== "TIMEOUT");
   if (swipeFailedAttempt){
     ap.failedSwipeThisTurn = true;
+    expandSpellFinderHintOnFailure(ap);
   }
 
   const ended = (g.attempts <= 0 && g.extraChanceLeft <= 0);
@@ -839,6 +842,23 @@ function handleFailure(g, {reason, word}){
   }
 
   return { ended: turnEnded, reason };
+}
+
+function expandSpellFinderHintOnFailure(player){
+  if (!player) return;
+  const lv = player.skills.SPELL_FINDER || 0;
+  if (lv < 4) return;
+  const spell = player.spellFinder;
+  if (!spell || !Array.isArray(spell.path)) return;
+  const pathLen = spell.path.length;
+  if (pathLen <= 0) return;
+  const baseTiles = SPELL_FINDER_HINT_TILES(lv);
+  const currentLimit = (typeof spell.tileLimitThisTurn === "number")
+    ? spell.tileLimitThisTurn
+    : baseTiles;
+  if (currentLimit >= pathLen) return;
+  spell.tileLimitThisTurn = Math.min(pathLen, currentLimit + 1);
+  rebuildSpellFinderTiles(player, lv);
 }
 
 function tryActivateSafetyNet(g){
@@ -1293,7 +1313,6 @@ function updateSpellFinderForPlayer(g, playerIndex){
   }
 
   const minLen = SPELL_FINDER_MINLEN(lv);
-  const hintTiles = SPELL_FINDER_HINT_TILES(lv);
   const opponentWord = g.players[1 - playerIndex]?.spellFinder?.word || null;
 
   let word = p.spellFinder?.word || null;
@@ -1310,13 +1329,14 @@ function updateSpellFinderForPlayer(g, playerIndex){
   }
 
   if (!word){
-    const chosen = findSpellFinderWord(g, minLen, opponentWord);
+    const chosen = findSpellFinderWordWithFallback(g, minLen, opponentWord);
     if (!chosen){
       clearSpellFinder(p);
       return;
     }
     word = chosen.word;
     path = chosen.path;
+    p.spellFinder.tileLimitThisTurn = null;
     console.log(`[spell-finder] ${p.name} target: ${word}`);
   }
 
@@ -1325,10 +1345,30 @@ function updateSpellFinderForPlayer(g, playerIndex){
   }
   p.spellFinder.word = word;
   p.spellFinder.path = path;
-  const limit = (typeof p.spellFinder.tileLimitThisTurn === "number")
-    ? Math.max(0, Math.min(hintTiles, p.spellFinder.tileLimitThisTurn))
-    : hintTiles;
-  p.spellFinder.tiles = new Set(path.slice(0, limit));
+  rebuildSpellFinderTiles(p, lv);
+}
+
+function computeSpellFinderHintLimit(spellFinder, pathLength, lv){
+  if (!spellFinder) return 0;
+  const baseTiles = SPELL_FINDER_HINT_TILES(lv);
+  const requested = (typeof spellFinder.tileLimitThisTurn === "number")
+    ? Math.max(0, spellFinder.tileLimitThisTurn)
+    : baseTiles;
+  if (pathLength <= 0) return 0;
+  return Math.min(pathLength, requested);
+}
+
+function rebuildSpellFinderTiles(player, lv){
+  const spell = player?.spellFinder;
+  if (!spell){
+    return;
+  }
+  if (!Array.isArray(spell.path) || spell.path.length === 0){
+    spell.tiles = new Set();
+    return;
+  }
+  const limit = computeSpellFinderHintLimit(spell, spell.path.length, lv);
+  spell.tiles = new Set(spell.path.slice(0, limit));
 }
 
 function findSpellFinderWord(g, minLen, opponentWord){
@@ -1356,6 +1396,15 @@ function findSpellFinderWord(g, minLen, opponentWord){
   }
   if (candidates.length > 0){
     return candidates[randInt(candidates.length)];
+  }
+  return null;
+}
+
+function findSpellFinderWordWithFallback(g, minLen, opponentWord){
+  const startLen = Math.max(minLen, MIN_WORD_LEN);
+  for (let len = startLen; len >= MIN_WORD_LEN; len--){
+    const candidate = findSpellFinderWord(g, len, opponentWord);
+    if (candidate) return candidate;
   }
   return null;
 }
@@ -1563,7 +1612,8 @@ export function describeSkillCompact(p, skillId){
       const minLen = SPELL_FINDER_MINLEN(lv);
       const tiles = SPELL_FINDER_HINT_TILES(lv);
       const shareTag = (lv >= 5) ? "; 50% share if stolen" : "";
-      return `len>=${minLen}, hint ${tiles} tile${tiles > 1 ? "s" : ""}${shareTag}`;
+      const growthTag = (lv >= 4) ? ", grows on misses" : "";
+      return `len>=${minLen}, hint ${tiles} tile${tiles > 1 ? "s" : ""}${growthTag}${shareTag}`;
     }
     default:
       return `Lv${lv}`;
@@ -1616,7 +1666,11 @@ export function describeSkill(p, skillId){
       const minLen = SPELL_FINDER_MINLEN(lv);
       const tiles = SPELL_FINDER_HINT_TILES(lv);
       const share = (lv >= 5) ? " If your opponent finds your marked word, you gain 50% of that word's final points." : "";
-      return `Lv${lv}/5 - At the start of your turn, pick a random swipeable word not yet found in the match (and not assigned to the opponent's Spell Finder). The word stays fixed until you find it. Highlight the first ${tiles} letter${tiles > 1 ? "s" : ""} in green; word length must be >=${minLen}.${share}`;
+      const fallback = ` If no word of length >=${minLen} exists, Spell Finder keeps lowering the threshold by 1 until a match is found.`;
+      const growth = (lv >= 4)
+        ? " Lv4+: each failed attempt (including Extra Chance) reveals one additional tile until the entire word is fully exposed."
+        : "";
+      return `Lv${lv}/5 - At the start of your turn, pick a random swipeable word not yet found in the match (and not assigned to the opponent's Spell Finder). The word stays fixed until you find it. Highlight the first ${tiles} letter${tiles > 1 ? "s" : ""} in green; word length must be >=${minLen}.${fallback}${growth}${share}`;
     }
     default:
       return `Lv${lv}/5`;
@@ -1664,7 +1718,8 @@ export function describeOffer(p, skillMeta){
       const minLen = SPELL_FINDER_MINLEN(next);
       const tiles = SPELL_FINDER_HINT_TILES(next);
       const share = (next >= 5) ? ", 50% share if opponent finds" : "";
-      effect = `Next: word len>=${minLen}, highlight ${tiles}${share}`;
+      const growth = (next >= 4) ? ", grows on misses" : "";
+      effect = `Next: word len>=${minLen}, highlight ${tiles}${growth}${share}`;
       break;
     }
   }
