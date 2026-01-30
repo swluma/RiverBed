@@ -934,9 +934,10 @@ function handleSuccess(g, word, wordLen){
   const scoreWithDecay = applyPostDecayScore(afterDecayBase, ap, scoreContext);
   const scoreWithoutDecay = applyPostDecayScore(preDecayScore, ap, scoreContext);
 
-  const finalWordPoints = roundInt(scoreWithDecay);
   const altFinalWordPoints = roundInt(scoreWithoutDecay);
-  const decayLoss = Math.max(0, altFinalWordPoints - finalWordPoints);
+  const rawDecayLoss = scoreWithoutDecay - scoreWithDecay;
+  const decayLoss = Math.max(0, roundInt(rawDecayLoss));
+  const finalWordPoints = Math.max(0, altFinalWordPoints - decayLoss);
 
   let fountainShared = 0;
   const usedOpponentFountain = (op.fountainIdx != null && g.selectionSet.has(op.fountainIdx));
