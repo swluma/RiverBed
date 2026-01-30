@@ -912,7 +912,7 @@ function handleSuccess(g, word, wordLen){
   const pfLv = ap.skills.POINT_FOUNTAIN;
   const usedFountainSelf = (ap.fountainIdx != null && g.selectionSet.has(ap.fountainIdx));
   const wfLv = ap.skills.WIN_FOOTSTEPS;
-  const usedGold = countOverlap(g.selectionSet, g.gold) >= 1;
+  const usedGoldCount = countOverlap(g.selectionSet, g.gold);
 
   const scoreContext = {
     piLv,
@@ -921,7 +921,7 @@ function handleSuccess(g, word, wordLen){
     wfLv,
     usedWhiteCount,
     usedFountainSelf,
-    usedGold,
+    usedGoldCount,
   };
 
   const scoreWithDecay = applyPostDecayScore(afterDecayBase, ap, scoreContext);
@@ -1019,8 +1019,9 @@ function applyPostDecayScore(baseScore, ap, context){
     s *= FOUNTAIN_MULT[pfLv];
   }
   const wfLv = context.wfLv || 0;
-  if (wfLv > 0 && context.usedGold){
-    s += GOLD_BONUS[wfLv];
+  const usedGoldCount = context.usedGoldCount || 0;
+  if (wfLv > 0 && usedGoldCount > 0){
+    s += GOLD_BONUS[wfLv] * usedGoldCount;
   }
   s *= pointCategoryMultiplier(ap);
   return s;
@@ -1066,8 +1067,9 @@ export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
   }
 
   const wfLv = ap.skills.WIN_FOOTSTEPS || 0;
-  if (wfLv > 0 && countOverlap(pathSet, g.gold) >= 1){
-    baseScore += GOLD_BONUS[wfLv];
+  const usedGoldCount = countOverlap(pathSet, g.gold);
+  if (wfLv > 0 && usedGoldCount > 0){
+    baseScore += GOLD_BONUS[wfLv] * usedGoldCount;
   }
   const tilePreference = options.tilePreference || {};
   const beneficialGold = countOverlap(pathSet, g.gold);
@@ -1591,7 +1593,7 @@ export function describeSkillCompact(p, skillId){
       return `purple step ${stepPct}% (max ${maxDecay}% decay)`;
     }
     case "WIN_FOOTSTEPS":
-      return `gold max ${GOLD_MAX_TILES[lv]}, +${GOLD_BONUS[lv]} if used`;
+      return `gold max ${GOLD_MAX_TILES[lv]}, +${GOLD_BONUS[lv]} per gold tile`;
     case "COLOR_CANCEL":
       if (lv===1) return `−1 special tile`;
       if (lv===2) return `−1 (50% −2)`;
@@ -1638,7 +1640,7 @@ export function describeSkill(p, skillId){
     case "WIN_FOOTSTEPS": {
       const maxGold = GOLD_MAX_TILES[lv];
       const bonus = GOLD_BONUS[lv];
-      return `Lv${lv}/5 — Trigger: if the opponent finds a word, then on YOUR NEXT turn spawn up to ${maxGold} visible GOLD tiles (uniform random among all 36). If your found word uses ≥1 gold tile: add +${bonus} flat points. Gold tiles are visible to both players and disappear at the end of your turn.`;
+      return `Lv${lv}/5 — Trigger: if the opponent finds a word, then on YOUR NEXT turn spawn up to ${maxGold} visible GOLD tiles (uniform random among all 36). For each gold tile used in your found word: add +${bonus} flat points. Gold tiles are visible to both players and disappear at the end of your turn.`;
     }
     case "COLOR_CANCEL": {
       return `Lv${lv}/5 — When you find a word, the opponent’s NEXT turn spawns fewer “special tiles” (GOLD from Winner’s Footsteps, WHITE from Failure into Opportunity, and GREEN Spell Finder hints). Gray tiles are NOT reduced. If the opponent has a Fountain tile, it is removed before their next turn begins. Reduction: Lv1 −1, Lv2 −1 (50% chance −2), Lv3 −2, Lv4 −2 (50% chance −3), Lv5 −3.`;
@@ -1693,7 +1695,7 @@ export function describeOffer(p, skillMeta){
       effect = `Next: purple step ${Math.round(DECAY_STEP[next] * 100)}% (max ${maxDecay}% decay)`;
       break;
     }
-    case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]}`; break;
+    case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]} per tile`; break;
     case "COLOR_CANCEL": {
       const cancelText =
         next === 1 ? "-1 special tile" :

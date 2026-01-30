@@ -1398,10 +1398,10 @@ function buildSkillReferenceHtml(){
             Trigger: if the opponent finds a word, then on your <b>NEXT</b> turn gold tiles appear.
             Gold tiles are visible to both players and revert at the end of your turn.
             Gold placement: choose the required number of distinct tiles uniformly at random from all 36.
-            If your found word uses ≥1 gold tile: add a flat bonus.
+            If your found word uses ≥1 gold tile: add a flat bonus per gold tile used.
           </div>
           <table class="skillRefTable">
-            <tr><th>Level</th><th>Max gold tiles</th><th>Gold bonus (flat)</th></tr>
+            <tr><th>Level</th><th>Max gold tiles</th><th>Gold bonus (per tile)</th></tr>
             <tr><td>Lv1</td><td>1</td><td>+5</td></tr>
             <tr><td>Lv2</td><td>1</td><td>+8</td></tr>
             <tr><td>Lv3</td><td>2</td><td>+8</td></tr>
