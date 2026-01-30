@@ -971,7 +971,7 @@ function handleSuccess(g, word, wordLen){
   g.log.push({
     word,
     player: ap.id,
-    pts: finalWordPoints,
+    pts: altFinalWordPoints,
     shared: sharedTotal,
     stolen: decayLoss,
   });
