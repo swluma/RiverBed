@@ -955,6 +955,14 @@ function handleSuccess(g, word, wordLen){
   }
 
   ap.score += Math.max(0, finalWordPoints - spellFinderReduction) + goldBonus;
+  if (goldBonus > 0){
+    g.pointLog.push({
+      label: "Winner's Footsteps",
+      detail: `Gold tiles used: ${usedGoldCount}`,
+      player: ap.id,
+      pts: goldBonus,
+    });
+  }
   if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
 
   if (decayLoss > 0){
