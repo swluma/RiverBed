@@ -1027,6 +1027,7 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 .legendTile.demo.gold{ background: rgba(240,197,74,0.35); }
 .legendTile.demo.white{ background: rgba(255,255,255,0.35); }
 .legendTile.demo.gray{ background: rgba(40,40,48,0.7); filter: grayscale(1); }
+.legendTile.demo.purple{ background: rgba(178,144,255,0.35); border-color: rgba(178,144,255,0.7); }
 .legendTile.demo.spellHint{ background: rgba(96,255,156,0.35); border-color: rgba(96,255,156,0.65); }
 .legendTile.demo.multi{ background: conic-gradient(from 90deg,
   rgba(255,75,75,0.65) 0 33%,
