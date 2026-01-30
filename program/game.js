@@ -29,6 +29,7 @@ export const SKILLS = {
   POINT_INCREASE: { id:"POINT_INCREASE", cat:"POINT", name:"Point Increase", max:5 },
   POINT_FOUNTAIN: { id:"POINT_FOUNTAIN", cat:"POINT", name:"Point Fountain",   max:5 },
   FAIL_OPP:       { id:"FAIL_OPP",       cat:"POINT", name:"Failure into Opportunity",  max:5 },
+  EXTRA_SWIPE:    { id:"EXTRA_SWIPE",    cat:"POINT", name:"Extra Swipe",               max:5 },
   SAFETY_NET:     { id:"SAFETY_NET",     cat:"TECH",  name:"Safety Net",             max:5 },
 
   // Counter
@@ -66,6 +67,8 @@ const CANCEL_REDUCTION = (lv) => {
 };
 
 const EXTRA_CHANCE_ADD   = [0, 1, 2, 3, 4, 5];
+const EXTRA_SWIPE_CHANCE = [0, 0.15, 0.30, 0.50, 0.75, 1.00];
+const EXTRA_SWIPE_BONUS_LV5_CHANCE = 0.25;
 
 const WHITE_MAX_TILES   = [0, 2, 3, 3, 4, 6];
 const WHITE_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
@@ -207,6 +210,8 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
     active: 0, // 0=P1, 1=P2
     attempts: 1,
     extraChanceLeft: 0,
+    extraSwipeLeft: 0,
+    extraSwipeActive: false,
     gameOver: false,
     winScore: winScore,
     timeLimits: [0, 0],
@@ -316,6 +321,7 @@ function makePlayer(id){
       COLOR_CANCEL: 0,
       EXTRA_CHANCE: 0,
       FAIL_OPP: 0,
+      EXTRA_SWIPE: 0,
       SAFETY_NET: 0,
       SPELL_FINDER: 0,
     },
@@ -556,6 +562,8 @@ export function startTurn(g){
   }
 
   g.attempts = 1;
+  g.extraSwipeLeft = 0;
+  g.extraSwipeActive = false;
   g.gold.clear();
   g.white.clear();
   g.gray.clear();
@@ -698,6 +706,8 @@ export function endTurn(g, reason){
   g.gold.clear();
   g.white.clear();
   g.gray.clear();
+  g.extraSwipeLeft = 0;
+  g.extraSwipeActive = false;
   if (g.hint){
     g.hint.tiles.clear();
     g.hint.word = null;
@@ -811,6 +821,12 @@ function isAdjacent(a, b){
 }
 
 function consumeAttempt(g){
+  if (g.extraSwipeActive){
+    if (g.attempts > 0){
+      g.attempts -= 1;
+    }
+    return;
+  }
   if (g.attempts > 0){
     g.attempts -= 1;
     return;
@@ -844,7 +860,7 @@ function handleFailure(g, {reason, word}){
   }
 
   const ended = (g.attempts <= 0 && g.extraChanceLeft <= 0);
-  const preserveCombo = (ap.skills.EXTRA_CHANCE >= 5) && !ended;
+  const preserveCombo = (ap.skills.EXTRA_CHANCE >= 5) && !ended && !g.extraSwipeActive;
   if (!preserveCombo){
     ap.combo = 0;
   }
@@ -916,6 +932,8 @@ function tryActivateSafetyNet(g){
 function handleSuccess(g, word, wordLen){
   const ap = g.players[g.active];
   const op = g.players[1 - g.active];
+  const firstSuccessThisTurn = !ap.hasFoundWordThisTurn;
+  const wasExtraSwipeAttempt = g.extraSwipeActive;
 
   ap.hasFoundWordThisTurn = true;
   ap.combo += 1;
@@ -1040,11 +1058,40 @@ function handleSuccess(g, word, wordLen){
 
   ap.lastWordTiles = new Set(g.selection);
 
-  g.attempts = 0;
+  const esLv = ap.skills.EXTRA_SWIPE || 0;
+  if (firstSuccessThisTurn && esLv > 0 && wordLen > 5){
+    const chance = EXTRA_SWIPE_CHANCE[esLv] || 0;
+    if (Math.random() < chance){
+      g.extraSwipeLeft = 1 + ((esLv >= 5 && Math.random() < EXTRA_SWIPE_BONUS_LV5_CHANCE) ? 1 : 0);
+      g.extraSwipeActive = true;
+    }
+  }
 
+  if (wasExtraSwipeAttempt){
+    g.extraSwipeLeft = Math.max(0, g.extraSwipeLeft - 1);
+    if (g.extraSwipeLeft <= 0){
+      g.extraSwipeActive = false;
+    }
+  }
+
+  if (g.extraSwipeActive){
+    g.attempts = 1;
+    g.extraChanceLeft = 0;
+    clearSelection(g);
+    g.pendingConfirm = false;
+    return {
+      ended: false,
+      finalWordPoints,
+      endedByVictory: false,
+      extraSwipe: true,
+      extraSwipeLeft: g.extraSwipeLeft,
+    };
+  }
+
+  g.attempts = 0;
   endTurn(g, "SUCCESS");
 
-  return { ended:true, finalWordPoints, endedByVictory:false };
+  return { ended:true, finalWordPoints, endedByVictory:false, extraSwipe:false };
 }
 
 function countOverlap(setA, setB){
@@ -1461,7 +1508,8 @@ export function pointTier(p){
   const total =
     p.skills.POINT_INCREASE +
     p.skills.POINT_FOUNTAIN +
-    p.skills.FAIL_OPP;
+    p.skills.FAIL_OPP +
+    p.skills.EXTRA_SWIPE;
 
   if (total >= 10) return 2;
   if (total >= 5) return 1;
@@ -1651,6 +1699,9 @@ export function describeSkillCompact(p, skillId){
       return `+${EXTRA_CHANCE_ADD[lv]} attempts after fail`;
     case "FAIL_OPP":
       return `white max ${WHITE_MAX_TILES[lv]} (after failing; prioritizes tiles from your most recent failed swipe before filling the rest randomly), ×${formatWhiteMult(WHITE_MULT[lv])} if ≥2 used`;
+    case "EXTRA_SWIPE":
+      if (lv >= 5) return `100% extra swipe (len>=6), 25% chance of a second`;
+      return `${Math.round((EXTRA_SWIPE_CHANCE[lv] || 0) * 100)}% extra swipe (len>=6)`;
     case "SAFETY_NET":
       return `+${SAFETY_NET_POINTS[lv]} pts at the end of the failed turn when combo is 0 or 1 (once per turn)`;
     case "SPELL_FINDER": {
@@ -1702,6 +1753,13 @@ export function describeSkill(p, skillId){
       const maxW = WHITE_MAX_TILES[lv];
       const mult = WHITE_MULT[lv];
       return `Lv${lv}/5 — Trigger whenever you fail an attempt before finding any word this turn (even if Extra Chance lets you recover): choose up to ${maxW} tiles for your NEXT turn by first marking the tiles from your most recent failed swipe and then filling any remaining slots with random board tiles that aren’t already white. On that next turn, if your successful word uses ≥2 white tiles, multiply that word’s score by ×${formatWhiteMult(mult)}. White tiles are visible and disappear at the end of that next turn.`;
+    }
+    case "EXTRA_SWIPE": {
+      const pct = Math.round((EXTRA_SWIPE_CHANCE[lv] || 0) * 100);
+      const bonus = (lv >= 5)
+        ? " At Lv5, there is also a 25% chance to gain one more additional swipe."
+        : "";
+      return `Lv${lv}/5 — Trigger: when your FIRST successful word in a turn has length >=6, gain an extra swipe to attempt one more word in the same turn (${pct}% chance). Extra Chance does NOT apply to the extra swipe.${bonus}`;
     }
     case "SAFETY_NET": {
       const bonus = SAFETY_NET_POINTS[lv];
@@ -1755,6 +1813,12 @@ export function describeOffer(p, skillMeta){
     case "EXTRA_CHANCE": {
       const comboTag = (next >= 5) ? " + combo preserved on success" : "";
       effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure${comboTag}`;
+      break;
+    }
+    case "EXTRA_SWIPE": {
+      const pct = Math.round((EXTRA_SWIPE_CHANCE[next] || 0) * 100);
+      const bonus = (next >= 5) ? ", +25% chance of a second swipe" : "";
+      effect = `Next: ${pct}% extra swipe on len>=6 first word${bonus}`;
       break;
     }
     case "FAIL_OPP":       effect = `Next: max white ${WHITE_MAX_TILES[next]} (failures prioritize your last failed-swipe tiles), white mult ×${formatWhiteMult(WHITE_MULT[next])}`; break;

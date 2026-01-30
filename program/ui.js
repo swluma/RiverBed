@@ -803,7 +803,7 @@ export function setConfirmState(el, pending, locked){
 function renderSkills(p){
   // Compact list for the player panels: level + CURRENT effect only.
   const order = [
-    "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP",
+    "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP","EXTRA_SWIPE",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
     "EXTRA_CHANCE","SPELL_FINDER","SAFETY_NET"
   ];
@@ -1179,7 +1179,7 @@ export function showTestSkillsModal(el, initialSkills){
   if (!el.testSkillsModal || !el.testSkillsList) return;
 
   const order = [
-    "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP",
+    "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP","EXTRA_SWIPE",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
     "EXTRA_CHANCE","SPELL_FINDER","SAFETY_NET"
   ];
@@ -1397,6 +1397,22 @@ function buildSkillReferenceHtml(){
             <tr><td>Lv3</td><td>3</td><td>×1.7</td></tr>
             <tr><td>Lv4</td><td>4</td><td>×1.85</td></tr>
             <tr><td>Lv5</td><td>6</td><td>×2.0</td></tr>
+          </table>
+        </div>
+
+        <div class="skillRefItem">
+          <div class="name"><span class="skillCatDot"></span>Extra Swipe</div>
+          <div class="rule">
+            Trigger: when your first successful word in a turn is length >=6 (including any Extra Chance attempts), you may gain an extra swipe to attempt another word in the same turn.
+            Combo increases on the extra swipe success, and Extra Chance does NOT apply to the extra swipe.
+          </div>
+          <table class="skillRefTable">
+            <tr><th>Level</th><th>Extra swipe chance</th><th>Bonus</th></tr>
+            <tr><td>Lv1</td><td>15%</td><td>-</td></tr>
+            <tr><td>Lv2</td><td>30%</td><td>-</td></tr>
+            <tr><td>Lv3</td><td>50%</td><td>-</td></tr>
+            <tr><td>Lv4</td><td>75%</td><td>-</td></tr>
+            <tr><td>Lv5</td><td>100%</td><td>25% chance of a second extra swipe</td></tr>
           </table>
         </div>
 

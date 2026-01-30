@@ -75,6 +75,7 @@ const COMPUTER_SKILL_PRIORITY = {
   POINT_INCREASE: 6,
   POINT_FOUNTAIN: 5,
   FAIL_OPP: 5,
+  EXTRA_SWIPE: 4,
   VALUE_DECAY: 6,
   WIN_FOOTSTEPS: 5,
   COLOR_CANCEL: 4,
@@ -792,14 +793,22 @@ async function handleEvaluationResult(result){
   }
 
   if (result.type === "SUCCESS"){
-    setFeedback(ui, "SUCCESS", `+${result.finalWordPoints} pts (word itself). Turn ends.`);
+    if (result.extraSwipe){
+      const remaining = Number.isFinite(result.extraSwipeLeft) ? result.extraSwipeLeft : 0;
+      const suffix = (remaining > 1) ? ` Extra swipes left: ${remaining}.` : "";
+      setFeedback(ui, "SUCCESS", `+${result.finalWordPoints} pts (word itself). Extra swipe!${suffix}`);
+    } else {
+      setFeedback(ui, "SUCCESS", `+${result.finalWordPoints} pts (word itself). Turn ends.`);
+    }
     renderNow();
     if (g.gameOver){
       showEndModal(ui, g);
       locked = true;
       return;
     }
-    await openSkillSelectIfNeeded();
+    if (result.ended){
+      await openSkillSelectIfNeeded();
+    }
   }
 }
 
