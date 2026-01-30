@@ -634,7 +634,8 @@ export function startTurn(g){
 
   updateSpellFinderForPlayer(g, g.active);
   const spellTiles = ap.spellFinder?.tiles ? Array.from(ap.spellFinder.tiles) : [];
-  const union = new Set([...goldIndices, ...whiteIndices, ...spellTiles]);
+  // Color Cancellation should not remove green hint tiles (Spell Finder).
+  const union = new Set([...goldIndices, ...whiteIndices]);
   const unionArr = Array.from(union);
   shuffle(unionArr);
 
@@ -651,12 +652,7 @@ export function startTurn(g){
   }
 
   if (ap.spellFinder && ap.spellFinder.tiles){
-    const kept = new Set();
-    for (const idx of ap.spellFinder.tiles){
-      if (union.has(idx)) kept.add(idx);
-    }
-    ap.spellFinder.tiles = kept;
-    ap.spellFinder.tileLimitThisTurn = kept.size;
+    ap.spellFinder.tileLimitThisTurn = ap.spellFinder.tiles.size;
   }
 
   if (reduction > 0 && ap.fountainIdx != null){
