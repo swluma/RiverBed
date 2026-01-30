@@ -595,6 +595,7 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 
 /* Log */
 .logWrap{ padding:12px; border-top:1px solid rgba(255,255,255,0.10); }
+.logWrap + .logWrap{ margin-top:8px; }
 .logHead{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
 .logTitle{ font-weight:1000; font-size:13px; }
 .logHint{ color:var(--muted); font-size:12px; }
@@ -605,6 +606,15 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   gap:8px;
   max-height: 280px;
   overflow:auto;
+}
+.logEmpty{
+  padding:10px;
+  border-radius:12px;
+  border:1px dashed rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  text-align:center;
+  font-size:13px;
+  color:var(--muted);
 }
 .logItem{
   display:flex;

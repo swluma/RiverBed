@@ -198,6 +198,7 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
     embeddedWords: null,       // hidden list (never shown)
     foundWords: new Set(),     // match-wide duplicate rule
     log: [],                   // success + event entries
+    pointLog: [],              // skill-triggered point bonuses
 
     turnNo: 1,
     active: 0, // 0=P1, 1=P2
@@ -877,8 +878,9 @@ function tryActivateSafetyNet(g){
   if (safetyPts <= 0) return;
 
   ap.score += safetyPts;
-  g.log.push({
-    word: "Safety Net",
+  g.pointLog.push({
+    label: "Safety Net",
+    detail: "Triggered after a failed swipe while combo ≤1.",
     player: ap.id,
     pts: safetyPts,
   });
@@ -1470,8 +1472,9 @@ function applyTechTierBonus(g){
   const points = techTierBonusPoints(tier);
   if (points <= 0) return;
   ap.score += points;
-  g.log.push({
-    word: `Tech Tier ${tier} bonus`,
+  g.pointLog.push({
+    label: `Tech Tier ${tier} bonus`,
+    detail: "Technical category bonus applied at turn end.",
     player: ap.id,
     pts: points,
   });

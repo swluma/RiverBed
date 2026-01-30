@@ -111,6 +111,7 @@ export function bindUI(handlers){
     skillReferenceRoot: document.getElementById("skillReferenceRoot"),
 
     log: document.getElementById("wordLog"),
+    skillLog: document.getElementById("skillLog"),
     gridCover: document.getElementById("gridCover"),
     gridCoverTitle: document.getElementById("gridCoverTitle"),
     startTurnBtn: document.getElementById("startTurnBtn"),
@@ -765,6 +766,9 @@ export function renderAll(el, g){
 
   // Log (success-only)
   el.log.innerHTML = renderLog(g);
+  if (el.skillLog){
+    el.skillLog.innerHTML = renderSkillLog(g);
+  }
 
   // Field
   renderGrid(el.grid, g);
@@ -884,6 +888,27 @@ function renderLog(g){
         <div class="pts">+${it.pts} pts</div>
         ${shared}
         ${stolen}
+      </div>
+    `;
+  }).join("");
+}
+
+function renderSkillLog(g){
+  const items = (g.pointLog || []).slice().reverse();
+  if (items.length === 0){
+    return `<div class="logEmpty muted">No skill point gains yet.</div>`;
+  }
+  return items.map((it) => {
+    const cls = (it.player === 0) ? "logItem redOutline" : "logItem blueOutline";
+    const label = it.label || it.word || "Skill points";
+    const detail = it.detail ? `<div class="muted">${escapeHtml(it.detail)}</div>` : "";
+    return `
+      <div class="${cls}">
+        <div class="left">
+          <div class="word">${escapeHtml(label)}</div>
+          ${detail}
+        </div>
+        <div class="pts">+${it.pts} pts</div>
       </div>
     `;
   }).join("");
