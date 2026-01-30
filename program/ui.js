@@ -112,6 +112,7 @@ export function bindUI(handlers){
 
     log: document.getElementById("wordLog"),
     skillLog: document.getElementById("skillLog"),
+    turnLog: document.getElementById("turnLog"),
     gridCover: document.getElementById("gridCover"),
     gridCoverTitle: document.getElementById("gridCoverTitle"),
     startTurnBtn: document.getElementById("startTurnBtn"),
@@ -769,6 +770,9 @@ export function renderAll(el, g){
   if (el.skillLog){
     el.skillLog.innerHTML = renderSkillLog(g);
   }
+  if (el.turnLog){
+    el.turnLog.innerHTML = renderTurnLog(g);
+  }
 
   // Field
   renderGrid(el.grid, g);
@@ -902,6 +906,39 @@ function renderSkillLog(g){
     const cls = (it.player === 0) ? "logItem redOutline" : "logItem blueOutline";
     const label = it.label || it.word || "Skill points";
     const detail = it.detail ? `<div class="muted">${escapeHtml(it.detail)}</div>` : "";
+    return `
+      <div class="${cls}">
+        <div class="left">
+          <div class="word">${escapeHtml(label)}</div>
+          ${detail}
+        </div>
+        <div class="pts">+${it.pts} pts</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function formatTurnReason(reason){
+  switch (reason){
+    case "SUCCESS": return "Turn ended: Success";
+    case "OUT_OF_ATTEMPTS": return "Turn ended: Out of attempts";
+    case "VICTORY": return "Turn ended: Victory";
+    default: return reason ? `Turn ended: ${reason}` : "";
+  }
+}
+
+function renderTurnLog(g){
+  const items = (g.turnLog || []).slice().reverse();
+  if (items.length === 0){
+    return `<div class="logEmpty muted">No turn totals yet.</div>`;
+  }
+  return items.map((it) => {
+    const cls = (it.player === 0) ? "logItem redOutline" : "logItem blueOutline";
+    const playerLabel = (it.player === 0) ? "Player 1" : "Player 2";
+    const activeTag = (it.player === it.active) ? " (active)" : "";
+    const label = `Turn ${it.turn} — ${playerLabel}${activeTag}`;
+    const reason = formatTurnReason(it.reason);
+    const detail = reason ? `<div class="muted">${escapeHtml(reason)}</div>` : "";
     return `
       <div class="${cls}">
         <div class="left">

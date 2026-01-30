@@ -199,6 +199,9 @@ export function createNewGame(dictSet, dictWords, embedWords, winScore = WIN_SCO
     foundWords: new Set(),     // match-wide duplicate rule
     log: [],                   // success + event entries
     pointLog: [],              // skill-triggered point bonuses
+    turnLog: [],               // per-turn total point gains (both players)
+    turnStartScores: [0, 0],
+    lastTurnTotalsKey: null,
 
     turnNo: 1,
     active: 0, // 0=P1, 1=P2
@@ -572,6 +575,7 @@ export function startTurn(g){
   ap.failedSwipeThisTurn = false;
 
   g.extraChanceLeft = EXTRA_CHANCE_ADD[ap.skills.EXTRA_CHANCE];
+  g.turnStartScores = g.players.map(p => p.score);
 
   // Counter category bonus: gray tiles on opponent's turn
   const opCounterTier = counterTier(op);
@@ -659,6 +663,29 @@ export function startTurn(g){
   ap.pendingGoldTrigger = false;
 }
 
+function logTurnTotals(g, reason){
+  if (!g || !Array.isArray(g.players)) return;
+  const key = `${g.turnNo}-${g.active}`;
+  if (g.lastTurnTotalsKey === key) return;
+  const startScores = Array.isArray(g.turnStartScores)
+    ? g.turnStartScores
+    : g.players.map(p => p.score);
+
+  for (let i = 0; i < g.players.length; i++){
+    const start = Number.isFinite(startScores[i]) ? startScores[i] : g.players[i].score;
+    const gained = Math.max(0, g.players[i].score - start);
+    g.turnLog.push({
+      turn: g.turnNo,
+      player: i,
+      active: g.active,
+      pts: gained,
+      reason: reason || null,
+    });
+  }
+
+  g.lastTurnTotalsKey = key;
+}
+
 export function endTurn(g, reason){
   if (g.gameOver) return;
 
@@ -679,6 +706,7 @@ export function endTurn(g, reason){
 
   const ap = g.players[g.active];
   applyTechTierBonus(g);
+  logTurnTotals(g, reason);
   if (g.gameOver) return;
 
   // Skill selection happens BEFORE the next turn begins.
@@ -941,7 +969,10 @@ function handleSuccess(g, word, wordLen){
     const opponentBonus = roundInt(finalWordPoints * 0.5);
     fountainShared = opponentBonus;
     op.score += opponentBonus;
-    if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
+    if (checkVictory(g)){
+      logTurnTotals(g, "VICTORY");
+      return { ended:true, finalWordPoints, endedByVictory:true };
+    }
   }
 
   let spellFinderShared = 0;
@@ -951,7 +982,10 @@ function handleSuccess(g, word, wordLen){
     spellFinderShared = roundInt(finalWordPoints * 0.5);
     spellFinderReduction = spellFinderShared;
     op.score += spellFinderShared;
-    if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
+    if (checkVictory(g)){
+      logTurnTotals(g, "VICTORY");
+      return { ended:true, finalWordPoints, endedByVictory:true };
+    }
   }
 
   ap.score += Math.max(0, finalWordPoints - spellFinderReduction) + goldBonus;
@@ -963,11 +997,17 @@ function handleSuccess(g, word, wordLen){
       pts: goldBonus,
     });
   }
-  if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
+  if (checkVictory(g)){
+    logTurnTotals(g, "VICTORY");
+    return { ended:true, finalWordPoints, endedByVictory:true };
+  }
 
   if (decayLoss > 0){
     op.score += decayLoss;
-    if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
+    if (checkVictory(g)){
+      logTurnTotals(g, "VICTORY");
+      return { ended:true, finalWordPoints, endedByVictory:true };
+    }
   }
 
   g.foundWords.add(word);
