@@ -26,7 +26,6 @@ export const CATEGORIES = {
 
 export const SKILLS = {
   // Point
-  POINT_INCREASE: { id:"POINT_INCREASE", cat:"POINT", name:"Point Increase", max:5 },
   POINT_FOUNTAIN: { id:"POINT_FOUNTAIN", cat:"POINT", name:"Point Fountain",   max:5 },
   FAIL_OPP:       { id:"FAIL_OPP",       cat:"POINT", name:"Failure into Opportunity",  max:5 },
   EXTRA_SWIPE:    { id:"EXTRA_SWIPE",    cat:"POINT", name:"Extra Swipe",               max:5 },
@@ -42,7 +41,6 @@ export const SKILLS = {
   SPELL_FINDER:   { id:"SPELL_FINDER",   cat:"TECH", name:"Spell Finder",               max:5 },
 };
 
-const POINT_INCREASE_PCT = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
 const FOUNTAIN_MULT      = [1, 1.02, 1.04, 1.06, 1.10, 1.15];
 
 const DECAY_STEP         = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
@@ -314,7 +312,6 @@ function makePlayer(id){
 
     // Skills levels
     skills: {
-      POINT_INCREASE: 0,
       POINT_FOUNTAIN: 0,
       VALUE_DECAY: 0,
       WIN_FOOTSTEPS: 0,
@@ -952,7 +949,6 @@ function handleSuccess(g, word, wordLen){
   const afterDecayBase = preDecayScore * multiplier;
   updateDecaySteps(g);
 
-  const piLv = ap.skills.POINT_INCREASE;
   const foLv = ap.skills.FAIL_OPP;
   const usedWhiteCount = countOverlap(g.selectionSet, g.white);
   const pfLv = ap.skills.POINT_FOUNTAIN;
@@ -961,7 +957,6 @@ function handleSuccess(g, word, wordLen){
   const usedGoldCount = countOverlap(g.selectionSet, g.gold);
 
   const scoreContext = {
-    piLv,
     foLv,
     pfLv,
     wfLv,
@@ -1102,12 +1097,8 @@ function countOverlap(setA, setB){
 
 function applyPostDecayScore(baseScore, ap, context){
   let s = baseScore;
-  const piLv = context.piLv || 0;
   const foLv = context.foLv || 0;
   const usedWhiteCount = context.usedWhiteCount || 0;
-  if (piLv > 0){
-    s *= (1 + POINT_INCREASE_PCT[piLv]);
-  }
   if (foLv > 0 && usedWhiteCount >= 2){
     s *= WHITE_MULT[foLv];
   }
@@ -1142,11 +1133,6 @@ export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
     if (details.multiplier < 1){
       baseScore *= details.multiplier;
     }
-  }
-
-  const piLv = ap.skills.POINT_INCREASE || 0;
-  if (piLv > 0){
-    baseScore *= (1 + POINT_INCREASE_PCT[piLv]);
   }
 
   const foLv = ap.skills.FAIL_OPP || 0;
@@ -1506,7 +1492,6 @@ function findSpellFinderWordWithFallback(g, minLen, opponentWord){
 
 export function pointTier(p){
   const total =
-    p.skills.POINT_INCREASE +
     p.skills.POINT_FOUNTAIN +
     p.skills.FAIL_OPP +
     p.skills.EXTRA_SWIPE;
@@ -1677,8 +1662,6 @@ export function describeSkillCompact(p, skillId){
   const lv = p.skills[skillId];
 
   switch(skillId){
-    case "POINT_INCREASE":
-      return `×${(1+POINT_INCREASE_PCT[lv]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[lv]*100)}%)`;
     case "POINT_FOUNTAIN":
       return `self ×${FOUNTAIN_MULT[lv].toFixed(2)} / opponent share 50%`;
     case "VALUE_DECAY": {
@@ -1720,10 +1703,6 @@ export function describeSkill(p, skillId){
   const lv = p.skills[skillId];
 
   switch(skillId){
-    case "POINT_INCREASE": {
-      const pct = Math.round(POINT_INCREASE_PCT[lv] * 100);
-      return `Lv${lv}/5 — After combo (and after Value Decay if it applies): multiply your word’s Base+Length score by ×${(1+POINT_INCREASE_PCT[lv]).toFixed(2)} (+${pct}%).`;
-    }
     case "POINT_FOUNTAIN": {
       const mult = FOUNTAIN_MULT[lv];
       return `Lv${lv}/5 — When you find a word, the LAST tile becomes your Fountain (only 1 at a time; new replaces old). Using YOUR Fountain in a later word multiplies that word’s FINAL points by ×${mult.toFixed(2)}. If the OPPONENT uses your Fountain in a word, you gain 50% of that word’s FINAL points (rounded), and the opponent still keeps full word points.`;
@@ -1792,7 +1771,6 @@ export function describeOffer(p, skillMeta){
 
   let effect = "";
   switch(id){
-    case "POINT_INCREASE": effect = `Next: ×${(1+POINT_INCREASE_PCT[next]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[next]*100)}%)`; break;
     case "POINT_FOUNTAIN": effect = `Next: self-use ×${FOUNTAIN_MULT[next].toFixed(2)}`; break;
     case "VALUE_DECAY": {
       const maxDecay = DECAY_MAX_DECAY_PCT[next] ?? 0;

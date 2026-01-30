@@ -803,7 +803,7 @@ export function setConfirmState(el, pending, locked){
 function renderSkills(p){
   // Compact list for the player panels: level + CURRENT effect only.
   const order = [
-    "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP","EXTRA_SWIPE",
+    "POINT_FOUNTAIN","FAIL_OPP","EXTRA_SWIPE",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
     "EXTRA_CHANCE","SPELL_FINDER","SAFETY_NET"
   ];
@@ -1179,7 +1179,7 @@ export function showTestSkillsModal(el, initialSkills){
   if (!el.testSkillsModal || !el.testSkillsList) return;
 
   const order = [
-    "POINT_INCREASE","POINT_FOUNTAIN","FAIL_OPP","EXTRA_SWIPE",
+    "POINT_FOUNTAIN","FAIL_OPP","EXTRA_SWIPE",
     "VALUE_DECAY","WIN_FOOTSTEPS","COLOR_CANCEL",
     "EXTRA_CHANCE","SPELL_FINDER","SAFETY_NET"
   ];
@@ -1352,19 +1352,6 @@ function buildSkillReferenceHtml(){
     <div class="skillRefCats">
       <div class="skillRefCat skillCatPoint">
         <div class="catTitle">Point Skills</div>
-
-        <div class="skillRefItem">
-          <div class="name"><span class="skillCatDot"></span>Point Increase (multiplicative)</div>
-          <div class="rule">Applied after combo (and after Value Decay if it applies). Multiplies your current score value.</div>
-          <table class="skillRefTable">
-            <tr><th>Level</th><th>Effect</th></tr>
-            <tr><td>Lv1</td><td>×1.05 (+5%)</td></tr>
-            <tr><td>Lv2</td><td>×1.08 (+8%)</td></tr>
-            <tr><td>Lv3</td><td>×1.12 (+12%)</td></tr>
-            <tr><td>Lv4</td><td>×1.15 (+15%)</td></tr>
-            <tr><td>Lv5</td><td>×1.20 (+20%)</td></tr>
-          </table>
-        </div>
 
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Point Fountain</div>
