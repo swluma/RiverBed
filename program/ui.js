@@ -1333,16 +1333,16 @@ function buildSkillReferenceHtml(){
           <div class="name"><span class="skillCatDot"></span>Point Fountain</div>
           <div class="rule">
             When you find a word, the <b>final tile</b> becomes your fountain tile (max 1; new replaces old).
-            <br/>• If <b>YOU</b> use your own fountain tile in a word: add a flat bonus.
+            <br/>• If <b>YOU</b> use your own fountain tile in a word: multiply that word’s final points.
             <br/>• If your <b>OPPONENT</b> uses your fountain tile: you gain <b>50%</b> of that word’s <b>FINAL</b> points (rounded), opponent still gains full word points.
           </div>
           <table class="skillRefTable">
-            <tr><th>Level</th><th>Self-use flat bonus</th></tr>
-              <tr><td>Lv1</td><td>+3</td></tr>
-              <tr><td>Lv2</td><td>+5</td></tr>
-              <tr><td>Lv3</td><td>+10</td></tr>
-              <tr><td>Lv4</td><td>+15</td></tr>
-              <tr><td>Lv5</td><td>+20</td></tr>
+            <tr><th>Level</th><th>Self-use multiplier</th></tr>
+              <tr><td>Lv1</td><td>×1.02 (+2%)</td></tr>
+              <tr><td>Lv2</td><td>×1.04 (+4%)</td></tr>
+              <tr><td>Lv3</td><td>×1.06 (+6%)</td></tr>
+              <tr><td>Lv4</td><td>×1.10 (+10%)</td></tr>
+              <tr><td>Lv5</td><td>×1.15 (+15%)</td></tr>
           </table>
         </div>
 

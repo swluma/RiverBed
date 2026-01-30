@@ -42,7 +42,7 @@ export const SKILLS = {
 };
 
 const POINT_INCREASE_PCT = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
-  const FOUNTAIN_BONUS     = [0, 3, 5, 10, 15, 20];
+const FOUNTAIN_MULT      = [1, 1.02, 1.04, 1.06, 1.10, 1.15];
 
 const DECAY_STEP         = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
 const DECAY_MIN_MULT     = [1, 0.75, 0.60, 0.40, 0.25, 0.00];
@@ -1019,7 +1019,7 @@ function applyPostDecayScore(baseScore, ap, context){
   const pfLv = context.pfLv || 0;
   const usedFountainSelf = context.usedFountainSelf;
   if (pfLv > 0 && usedFountainSelf){
-    s += FOUNTAIN_BONUS[pfLv];
+    s *= FOUNTAIN_MULT[pfLv];
   }
   const wfLv = context.wfLv || 0;
   if (wfLv > 0 && context.usedGold){
@@ -1065,7 +1065,7 @@ export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
 
   const pfLv = ap.skills.POINT_FOUNTAIN || 0;
   if (pfLv > 0 && ap.fountainIdx != null && pathSet.has(ap.fountainIdx)){
-    baseScore += FOUNTAIN_BONUS[pfLv];
+    baseScore *= FOUNTAIN_MULT[pfLv];
   }
 
   const wfLv = ap.skills.WIN_FOOTSTEPS || 0;
@@ -1587,7 +1587,7 @@ export function describeSkillCompact(p, skillId){
     case "POINT_INCREASE":
       return `×${(1+POINT_INCREASE_PCT[lv]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[lv]*100)}%)`;
     case "POINT_FOUNTAIN":
-      return `self +${FOUNTAIN_BONUS[lv]} / opponent share 50%`;
+      return `self ×${FOUNTAIN_MULT[lv].toFixed(2)} / opponent share 50%`;
     case "VALUE_DECAY": {
       const stepPct = Math.round(DECAY_STEP[lv] * 100);
       const maxDecay = DECAY_MAX_DECAY_PCT[lv] ?? 0;
@@ -1629,8 +1629,8 @@ export function describeSkill(p, skillId){
       return `Lv${lv}/5 — After combo (and after Value Decay if it applies): multiply your word’s Base+Length score by ×${(1+POINT_INCREASE_PCT[lv]).toFixed(2)} (+${pct}%).`;
     }
     case "POINT_FOUNTAIN": {
-      const bonus = FOUNTAIN_BONUS[lv];
-      return `Lv${lv}/5 — When you find a word, the LAST tile becomes your Fountain (only 1 at a time; new replaces old). Using YOUR Fountain in a later word adds +${bonus} flat points. If the OPPONENT uses your Fountain in a word, you gain 50% of that word’s FINAL points (rounded), and the opponent still keeps full word points.`;
+      const mult = FOUNTAIN_MULT[lv];
+      return `Lv${lv}/5 — When you find a word, the LAST tile becomes your Fountain (only 1 at a time; new replaces old). Using YOUR Fountain in a later word multiplies that word’s FINAL points by ×${mult.toFixed(2)}. If the OPPONENT uses your Fountain in a word, you gain 50% of that word’s FINAL points (rounded), and the opponent still keeps full word points.`;
     }
     case "VALUE_DECAY": {
       const stepPct = Math.round(DECAY_STEP[lv] * 100);
@@ -1690,7 +1690,7 @@ export function describeOffer(p, skillMeta){
   let effect = "";
   switch(id){
     case "POINT_INCREASE": effect = `Next: ×${(1+POINT_INCREASE_PCT[next]).toFixed(2)} (+${Math.round(POINT_INCREASE_PCT[next]*100)}%)`; break;
-    case "POINT_FOUNTAIN": effect = `Next: self-use +${FOUNTAIN_BONUS[next]} pts`; break;
+    case "POINT_FOUNTAIN": effect = `Next: self-use ×${FOUNTAIN_MULT[next].toFixed(2)}`; break;
     case "VALUE_DECAY": {
       const maxDecay = DECAY_MAX_DECAY_PCT[next] ?? 0;
       effect = `Next: purple step ${Math.round(DECAY_STEP[next] * 100)}% (max ${maxDecay}% decay)`;
