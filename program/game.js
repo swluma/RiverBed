@@ -570,9 +570,6 @@ export function startTurn(g){
   ap.hasFoundWordThisTurn = false;
   ap.safetyNetUsed = false;
   ap.failedSwipeThisTurn = false;
-  if (ap.spellFinder){
-    ap.spellFinder.tileLimitThisTurn = null;
-  }
 
   g.extraChanceLeft = EXTRA_CHANCE_ADD[ap.skills.EXTRA_CHANCE];
 
