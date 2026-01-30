@@ -931,6 +931,9 @@ function handleSuccess(g, word, wordLen){
   const rawDecayLoss = scoreWithoutDecay - scoreWithDecay;
   const decayLoss = Math.max(0, roundInt(rawDecayLoss));
   const finalWordPoints = Math.max(0, altFinalWordPoints - decayLoss);
+  const goldBonus = (wfLv > 0 && usedGoldCount > 0)
+    ? (GOLD_BONUS[wfLv] * usedGoldCount)
+    : 0;
 
   let fountainShared = 0;
   const usedOpponentFountain = (op.fountainIdx != null && g.selectionSet.has(op.fountainIdx));
@@ -951,7 +954,7 @@ function handleSuccess(g, word, wordLen){
     if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
   }
 
-  ap.score += Math.max(0, finalWordPoints - spellFinderReduction);
+  ap.score += Math.max(0, finalWordPoints - spellFinderReduction) + goldBonus;
   if (checkVictory(g)) return { ended:true, finalWordPoints, endedByVictory:true };
 
   if (decayLoss > 0){
@@ -1018,11 +1021,6 @@ function applyPostDecayScore(baseScore, ap, context){
   if (pfLv > 0 && usedFountainSelf){
     s *= FOUNTAIN_MULT[pfLv];
   }
-  const wfLv = context.wfLv || 0;
-  const usedGoldCount = context.usedGoldCount || 0;
-  if (wfLv > 0 && usedGoldCount > 0){
-    s += GOLD_BONUS[wfLv] * usedGoldCount;
-  }
   s *= pointCategoryMultiplier(ap);
   return s;
 }
@@ -1068,9 +1066,6 @@ export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
 
   const wfLv = ap.skills.WIN_FOOTSTEPS || 0;
   const usedGoldCount = countOverlap(pathSet, g.gold);
-  if (wfLv > 0 && usedGoldCount > 0){
-    baseScore += GOLD_BONUS[wfLv] * usedGoldCount;
-  }
   const tilePreference = options.tilePreference || {};
   const beneficialGold = countOverlap(pathSet, g.gold);
   const beneficialWhite = countOverlap(pathSet, g.white);
@@ -1102,6 +1097,9 @@ export function projectWordScore(g, playerIndex, wordLen, path, options = {}){
   }
 
   baseScore *= pointCategoryMultiplier(ap);
+  if (wfLv > 0 && usedGoldCount > 0){
+    baseScore += GOLD_BONUS[wfLv] * usedGoldCount;
+  }
   return Math.round(baseScore);
 }
 
