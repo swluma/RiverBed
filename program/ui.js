@@ -1435,7 +1435,8 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Winner’s Footsteps (Gold tiles)</div>
           <div class="rule">
-            Trigger: if the opponent finds a word, then on your <b>NEXT</b> turn gold tiles appear.
+            Trigger: if the opponent finds a word without failing any swipe this turn, then on your <b>NEXT</b> turn gold tiles appear.
+            Failing even once (Extra Chance does not override this) prevents the gold from spawning.
             Gold tiles are visible to both players and revert at the end of your turn.
             Gold placement: choose the required number of distinct tiles uniformly at random from all 36.
             If your found word uses ≥1 gold tile: add a flat bonus per gold tile used.

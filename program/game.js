@@ -1030,7 +1030,7 @@ function handleSuccess(g, word, wordLen){
     ap.fountainIdx = lastIdx;
   }
 
-  if (op.skills.WIN_FOOTSTEPS >= 1){
+  if (op.skills.WIN_FOOTSTEPS >= 1 && !ap.failedSwipeThisTurn){
     op.pendingGoldTrigger = true;
   }
 
@@ -1658,7 +1658,7 @@ export function describeSkillCompact(p, skillId){
       return `purple step ${stepPct}% (max ${maxDecay}% decay)`;
     }
     case "WIN_FOOTSTEPS":
-      return `gold max ${GOLD_MAX_TILES[lv]}, +${GOLD_BONUS[lv]} per gold tile`;
+      return `gold max ${GOLD_MAX_TILES[lv]}, +${GOLD_BONUS[lv]} per gold tile (opponent no failed swipes)`;
     case "COLOR_CANCEL":
       if (lv===1) return `−1 special tile`;
       if (lv===2) return `−1 (50% −2)`;
@@ -1704,7 +1704,7 @@ export function describeSkill(p, skillId){
     case "WIN_FOOTSTEPS": {
       const maxGold = GOLD_MAX_TILES[lv];
       const bonus = GOLD_BONUS[lv];
-      return `Lv${lv}/5 — Trigger: if the opponent finds a word, then on YOUR NEXT turn spawn up to ${maxGold} visible GOLD tiles (uniform random among all 36). For each gold tile used in your found word: add +${bonus} flat points. Gold tiles are visible to both players and disappear at the end of your turn.`;
+      return `Lv${lv}/5 — Trigger: if the opponent finds a word without failing any swipe that turn, then on YOUR NEXT turn spawn up to ${maxGold} visible GOLD tiles (uniform random among all 36). For each gold tile used in your found word: add +${bonus} flat points. Gold tiles are visible to both players and disappear at the end of your turn.`;
     }
     case "COLOR_CANCEL": {
       return `Lv${lv}/5 — When you find a word, the opponent’s NEXT turn spawns fewer “special tiles” (GOLD from Winner’s Footsteps, WHITE from Failure into Opportunity, and GREEN Spell Finder hints). Gray tiles are NOT reduced. If the opponent has a Fountain tile, it is removed before their next turn begins. Reduction: Lv1 −1, Lv2 −1 (50% chance −2), Lv3 −2, Lv4 −2 (50% chance −3), Lv5 −3.`;
@@ -1765,7 +1765,7 @@ export function describeOffer(p, skillMeta){
       effect = `Next: purple step ${Math.round(DECAY_STEP[next] * 100)}% (max ${maxDecay}% decay)`;
       break;
     }
-    case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]} per tile`; break;
+    case "WIN_FOOTSTEPS":  effect = `Next: max gold ${GOLD_MAX_TILES[next]}, gold bonus +${GOLD_BONUS[next]} per tile (opponent must never fail that turn)`; break;
     case "COLOR_CANCEL": {
       const cancelText =
         next === 1 ? "-1 special tile" :
