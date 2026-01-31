@@ -857,7 +857,7 @@ function handleFailure(g, {reason, word}){
   }
 
   const ended = (g.attempts <= 0 && g.extraChanceLeft <= 0);
-  const preserveCombo = (ap.skills.EXTRA_CHANCE >= 5) && !ended && !g.extraSwipeActive;
+  const preserveCombo = (ap.skills.EXTRA_CHANCE >= 4) && !ended && !g.extraSwipeActive;
   if (!preserveCombo){
     ap.combo = 0;
   }
@@ -1666,7 +1666,7 @@ export function describeSkillCompact(p, skillId){
       if (lv===4) return `−2 (50% −3)`;
       return `−3`;
     case "EXTRA_CHANCE":
-      if (lv >= 5) return `+${EXTRA_CHANCE_ADD[lv]} attempts; combo kept on success`;
+      if (lv >= 4) return `+${EXTRA_CHANCE_ADD[lv]} attempts; combo kept on success`;
       return `+${EXTRA_CHANCE_ADD[lv]} attempts after fail`;
     case "FAIL_OPP":
       return `white max ${WHITE_MAX_TILES[lv]} (after failing; prioritizes tiles from your most recent failed swipe before filling the rest randomly), ×${formatWhiteMult(WHITE_MULT[lv])} if ≥2 used`;
@@ -1711,8 +1711,8 @@ export function describeSkill(p, skillId){
     }
     case "EXTRA_CHANCE": {
       const add = EXTRA_CHANCE_ADD[lv];
-      const comboNote = (lv >= 5)
-        ? " At Lv5, if you eventually succeed in the SAME turn (even using extra attempts), your combo is preserved."
+      const comboNote = (lv >= 4)
+        ? " At Lv4+, if you eventually succeed in the SAME turn (even using extra attempts), your combo is preserved."
         : " IMPORTANT: the failure still consumes the attempt and ALWAYS resets combo; extra attempts do NOT protect combo.";
       return `Lv${lv}/5 — After a failed attempt (invalid word / duplicate / not in dictionary): immediately gain +${add} extra attempts for the SAME turn.${comboNote}`;
     }
@@ -1777,7 +1777,7 @@ export function describeOffer(p, skillMeta){
       break;
     }
     case "EXTRA_CHANCE": {
-      const comboTag = (next >= 5) ? " + combo preserved on success" : "";
+      const comboTag = (next >= 4) ? " + combo preserved on success" : "";
       effect = `Next: +${EXTRA_CHANCE_ADD[next]} attempts after failure${comboTag}`;
       break;
     }
