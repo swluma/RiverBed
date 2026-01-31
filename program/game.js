@@ -41,7 +41,7 @@ export const SKILLS = {
   SPELL_FINDER:   { id:"SPELL_FINDER",   cat:"TECH", name:"Spell Finder",               max:5 },
 };
 
-const FOUNTAIN_MULT      = [1, 1.02, 1.04, 1.06, 1.10, 1.15];
+const FOUNTAIN_MULT      = [1, 1.03, 1.05, 1.08, 1.12, 1.18];
 
 const DECAY_STEP         = [0, 0.05, 0.08, 0.12, 0.15, 0.20];
 const DECAY_MIN_MULT     = [1, 0.75, 0.60, 0.40, 0.25, 0.00];

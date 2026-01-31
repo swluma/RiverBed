@@ -1362,11 +1362,11 @@ function buildSkillReferenceHtml(){
           </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Self-use multiplier</th></tr>
-              <tr><td>Lv1</td><td>×1.02 (+2%)</td></tr>
-              <tr><td>Lv2</td><td>×1.04 (+4%)</td></tr>
-              <tr><td>Lv3</td><td>×1.06 (+6%)</td></tr>
-              <tr><td>Lv4</td><td>×1.10 (+10%)</td></tr>
-              <tr><td>Lv5</td><td>×1.15 (+15%)</td></tr>
+            <tr><td>Lv1</td><td>×1.03 (+3%)</td></tr>
+            <tr><td>Lv2</td><td>×1.05 (+5%)</td></tr>
+            <tr><td>Lv3</td><td>×1.08 (+8%)</td></tr>
+            <tr><td>Lv4</td><td>×1.12 (+12%)</td></tr>
+            <tr><td>Lv5</td><td>×1.18 (+18%)</td></tr>
           </table>
         </div>
 
