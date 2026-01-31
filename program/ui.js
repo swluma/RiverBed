@@ -858,7 +858,7 @@ export function renderCategoryBonuses(p){
   }
 
   if (tTier > 0){
-    const detail = (tTier === 1) ? "End of turn +5 pts" : "End of turn +10 pts";
+    const detail = (tTier === 1) ? "End of turn +8 pts" : "End of turn +15 pts";
     items.push(`
       <div class="bonusItem tech">
         <div class="tag"><span class="dot"></span>Tech Tier ${tTier}</div>
@@ -1538,13 +1538,13 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Technical Skills Category Bonus</div>
           <div class="rule">
-            At the end of your turn you gain a flat point bonus. Tier 1 awards +5 points, Tier 2 awards +10 points.
+            At the end of your turn you gain a flat point bonus. Tier 1 awards +8 points, Tier 2 awards +15 points.
             This bonus is applied before skill selection and can trigger on both successful and failed turns.
           </div>
           <table class="skillRefTable">
             <tr><th>Tier</th><th>Effect</th></tr>
-            <tr><td>Tier 1</td><td>+5 points</td></tr>
-            <tr><td>Tier 2</td><td>+10 points</td></tr>
+            <tr><td>Tier 1</td><td>+8 points</td></tr>
+            <tr><td>Tier 2</td><td>+15 points</td></tr>
           </table>
         </div>
       </div>

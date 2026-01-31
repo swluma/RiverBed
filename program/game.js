@@ -1512,7 +1512,7 @@ export function techTier(p){
 }
 
 const POINT_CATEGORY_MULTIPLIERS = [1, 1.1, 1.2];
-const TECH_CATEGORY_BONUS_POINTS = [0, 5, 10];
+const TECH_CATEGORY_BONUS_POINTS = [0, 8, 15];
 
 function pointCategoryMultiplier(p){
   const tier = pointTier(p);
