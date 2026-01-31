@@ -71,7 +71,7 @@ const EXTRA_SWIPE_BONUS_LV5_CHANCE = 0.25;
 const WHITE_MAX_TILES   = [0, 2, 3, 3, 4, 6];
 const WHITE_MULT        = [1, 1.3, 1.5, 1.7, 1.85, 2.0];
 
-const SAFETY_NET_POINTS  = [0, 3, 5, 8, 10, 15];
+const SAFETY_NET_POINTS  = [0, 3, 6, 10, 15, 20];
 
 const SPELL_FINDER_MINLENS = [0, 3, 3, 4, 5, 6];
 const SPELL_FINDER_BASE_HINT_TILES = [0, 1, 2, 2, 2, 2];
