@@ -101,10 +101,10 @@ const COMBO_MULT = (combo) => {
   if (combo === 1) return 1.03;
   if (combo === 2) return 1.06;
   if (combo === 3) return 1.10;
-  if (combo === 4) return 1.14;
-  if (combo === 5) return 1.18;
-  if (combo === 6) return 1.22;
-  return 1.35; // >=7 cap
+  if (combo === 4) return 1.16;
+  if (combo === 5) return 1.24;
+  if (combo === 6) return 1.34;
+  return 1.50; // >=7 cap
 };
 
 export function comboMultiplier(combo){
