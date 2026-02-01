@@ -53,6 +53,12 @@ const COMPUTER_OPTIONS = {
     tilePreference: { gold: 0, white: 0, fountain: 0 },
     opponentFountainPenalty: 0,
     lengthPreference: { min: 3, max: 4, bonus: 4, penaltyPerStep: 6 },
+    lengthRegulation: {
+      mode: "soft",
+      primaryMin: 3,
+      primaryMax: 4,
+      primaryProbability: 0.85,
+    },
   },
   strong: {
     label: "Strong",
@@ -61,6 +67,12 @@ const COMPUTER_OPTIONS = {
     tilePreference: { gold: 2, white: 2, fountain: 3 },
     opponentFountainPenalty: 15,
     lengthPreference: { min: 4, max: 5, bonus: 8, penaltyPerStep: 4 },
+    lengthRegulation: {
+      mode: "hard",
+      primaryMin: 4,
+      primaryMax: 5,
+      fallbackToShorter: true,
+    },
   },
   "very-strong": {
     label: "Very Strong",
@@ -69,6 +81,12 @@ const COMPUTER_OPTIONS = {
     tilePreference: { gold: 3, white: 3, fountain: 5 },
     opponentFountainPenalty: 26,
     lengthPreference: { min: 4, max: 6, bonus: 12, penaltyPerStep: 1 },
+    lengthRegulation: {
+      mode: "hard",
+      primaryMin: 5,
+      primaryMax: 6,
+      fallbackToShorter: true,
+    },
   },
 };
 const COMPUTER_SKILL_PRIORITY = {
@@ -950,6 +968,7 @@ async function runComputerTurn(){
       tilePreference: options?.tilePreference,
       opponentFountainPenalty: options?.opponentFountainPenalty,
       lengthPreference: options?.lengthPreference,
+      lengthRegulation: options?.lengthRegulation,
     });
     if (candidate && Array.isArray(candidate.path) && candidate.path.length >= MIN_WORD_LEN){
       await animateComputerSwipe(candidate.path);

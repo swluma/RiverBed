@@ -132,6 +132,44 @@ function shuffle(a){
   return a;
 }
 
+const DEFAULT_SOFT_LENGTH_PROBABILITY = 0.85;
+
+function clampProbability(value, fallback){
+  if (value == null) return fallback;
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.min(1, value));
+}
+
+function normalizeLengthRegulation(input){
+  if (!input || typeof input !== "object") return null;
+  const mode = input.mode === "hard" ? "hard" : "soft";
+  const minRaw = Number.isFinite(input.primaryMin) ? Math.trunc(input.primaryMin) : MIN_WORD_LEN;
+  const primaryMin = Math.max(MIN_WORD_LEN, minRaw);
+  const maxRaw = Number.isFinite(input.primaryMax) ? Math.trunc(input.primaryMax) : primaryMin;
+  const primaryMax = Math.max(primaryMin, maxRaw);
+  const primaryProbability = mode === "soft"
+    ? clampProbability(input.primaryProbability ?? DEFAULT_SOFT_LENGTH_PROBABILITY, DEFAULT_SOFT_LENGTH_PROBABILITY)
+    : 1;
+  const fallbackToShorter = mode === "hard" ? (input.fallbackToShorter !== false) : false;
+  return { mode, primaryMin, primaryMax, primaryProbability, fallbackToShorter };
+}
+
+function selectCandidateByLengthRegulation(bestOverall, bestPrimary, bestShorter, regulation){
+  if (!regulation) return bestOverall;
+  if (regulation.mode === "soft"){
+    if (bestPrimary && Math.random() < regulation.primaryProbability){
+      return bestPrimary;
+    }
+    return bestOverall || bestPrimary;
+  }
+  if (regulation.mode === "hard"){
+    if (bestPrimary) return bestPrimary;
+    if (regulation.fallbackToShorter && bestShorter) return bestShorter;
+    return bestOverall;
+  }
+  return bestOverall;
+}
+
 export function shuffleBoard(g){
   if (!g || !Array.isArray(g.board)) return false;
   shuffle(g.board);
@@ -1179,6 +1217,7 @@ export function findComputerWord(g, playerIndex, options = {}){
 
   const sampleSize = Number.isFinite(options.sampleSize) ? Math.max(1, options.sampleSize) : 400;
   const stopScore = Number.isFinite(options.stopScore) ? options.stopScore : 0;
+  const lengthRegulation = normalizeLengthRegulation(options.lengthRegulation);
 
   const pools = [];
   if (Array.isArray(g.commonWords) && g.commonWords.length > 0){
@@ -1188,6 +1227,8 @@ export function findComputerWord(g, playerIndex, options = {}){
 
   let tries = 0;
   let best = null;
+  let bestPrimary = null;
+  let bestShorter = null;
 
   for (const pool of pools){
     if (!Array.isArray(pool) || pool.length === 0) continue;
@@ -1209,13 +1250,33 @@ export function findComputerWord(g, playerIndex, options = {}){
         tilePreference: options.tilePreference,
         opponentFountainPenalty: options.opponentFountainPenalty,
       });
+      const candidate = { word, path, score };
+
+      if (lengthRegulation){
+        const len = path.length;
+        if (len >= lengthRegulation.primaryMin && len <= lengthRegulation.primaryMax){
+          if (!bestPrimary || score > bestPrimary.score || (score === bestPrimary.score && path.length > bestPrimary.path.length)){
+            bestPrimary = candidate;
+          }
+        } else if (lengthRegulation.fallbackToShorter && len < lengthRegulation.primaryMin){
+          if (!bestShorter || score > bestShorter.score || (score === bestShorter.score && path.length > bestShorter.path.length)){
+            bestShorter = candidate;
+          }
+        }
+      }
+
       if (!best || score > best.score || (score === best.score && path.length > best.path.length)){
-        best = { word, path, score };
+        best = candidate;
       }
       if (stopScore > 0 && best && best.score >= stopScore){
         return best;
       }
     }
+  }
+
+  const selected = selectCandidateByLengthRegulation(best, bestPrimary, bestShorter, lengthRegulation);
+  if (selected){
+    return selected;
   }
 
   if (best){
