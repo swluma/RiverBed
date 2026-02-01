@@ -1420,7 +1420,7 @@ function buildSkillReferenceHtml(){
         <div class="skillRefItem">
           <div class="name"><span class="skillCatDot"></span>Value Decay</div>
           <div class="rule">
-            Only the opponent is affected. At the start of their turn, the tiles from your most recent word glow purple. Each time they use ≥1 purple tile to find a word, they lose step × (consecutive purple hits) of that word’s score (after combo, before point multipliers). Decay steps stack while purple usage continues and reset once they avoid purple tiles; the reduction is capped at the level’s Max decay and the points shaved off are added to you immediately. Purple tiles vanish once their turn ends.
+            Opponent only: if they scored last turn, tiles from your most recent word glow purple on their turn; the effect is cleared whenever they fail to swipe. Using ≥1 purple tile applies step × consecutive hits of decay (capped per level) before other multipliers, and shaved points go to you. Purple tiles vanish at turn end.
           </div>
           <table class="skillRefTable">
             <tr><th>Level</th><th>Decay step</th><th>Max decay</th></tr>
