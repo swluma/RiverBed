@@ -339,6 +339,7 @@ function makePlayer(id){
     hasFoundWordThisTurn: false,
     safetyNetUsed: false,
     failedSwipeThisTurn: false,
+    lastTurnFoundWord: false,
 
     // Spell Finder: fixed target + hint tiles
     spellFinder: {
@@ -568,7 +569,7 @@ export function startTurn(g){
   const ap = g.players[g.active];
   const op = g.players[1 - g.active];
   g.purple.clear();
-  if (op && (op.skills.VALUE_DECAY || 0) > 0 && ap.lastWordTiles){
+  if (op && (op.skills.VALUE_DECAY || 0) > 0 && ap.lastTurnFoundWord && ap.lastWordTiles){
     for (const idx of ap.lastWordTiles){
       if (Number.isInteger(idx) && idx >= 0 && idx < SIZE * SIZE){
         g.purple.add(idx);
@@ -712,6 +713,7 @@ export function endTurn(g, reason){
   }
 
   const ap = g.players[g.active];
+  ap.lastTurnFoundWord = ap.hasFoundWordThisTurn;
   applyTechTierBonus(g);
   logTurnTotals(g, reason);
   if (g.gameOver) return;
