@@ -72,6 +72,30 @@ export function bindUI(handlers){
     winScoreValue: document.getElementById("winScoreValue"),
     modePill: document.getElementById("modePill"),
     modeValue: document.getElementById("modeValue"),
+    roomStatusPanel: document.getElementById("roomStatusPanel"),
+    roomSourceBadge: document.getElementById("roomSourceBadge"),
+    roomModeBadge: document.getElementById("roomModeBadge"),
+    roomConnectionBadge: document.getElementById("roomConnectionBadge"),
+    roomCodeValue: document.getElementById("roomCodeValue"),
+    roomPlayerValue: document.getElementById("roomPlayerValue"),
+    roomPlayersValue: document.getElementById("roomPlayersValue"),
+    roomPhaseValue: document.getElementById("roomPhaseValue"),
+    roomStatusNote: document.getElementById("roomStatusNote"),
+    roomWaitingPanel: document.getElementById("roomWaitingPanel"),
+    roomWaitingTitle: document.getElementById("roomWaitingTitle"),
+    roomWaitingBody: document.getElementById("roomWaitingBody"),
+    roomWaitingCodeWrap: document.getElementById("roomWaitingCodeWrap"),
+    roomWaitingCodeValue: document.getElementById("roomWaitingCodeValue"),
+    roomWaitingPlayersWrap: document.getElementById("roomWaitingPlayersWrap"),
+    roomWaitingPlayersList: document.getElementById("roomWaitingPlayersList"),
+    roomWaitingErrors: document.getElementById("roomWaitingErrors"),
+    copyRoomCodeBtn: document.getElementById("copyRoomCodeBtn"),
+    roomRetryBtn: document.getElementById("roomRetryBtn"),
+    roomBackHubBtn: document.getElementById("roomBackHubBtn"),
+    roomReloadBtn: document.getElementById("roomReloadBtn"),
+    roomContinueLocalBtn: document.getElementById("roomContinueLocalBtn"),
+    roomReadyBtn: document.getElementById("roomReadyBtn"),
+    roomStartBtn: document.getElementById("roomStartBtn"),
 
     dictDot: document.getElementById("dictDot"),
     dictText: document.getElementById("dictText"),
@@ -661,6 +685,28 @@ const emitVsComputer = () => {
 
   initTopRightMenus();
 
+  if (el.copyRoomCodeBtn && handlers.onCopyRoomCode){
+    el.copyRoomCodeBtn.addEventListener("click", handlers.onCopyRoomCode);
+  }
+  if (el.roomRetryBtn && handlers.onRetryRoom){
+    el.roomRetryBtn.addEventListener("click", handlers.onRetryRoom);
+  }
+  if (el.roomBackHubBtn && handlers.onBackToHub){
+    el.roomBackHubBtn.addEventListener("click", handlers.onBackToHub);
+  }
+  if (el.roomReloadBtn && handlers.onReloadPage){
+    el.roomReloadBtn.addEventListener("click", handlers.onReloadPage);
+  }
+  if (el.roomContinueLocalBtn && handlers.onContinueLocal){
+    el.roomContinueLocalBtn.addEventListener("click", handlers.onContinueLocal);
+  }
+  if (el.roomReadyBtn && handlers.onRoomReady){
+    el.roomReadyBtn.addEventListener("click", handlers.onRoomReady);
+  }
+  if (el.roomStartBtn && handlers.onRoomStart){
+    el.roomStartBtn.addEventListener("click", handlers.onRoomStart);
+  }
+
   return el;
 }
 
@@ -797,6 +843,83 @@ export function setConfirmState(el, pending, locked){
     el.confirmHint.textContent = pending
       ? "Tap Confirm to submit this word."
       : "Release to lock in a word, then confirm.";
+  }
+}
+
+export function renderRoomStatus(el, session, roomState, viewModel, options = {}){
+  if (!el.roomStatusPanel) return;
+  const show = !!(session?.hasHubParams || session?.isRoomPlay || options.forceVisible);
+  el.roomStatusPanel.classList.toggle("hidden", !show);
+  if (!show) return;
+
+  if (el.roomSourceBadge) el.roomSourceBadge.textContent = session.source;
+  if (el.roomModeBadge) el.roomModeBadge.textContent = session.mode;
+  if (el.roomConnectionBadge) el.roomConnectionBadge.textContent = roomState.connectionStatus;
+  if (el.roomCodeValue) el.roomCodeValue.textContent = session.roomCode || "-";
+  if (el.roomPlayerValue) el.roomPlayerValue.textContent = session.playerName || "Local device";
+  if (el.roomPlayersValue) el.roomPlayersValue.textContent = viewModel?.playerCountLabel || `0/${session.maxPlayers || 2}`;
+  if (el.roomPhaseValue) el.roomPhaseValue.textContent = roomState.phase || "idle";
+  if (el.roomStatusNote){
+    el.roomStatusNote.textContent = options.note || (session.isRoomPlay
+      ? "Room flow active. Mock transport is ready for backend replacement."
+      : "Local single-device play.");
+  }
+}
+
+export function renderRoomWaiting(el, model){
+  if (!el.roomWaitingPanel) return;
+  const visible = !!model?.visible;
+  el.roomWaitingPanel.classList.toggle("hidden", !visible);
+  if (!visible) return;
+
+  if (el.roomWaitingTitle) el.roomWaitingTitle.textContent = model.title || "Room";
+  if (el.roomWaitingBody) el.roomWaitingBody.textContent = model.body || "";
+
+  const roomCode = model.roomCode || "";
+  if (el.roomWaitingCodeWrap){
+    el.roomWaitingCodeWrap.classList.toggle("hidden", !roomCode);
+  }
+  if (el.roomWaitingCodeValue) el.roomWaitingCodeValue.textContent = roomCode || "-";
+  if (el.copyRoomCodeBtn){
+    el.copyRoomCodeBtn.classList.toggle("hidden", !roomCode || !model.showCopy);
+  }
+
+  const players = Array.isArray(model.players) ? model.players : [];
+  if (el.roomWaitingPlayersWrap){
+    el.roomWaitingPlayersWrap.classList.toggle("hidden", players.length === 0);
+  }
+  if (el.roomWaitingPlayersList){
+    el.roomWaitingPlayersList.innerHTML = players.map((player) => `
+      <div class="roomWaitingPlayer">
+        <div class="roomWaitingPlayerMeta">
+          <div class="roomWaitingPlayerName">${escapeHtml(player.name || "Player")}</div>
+          <div class="roomWaitingPlayerSub">${escapeHtml(player.role || "")}</div>
+        </div>
+        <div class="roomWaitingPlayerReady">${player.ready ? "Ready" : "Waiting"}</div>
+      </div>
+    `).join("");
+  }
+
+  const errors = Array.isArray(model.errors) ? model.errors : [];
+  if (el.roomWaitingErrors){
+    el.roomWaitingErrors.classList.toggle("hidden", errors.length === 0);
+    el.roomWaitingErrors.innerHTML = errors.map((entry) => `<div>${escapeHtml(entry)}</div>`).join("");
+  }
+
+  const buttonConfig = [
+    ["roomRetryBtn", model.showRetry, !!model.retryDisabled],
+    ["roomBackHubBtn", model.showBackHub, false],
+    ["roomReloadBtn", model.showReload, false],
+    ["roomContinueLocalBtn", model.showContinueLocal, false],
+    ["roomReadyBtn", model.showReady, !!model.readyDisabled],
+    ["roomStartBtn", model.showStart, !!model.startDisabled],
+  ];
+
+  for (const [key, showButton, disabled] of buttonConfig){
+    const button = el[key];
+    if (!button) continue;
+    button.classList.toggle("hidden", !showButton);
+    button.disabled = !!disabled;
   }
 }
 

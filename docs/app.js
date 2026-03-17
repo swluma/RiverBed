@@ -24,8 +24,20 @@ import {
   onSpectatorInterrupt,
   onSpectatorRematch,
   showShuffleModal, showNoWordsModal, onConfirmShuffle, onCancelShuffle,
+  renderRoomStatus, renderRoomWaiting,
   showTestSkillsModal, onApplyTestSkills, onCancelTestSkills
 } from "./ui.js";
+import { resolveSessionFromLocation } from "./multiplayer/session.js";
+import {
+  CLIENT_ROOM_EVENTS,
+  CONNECTION_STATUS,
+  GAME_ACTION_TYPES,
+  SERVER_ROOM_EVENTS,
+  createGameAction,
+} from "./multiplayer/protocol.js";
+import { createInitialRoomState, getRoomViewModel, reduceRoomEvent } from "./multiplayer/roomState.js";
+import { createMockRoomTransport } from "./multiplayer/mockTransport.js";
+import { createRoomClient } from "./multiplayer/roomClient.js";
 
 let dictSet = null;
 let dictWords = null;
@@ -44,6 +56,12 @@ let timeLimitRemainingSec = null;
 let timeLimitCoverActive = false;
 let lastTurnKey = null;
 let initialSkills = createInitialSkillState();
+let dictionaryReady = false;
+let localFallbackConfirmed = false;
+let roomHeartbeatId = null;
+let roomClient = null;
+let roomSession = resolveSessionFromLocation(window.location);
+let roomState = createInitialRoomState(roomSession);
 
 const COMPUTER_OPTIONS = {
   normal: {
@@ -180,6 +198,220 @@ function normalizeInitialSkills(input){
   return normalized;
 }
 
+function isRoomGameplayActive(){
+  return roomSession.isRoomPlay && roomState.phase === "playing";
+}
+
+function updateRoomState(event){
+  roomState = reduceRoomEvent(roomState, event, roomSession);
+  renderRoomUi();
+}
+
+function getRoomPlayersForUi(){
+  return (roomState.players || []).map((player) => ({
+    name: player.name,
+    ready: !!player.ready,
+    role: player.id === roomState.hostId ? "Host" : "Guest",
+  }));
+}
+
+function renderRoomUi(){
+  const viewModel = getRoomViewModel(roomSession, roomState);
+  const roomControlsLocked = roomSession.isRoomPlay;
+  if (ui?.vsComputerBtn) ui.vsComputerBtn.disabled = roomControlsLocked;
+  if (ui?.spectatorBtn) ui.spectatorBtn.disabled = roomControlsLocked;
+  if (ui?.testSkillsBtn) ui.testSkillsBtn.disabled = roomControlsLocked;
+  if (ui?.newMatchBtn){
+    const waitingForFallback = roomSession.canFallbackToLocal && !localFallbackConfirmed;
+    const waitingForRoomStart = roomSession.isRoomPlay && roomState.phase !== "playing";
+    ui.newMatchBtn.disabled = !dictionaryReady || waitingForFallback || waitingForRoomStart;
+  }
+  const note = roomSession.isRoomPlay
+    ? (roomState.phase === "playing"
+      ? "Room play active. Mock transport starts both clients, but full gameplay sync is still a TODO."
+      : "Room bootstrap active. Waiting flow is connected through the multiplayer layer.")
+    : (roomSession.canFallbackToLocal
+      ? "Hub parameters were invalid. Review the error and continue locally if needed."
+      : "Local single-device play.");
+
+  renderRoomStatus(ui, roomSession, roomState, viewModel, {
+    forceVisible: roomSession.hasHubParams,
+    note,
+  });
+
+  const waitingModel = {
+    visible: false,
+    title: "Room Session",
+    body: "",
+    roomCode: roomSession.roomCode,
+    players: getRoomPlayersForUi(),
+    errors: [],
+    showCopy: !!roomSession.roomCode,
+    showRetry: false,
+    showBackHub: !!roomSession.hubUrl,
+    showReload: true,
+    showContinueLocal: false,
+    showReady: false,
+    readyDisabled: false,
+    showStart: false,
+    startDisabled: true,
+  };
+
+  if (roomSession.canFallbackToLocal && !localFallbackConfirmed){
+    waitingModel.visible = true;
+    waitingModel.title = "Invalid room launch";
+    waitingModel.body = "The hub parameters could not start a room session safely.";
+    waitingModel.errors = roomSession.validationErrors.slice();
+    waitingModel.showContinueLocal = true;
+    waitingModel.showRetry = false;
+  } else if (roomSession.isRoomPlay && roomState.phase !== "playing"){
+    waitingModel.visible = true;
+    waitingModel.errors = roomState.lastError?.message ? [roomState.lastError.message] : [];
+    waitingModel.showRetry = roomState.connectionStatus === CONNECTION_STATUS.ERROR;
+    waitingModel.showContinueLocal = roomState.connectionStatus === CONNECTION_STATUS.ERROR;
+    waitingModel.showReady = roomSession.isGuest && roomState.joined;
+    waitingModel.readyDisabled = !!viewModel.self?.ready;
+    waitingModel.showStart = roomSession.isHost && roomState.joined;
+    waitingModel.startDisabled = !viewModel.canStart;
+
+    if (roomSession.isHost){
+      waitingModel.title = "Host room";
+      waitingModel.body = roomState.playerCount > 1
+        ? "Another player is connected. Start the match when both players are ready."
+        : "Waiting for another player...";
+    } else {
+      waitingModel.title = roomState.joined ? "Joined room" : "Joining room...";
+      waitingModel.body = roomState.joined
+        ? "Waiting for the host to start the match."
+        : "Connecting to the room and requesting the current state.";
+    }
+  }
+
+  renderRoomWaiting(ui, waitingModel);
+}
+
+function startRoomHeartbeat(){
+  stopRoomHeartbeat();
+  if (!roomClient || !roomSession.isRoomPlay) return;
+  roomHeartbeatId = setInterval(() => {
+    roomClient.send(CLIENT_ROOM_EVENTS.HEARTBEAT, {
+      roomCode: roomSession.roomCode,
+      playerId: roomSession.playerId,
+      at: Date.now(),
+    });
+  }, 5000);
+}
+
+function stopRoomHeartbeat(){
+  if (roomHeartbeatId){
+    clearInterval(roomHeartbeatId);
+    roomHeartbeatId = null;
+  }
+}
+
+function connectRoomSession(){
+  if (!roomSession.isRoomPlay || !roomSession.isValid || roomClient) return;
+  const transport = createMockRoomTransport({
+    clientId: roomSession.playerId,
+    gameId: roomSession.gameId,
+    maxPlayers: roomSession.maxPlayers,
+  });
+  roomClient = createRoomClient({ session: roomSession, transport });
+  const roomEvents = [
+    "transport_connecting",
+    "transport_connected",
+    "transport_disconnected",
+    SERVER_ROOM_EVENTS.ROOM_JOINED,
+    SERVER_ROOM_EVENTS.ROOM_STATE,
+    SERVER_ROOM_EVENTS.PLAYER_JOINED,
+    SERVER_ROOM_EVENTS.PLAYER_LEFT,
+    SERVER_ROOM_EVENTS.PLAYER_READY,
+    SERVER_ROOM_EVENTS.GAME_STARTED,
+    SERVER_ROOM_EVENTS.GAME_ACTION,
+    SERVER_ROOM_EVENTS.SYNC_STATE,
+    SERVER_ROOM_EVENTS.ERROR,
+    SERVER_ROOM_EVENTS.ROOM_CLOSED,
+  ];
+
+  for (const eventName of roomEvents){
+    roomClient.on(eventName, (payload) => {
+      updateRoomState({ type: eventName, payload });
+      if (eventName === SERVER_ROOM_EVENTS.ROOM_JOINED){
+        roomClient.send(CLIENT_ROOM_EVENTS.SYNC_REQUEST, {
+          roomCode: roomSession.roomCode,
+          playerId: roomSession.playerId,
+        });
+        if (roomSession.isHost){
+          roomClient.send(CLIENT_ROOM_EVENTS.PLAYER_READY, {
+            roomCode: roomSession.roomCode,
+            playerId: roomSession.playerId,
+            ready: true,
+          });
+        }
+        startRoomHeartbeat();
+      }
+      if (eventName === SERVER_ROOM_EVENTS.GAME_STARTED){
+        startRoomMatch(payload);
+      }
+    });
+  }
+
+  roomClient.connect();
+  roomClient.joinRoom(roomSession);
+}
+
+function resetToLocalFallback(){
+  roomSession = {
+    ...roomSession,
+    mode: "local",
+    isRoomPlay: false,
+    isLocalPlay: true,
+    isHost: false,
+    isGuest: false,
+  };
+  roomState = createInitialRoomState(roomSession);
+  renderRoomUi();
+}
+
+function startResolvedBootstrap(){
+  renderRoomUi();
+  if (!dictionaryReady) return;
+  if (roomSession.canFallbackToLocal && !localFallbackConfirmed) return;
+  if (roomSession.isRoomPlay){
+    connectRoomSession();
+    return;
+  }
+  if (!g){
+    onNewMatch();
+  }
+}
+
+function startRoomMatch(payload = {}){
+  if (!dictionaryReady) return;
+  roomState = {
+    ...roomState,
+    phase: "playing",
+    startedAt: payload.startedAt || Date.now(),
+    connectionStatus: CONNECTION_STATUS.IN_ROOM,
+  };
+  onNewMatch();
+  setFeedback(ui, "Room match started", "Mock room start received. Gameplay sync hooks are prepared, but full synchronization is still pending.");
+  renderRoomUi();
+}
+
+function emitRoomGameAction(type, payload = {}){
+  if (!roomClient || !isRoomGameplayActive()) return;
+  const action = createGameAction(type, payload, {
+    actorId: roomSession.playerId,
+    turnNo: g?.turnNo ?? null,
+  });
+  roomClient.send(CLIENT_ROOM_EVENTS.GAME_ACTION, {
+    roomCode: roomSession.roomCode,
+    fromPlayerId: roomSession.playerId,
+    action,
+  });
+}
+
 function isLocked(){ return locked || timeLimitCoverActive || !g || g.gameOver; }
 
 ui = bindUI({
@@ -193,15 +425,25 @@ ui = bindUI({
   onStartTurn,
   onShuffle,
   onOpenTestSkills,
+  onRetryRoom,
+  onBackToHub,
+  onReloadPage,
+  onContinueLocal,
+  onCopyRoomCode,
+  onRoomReady,
+  onRoomStart,
 });
 
 if (ui.winScoreValue){
   ui.winScoreValue.textContent = String(targetWinScore);
 }
 
+renderRoomUi();
+
 onChooseSkill(ui, (skillId) => {
   if (!g || g.gameOver) return;
   upgradeSkill(g, skillId);
+  emitRoomGameAction(GAME_ACTION_TYPES.USE_SKILL, { kind: "upgrade_skill", skillId });
   locked = false;
   renderNow();
   setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
@@ -232,6 +474,7 @@ onApplyHint(ui, (allocations) => {
 
   renderNow();
   setFeedback(ui, "Hint revealed", "Highlighted tiles form a valid word.");
+  emitRoomGameAction(GAME_ACTION_TYPES.USE_SKILL, { kind: "hint", allocations });
 });
 
 onCancelHint(ui, () => {
@@ -384,6 +627,7 @@ onConfirmShuffle(ui, () => {
   renderNow();
   if (ok){
     setFeedback(ui, "Board shuffled", "Tiles randomized. Embedded words removed.");
+    emitRoomGameAction(GAME_ACTION_TYPES.SYNC_SNAPSHOT, { reason: "shuffle_board" });
   }
 });
 
@@ -431,12 +675,12 @@ async function loadDictionary(){
     dictWords = words;
     embedWords = words.filter((w) => commonSet.has(w));
     if (embedWords.length === 0) embedWords = words;
+    dictionaryReady = true;
 
     setDictStatus(ui, "ok", `Dictionary OK (${set.size.toLocaleString()} words)`);
     ui.newMatchBtn.disabled = false;
     locked = false;
-
-    onNewMatch();
+    startResolvedBootstrap();
   } catch(err){
     console.error(err);
     setDictStatus(ui, "no", "Dictionary load failed (check network/URL).");
@@ -445,6 +689,16 @@ async function loadDictionary(){
 }
 
 function onNewMatch(){
+  if (roomSession.canFallbackToLocal && !localFallbackConfirmed){
+    setFeedback(ui, "Launch blocked", "Confirm the local fallback before starting a match.");
+    renderRoomUi();
+    return;
+  }
+  if (roomSession.isRoomPlay && !isRoomGameplayActive()){
+    setFeedback(ui, "Room waiting", "The match will start once the room is ready.");
+    renderRoomUi();
+    return;
+  }
   cancelScheduledComputerTurn();
   autoPlayers = { 0: null, 1: null };
   autoMode = null;
@@ -480,6 +734,10 @@ function onNewMatch(){
   setGridCoverVisible(false);
   renderNow();
   setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
+  emitRoomGameAction(GAME_ACTION_TYPES.GAME_START, {
+    roomCode: roomSession.roomCode,
+    mock: roomSession.isRoomPlay,
+  });
 }
 
 function buildMatchInitialSkills(){
@@ -601,6 +859,7 @@ function startTimeLimitCountdown(){
 async function handleTimeLimitExpired(){
   if (!g || g.gameOver || (g.skillSelect && g.skillSelect.pending)) return;
   const result = timeoutTurn(g);
+  emitRoomGameAction(GAME_ACTION_TYPES.END_TURN, { reason: "timeout" });
   renderNow();
   setFeedback(ui, "TIME UP", "Time expired. Attempt skipped and counted as a failure.");
   if (result.ended){
@@ -773,6 +1032,72 @@ function onOpenTestSkills(){
   showTestSkillsModal(ui, initialSkills);
 }
 
+function onRetryRoom(){
+  if (roomClient){
+    stopRoomHeartbeat();
+    roomClient.disconnect();
+    roomClient = null;
+  }
+  roomState = createInitialRoomState(roomSession);
+  renderRoomUi();
+  connectRoomSession();
+}
+
+function onBackToHub(){
+  if (roomSession.hubUrl){
+    window.location.href = roomSession.hubUrl;
+    return;
+  }
+  window.history.back();
+}
+
+function onReloadPage(){
+  window.location.reload();
+}
+
+function onContinueLocal(){
+  localFallbackConfirmed = true;
+  if (roomClient){
+    stopRoomHeartbeat();
+    roomClient.leaveRoom(roomSession);
+    roomClient.disconnect();
+    roomClient = null;
+  }
+  resetToLocalFallback();
+  if (dictionaryReady && !g){
+    onNewMatch();
+  }
+}
+
+async function onCopyRoomCode(){
+  if (!roomSession.roomCode) return;
+  try{
+    await navigator.clipboard.writeText(roomSession.roomCode);
+    renderRoomUi();
+    setFeedback(ui, "Room code copied", `Share ${roomSession.roomCode} with the other player.`);
+  } catch {
+    setFeedback(ui, "Copy failed", `Room code: ${roomSession.roomCode}`);
+  }
+}
+
+function onRoomReady(){
+  if (!roomClient || !roomSession.isRoomPlay) return;
+  roomClient.send(CLIENT_ROOM_EVENTS.PLAYER_READY, {
+    roomCode: roomSession.roomCode,
+    playerId: roomSession.playerId,
+    ready: true,
+  });
+}
+
+function onRoomStart(){
+  if (!roomClient || !roomSession.isHost) return;
+  roomClient.send(CLIENT_ROOM_EVENTS.START_GAME, {
+    roomCode: roomSession.roomCode,
+    playerId: roomSession.playerId,
+    gameId: roomSession.gameId,
+  });
+}
+
 async function onConfirm(){
   if (isLocked()) return;
   if (!g || g.gameOver) return;
@@ -791,6 +1116,11 @@ async function onConfirm(){
 
 async function handleEvaluationResult(result){
   if (result.type === "FAIL_INVALID" || result.type === "FAIL_DUPLICATE"){
+    emitRoomGameAction(GAME_ACTION_TYPES.CONFIRM_WORD, {
+      outcome: "fail",
+      reason: result.reason || "INVALID",
+      word: g?.selectionWord || null,
+    });
     const reasonText =
       result.reason === "DUPLICATE" ? "Duplicate (match-wide)" :
       "Not in dictionary";
@@ -810,6 +1140,12 @@ async function handleEvaluationResult(result){
   }
 
   if (result.type === "SUCCESS"){
+    emitRoomGameAction(GAME_ACTION_TYPES.CONFIRM_WORD, {
+      outcome: "success",
+      word: result.word || g?.selectionWord || null,
+      points: result.finalWordPoints ?? null,
+      extraSwipe: !!result.extraSwipe,
+    });
     if (result.extraSwipe){
       const remaining = Number.isFinite(result.extraSwipeLeft) ? result.extraSwipeLeft : 0;
       const suffix = (remaining > 1) ? ` Extra swipes left: ${remaining}.` : "";
@@ -850,6 +1186,7 @@ function renderNow(){
   syncTimeLimitState();
   syncTimeLimitModalDefaults();
   setConfirmState(ui, g.pendingConfirm, isLocked());
+  renderRoomUi();
   maybeScheduleComputerTurn();
 }
 
@@ -991,5 +1328,13 @@ async function runComputerTurn(){
     maybeScheduleComputerTurn();
   }
 }
+
+window.addEventListener("beforeunload", () => {
+  if (roomClient && roomSession.isRoomPlay){
+    roomClient.leaveRoom(roomSession);
+    roomClient.disconnect();
+  }
+  stopRoomHeartbeat();
+});
 
 loadDictionary();

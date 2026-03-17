@@ -57,6 +57,161 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   overflow:hidden;
 }
 
+.roomStatusPanel,
+.roomWaitingPanel{
+  margin:12px 12px 0;
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:16px;
+  background:rgba(255,255,255,0.04);
+}
+
+.roomStatusPanel{
+  display:grid;
+  gap:10px;
+  padding:12px 14px;
+}
+
+.roomStatusMain,
+.roomWaitingHead{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+}
+
+.roomStatusTitle,
+.roomWaitingTitle{
+  font-weight:900;
+  letter-spacing:0.2px;
+}
+
+.roomStatusMeta{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.roomBadge{
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.10);
+  background:rgba(255,255,255,0.06);
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.3px;
+}
+
+.roomStatusDetails{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:8px;
+}
+
+.roomDetail{
+  display:grid;
+  gap:4px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(0,0,0,0.14);
+}
+
+.roomDetail .k,
+.roomWaitingCode .k,
+.roomWaitingPlayersTitle{
+  color:var(--muted);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.3px;
+}
+
+.roomDetail .v,
+.roomWaitingCode .v{
+  font-weight:800;
+}
+
+.roomStatusNote,
+.roomWaitingBody{
+  color:var(--muted);
+  line-height:1.4;
+}
+
+.roomWaitingPanel{
+  display:grid;
+  gap:12px;
+  padding:14px;
+}
+
+.roomWaitingCode{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(0,0,0,0.14);
+}
+
+.roomWaitingPlayers{
+  display:grid;
+  gap:8px;
+}
+
+.roomWaitingPlayersList{
+  display:grid;
+  gap:8px;
+}
+
+.roomWaitingPlayer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.04);
+}
+
+.roomWaitingPlayerMeta{
+  display:grid;
+  gap:2px;
+}
+
+.roomWaitingPlayerName{
+  font-weight:800;
+}
+
+.roomWaitingPlayerSub{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.roomWaitingPlayerReady{
+  font-size:12px;
+  font-weight:800;
+}
+
+.roomWaitingErrors{
+  display:grid;
+  gap:6px;
+  padding:10px 12px;
+  border:1px solid rgba(255,75,75,0.24);
+  border-radius:12px;
+  background:rgba(255,75,75,0.10);
+  color:#ffd6d6;
+}
+
+.roomWaitingActions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.roomWaitingActions button{
+  flex:0 0 auto;
+}
+
 .topbar{
   position:sticky;
   top:0;
@@ -186,6 +341,13 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
     font-size:12px;
     border-radius:10px;
     white-space:nowrap;
+  }
+  .roomStatusDetails{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+  .roomStatusMain,
+  .roomWaitingHead{
+    flex-direction:column;
   }
 }
 

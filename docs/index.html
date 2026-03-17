@@ -97,6 +97,51 @@
     </section>
 
     <section class="center card">
+      <section class="roomStatusPanel hidden" id="roomStatusPanel" aria-live="polite">
+        <div class="roomStatusMain">
+          <div class="roomStatusTitle">Room Session</div>
+          <div class="roomStatusMeta">
+            <span class="roomBadge" id="roomSourceBadge">Direct</span>
+            <span class="roomBadge" id="roomModeBadge">Local</span>
+            <span class="roomBadge" id="roomConnectionBadge">offline</span>
+          </div>
+        </div>
+        <div class="roomStatusDetails">
+          <div class="roomDetail"><span class="k">Room</span><span class="v" id="roomCodeValue">-</span></div>
+          <div class="roomDetail"><span class="k">Player</span><span class="v" id="roomPlayerValue">-</span></div>
+          <div class="roomDetail"><span class="k">Players</span><span class="v" id="roomPlayersValue">0/2</span></div>
+          <div class="roomDetail"><span class="k">Phase</span><span class="v" id="roomPhaseValue">idle</span></div>
+        </div>
+        <div class="roomStatusNote" id="roomStatusNote">Local single-device play.</div>
+      </section>
+
+      <section class="roomWaitingPanel hidden" id="roomWaitingPanel" aria-live="polite">
+        <div class="roomWaitingHead">
+          <div>
+            <div class="roomWaitingTitle" id="roomWaitingTitle">Room setup</div>
+            <div class="roomWaitingBody" id="roomWaitingBody">Preparing session.</div>
+          </div>
+          <button class="ghost small hidden" id="copyRoomCodeBtn" type="button">Copy code</button>
+        </div>
+        <div class="roomWaitingCode hidden" id="roomWaitingCodeWrap">
+          <span class="k">Room code</span>
+          <span class="v" id="roomWaitingCodeValue">-</span>
+        </div>
+        <div class="roomWaitingPlayers hidden" id="roomWaitingPlayersWrap">
+          <div class="roomWaitingPlayersTitle">Players</div>
+          <div class="roomWaitingPlayersList" id="roomWaitingPlayersList"></div>
+        </div>
+        <div class="roomWaitingErrors hidden" id="roomWaitingErrors"></div>
+        <div class="roomWaitingActions" id="roomWaitingActions">
+          <button class="ghost hidden" id="roomRetryBtn" type="button">Retry</button>
+          <button class="ghost hidden" id="roomBackHubBtn" type="button">Back to Hub</button>
+          <button class="ghost hidden" id="roomReloadBtn" type="button">Reload</button>
+          <button class="ghost hidden" id="roomContinueLocalBtn" type="button">Continue in Local Mode</button>
+          <button class="ghost hidden" id="roomReadyBtn" type="button">Ready</button>
+          <button class="primary hidden" id="roomStartBtn" type="button">Start Match</button>
+        </div>
+      </section>
+
       <div class="centerHead">
         <div class="feedback" id="feedback">
           <span class="fbTitle" id="fbTitle">Ready</span>
