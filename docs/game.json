@@ -1,6 +1,6 @@
 {
   "title": "Rogue Boggle",
   "description": "rogue boggle",
-  "icon": "./docs/icon.png",
+  "icon": "./icon.png",
   "playUrl": "./"
 }
