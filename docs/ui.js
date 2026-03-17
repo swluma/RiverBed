@@ -141,6 +141,9 @@ export function bindUI(handlers){
     gridCover: document.getElementById("gridCover"),
     gridCoverTitle: document.getElementById("gridCoverTitle"),
     startTurnBtn: document.getElementById("startTurnBtn"),
+    opponentSuccessToast: document.getElementById("opponentSuccessToast"),
+    opponentSuccessToastTitle: document.getElementById("opponentSuccessToastTitle"),
+    opponentSuccessToastBody: document.getElementById("opponentSuccessToastBody"),
 
     legendModal: document.getElementById("legendModal"),
     closeLegendBtn: document.getElementById("closeLegendBtn"),
@@ -1167,6 +1170,20 @@ export function setFeedback(el, title, sub){
   if (title === "SUCCESS"){
     el.feedback.classList.add("success");
   }
+}
+
+export function showOpponentSuccessToast(el, title, body){
+  if (!el?.opponentSuccessToast) return;
+  if (el.opponentSuccessToastTitle) el.opponentSuccessToastTitle.textContent = title || "Opponent scored";
+  if (el.opponentSuccessToastBody) el.opponentSuccessToastBody.textContent = body || "";
+  el.opponentSuccessToast.classList.remove("hidden", "show");
+  void el.opponentSuccessToast.offsetWidth;
+  el.opponentSuccessToast.classList.add("show");
+  globalThis.clearTimeout?.(el.opponentSuccessToast._hideTimer);
+  el.opponentSuccessToast._hideTimer = globalThis.setTimeout?.(() => {
+    el.opponentSuccessToast.classList.remove("show");
+    el.opponentSuccessToast.classList.add("hidden");
+  }, 3000);
 }
 
 export function shakeFeedback(el){

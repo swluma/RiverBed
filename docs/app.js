@@ -16,7 +16,7 @@ import {
 import {
   bindUI, setDictStatus, renderAll,
   setConfirmState,
-  setFeedback, animateAttemptsFail, shakeFeedback,
+  setFeedback, animateAttemptsFail, shakeFeedback, showOpponentSuccessToast,
   showSkillModal, onChooseSkill,
   showHintModal, onApplyHint, onCancelHint,
   showEndModal, onApplyWinScore, onApplyTimeLimit,
@@ -210,6 +210,28 @@ function getLocalRoomPlayerIndex(){
   return null;
 }
 
+function getPlayerNameByIndex(playerIndex){
+  if (playerIndex === 0){
+    const hostPlayer = (roomState.players || []).find((player) => player.id === roomState.hostId);
+    return hostPlayer?.name || "Host";
+  }
+  if (playerIndex === 1){
+    const guestPlayer = (roomState.players || []).find((player) => player.id !== roomState.hostId);
+    return guestPlayer?.name || "Guest";
+  }
+  return "Opponent";
+}
+
+function maybeShowOpponentSuccessPopup(payload = {}){
+  const localIndex = getLocalRoomPlayerIndex();
+  const actorIndex = Number.isInteger(payload.actorIndex) ? payload.actorIndex : null;
+  if (actorIndex == null || localIndex == null || actorIndex === localIndex) return;
+  const actorName = payload.playerName || getPlayerNameByIndex(actorIndex);
+  const word = payload.word ? String(payload.word).toUpperCase() : "A WORD";
+  const points = Number.isFinite(payload.points) ? ` (+${payload.points} pts)` : "";
+  showOpponentSuccessToast(ui, `${actorName} found a word`, `${word}${points}`);
+}
+
 function isRoomAuthoritativeClient(){
   return roomSession.isRoomPlay && roomSession.isHost;
 }
@@ -240,15 +262,19 @@ function buildSnapshotAction(reason){
       title: ui?.fbTitle?.textContent || "",
       sub: ui?.fbSub?.textContent || "",
     },
+    popup: null,
   };
 }
 
-function broadcastGameSnapshot(reason){
+function broadcastGameSnapshot(reason, extra = {}){
   if (!isRoomAuthoritativeClient() || !roomClient || !g) return;
-  emitRoomGameAction(GAME_ACTION_TYPES.SYNC_SNAPSHOT, buildSnapshotAction(reason));
+  emitRoomGameAction(GAME_ACTION_TYPES.SYNC_SNAPSHOT, {
+    ...buildSnapshotAction(reason),
+    ...extra,
+  });
 }
 
-function applyIncomingSnapshot(snapshot, reason = "sync", feedback = null){
+function applyIncomingSnapshot(snapshot, reason = "sync", feedback = null, popup = null){
   if (!snapshot || !dictSet || !dictWords) return;
   g = hydrateGameState(snapshot, dictSet, dictWords, embedWords);
   pointerActiveId = null;
@@ -260,6 +286,9 @@ function applyIncomingSnapshot(snapshot, reason = "sync", feedback = null){
   maybeOpenRoomSkillPrompt();
   if (feedback?.title){
     setFeedback(ui, feedback.title, feedback.sub || "");
+  }
+  if (popup){
+    maybeShowOpponentSuccessPopup(popup);
   }
   syncGameOverPresentation();
   syncReadyFeedbackOnTurnChange();
@@ -306,6 +335,7 @@ async function applyRemoteIntentAction(action){
   const payload = action?.payload || {};
 
   if (action.type === GAME_ACTION_TYPES.CONFIRM_WORD){
+    const actorIndex = g.active;
     if (!setSelectionPath(g, payload.path || [])) return;
     const result = confirmSwipe(g);
     renderNow();
@@ -313,7 +343,16 @@ async function applyRemoteIntentAction(action){
       skipBroadcast: true,
       suppressRemoteFeedback: true,
       suppressPrompts: true,
+      actorIndex,
     });
+    if (result.type === "SUCCESS"){
+      maybeShowOpponentSuccessPopup({
+        actorIndex,
+        playerName: getPlayerNameByIndex(actorIndex),
+        word: result.word || null,
+        points: result.finalWordPoints ?? null,
+      });
+    }
     broadcastGameSnapshot("confirm_word");
     return;
   }
@@ -502,7 +541,12 @@ function connectRoomSession(){
         const action = payload?.action || null;
         if (!action) return;
         if (action.type === GAME_ACTION_TYPES.SYNC_SNAPSHOT && action.payload?.snapshot){
-          applyIncomingSnapshot(action.payload.snapshot, "remote_turn", action.payload.feedback || null);
+          applyIncomingSnapshot(
+            action.payload.snapshot,
+            "remote_turn",
+            action.payload.feedback || null,
+            action.payload.popup || null
+          );
           return;
         }
         if (isRoomAuthoritativeClient()){
@@ -513,7 +557,8 @@ function connectRoomSession(){
         applyIncomingSnapshot(
           payload.lastAction.payload.snapshot,
           "remote_turn",
-          payload.lastAction.payload.feedback || null
+          payload.lastAction.payload.feedback || null,
+          payload.lastAction.payload.popup || null
         );
       }
     });
@@ -1364,6 +1409,7 @@ async function onConfirm(){
     return;
   }
 
+  const actorIndex = g.active;
   const result = confirmSwipe(g);
   renderNow();
 
@@ -1373,7 +1419,7 @@ async function onConfirm(){
     return;
   }
 
-  await handleEvaluationResult(result);
+  await handleEvaluationResult(result, { actorIndex });
 }
 
 async function handleEvaluationResult(result, options = {}){
@@ -1432,7 +1478,15 @@ async function handleEvaluationResult(result, options = {}){
       await openSkillSelectIfNeeded({ silent: !!options.suppressPrompts });
     }
     if (!options.skipBroadcast){
-      broadcastGameSnapshot("confirm_success");
+      const popupActorIndex = Number.isInteger(options.actorIndex) ? options.actorIndex : g?.active ?? null;
+      broadcastGameSnapshot("confirm_success", {
+        popup: {
+          actorIndex: popupActorIndex,
+          playerName: getPlayerNameByIndex(popupActorIndex),
+          word: result.word || g?.selectionWord || null,
+          points: result.finalWordPoints ?? null,
+        },
+      });
     }
   }
 }
