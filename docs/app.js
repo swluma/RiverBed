@@ -1439,6 +1439,9 @@ async function handleEvaluationResult(result, options = {}){
     await animateAttemptsFail(ui, g);
     renderNow();
     if (g.gameOver){
+      if (!options.skipBroadcast){
+        broadcastGameSnapshot("game_over_fail");
+      }
       showEndModal(ui, g);
       locked = true;
       return;
@@ -1470,6 +1473,17 @@ async function handleEvaluationResult(result, options = {}){
     }
     renderNow();
     if (g.gameOver){
+      if (!options.skipBroadcast){
+        const popupActorIndex = Number.isInteger(options.actorIndex) ? options.actorIndex : g?.active ?? null;
+        broadcastGameSnapshot("game_over_success", {
+          popup: {
+            actorIndex: popupActorIndex,
+            playerName: getPlayerNameByIndex(popupActorIndex),
+            word: result.word || g?.selectionWord || null,
+            points: result.finalWordPoints ?? null,
+          },
+        });
+      }
       showEndModal(ui, g);
       locked = true;
       return;
