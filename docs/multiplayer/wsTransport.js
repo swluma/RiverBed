@@ -49,6 +49,15 @@ export function createWebSocketRoomTransport({ url } = {}){
   const emitter = createEmitter();
   const socketUrl = url || resolveRoomServerUrl();
   let socket = null;
+  let sendQueue = [];
+
+  function flushQueue(){
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    while (sendQueue.length > 0){
+      const message = sendQueue.shift();
+      socket.send(JSON.stringify(message));
+    }
+  }
 
   function connect(){
     if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)){
@@ -58,6 +67,7 @@ export function createWebSocketRoomTransport({ url } = {}){
 
     socket.addEventListener("open", () => {
       emitter.emit("open");
+      flushQueue();
     });
 
     socket.addEventListener("close", () => {
@@ -96,10 +106,12 @@ export function createWebSocketRoomTransport({ url } = {}){
     if (!socket) return;
     socket.close();
     socket = null;
+    sendQueue = [];
   }
 
   function send(type, payload){
-    if (!socket || socket.readyState !== WebSocket.OPEN){
+    const message = { type, payload };
+    if (!socket){
       emitter.emit("message", {
         type: "transport_error",
         payload: {
@@ -110,7 +122,22 @@ export function createWebSocketRoomTransport({ url } = {}){
       });
       return;
     }
-    socket.send(JSON.stringify({ type, payload }));
+    if (socket.readyState === WebSocket.CONNECTING){
+      sendQueue.push(message);
+      return;
+    }
+    if (socket.readyState !== WebSocket.OPEN){
+      emitter.emit("message", {
+        type: "transport_error",
+        payload: {
+          code: "SOCKET_NOT_READY",
+          message: "Room server is not connected.",
+          recoverable: true,
+        },
+      });
+      return;
+    }
+    socket.send(JSON.stringify(message));
   }
 
   return {
