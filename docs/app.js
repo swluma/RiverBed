@@ -1,9 +1,12 @@
 import { COMMON_WORDS_URL, DICT_URL, WIN_SCORE, MIN_WORD_LEN } from "./config.js";
 import {
   createNewGame,
+  hydrateGameState,
   beginSwipe, extendSwipe, releaseSwipe, confirmSwipe,
   getSkillOffers, upgradeSkill,
   applyHint, canUseHint, totalSkillLevels,
+  setSelectionPath,
+  serializeGameState,
   setWinScore,
   timeoutTurn,
   shuffleBoard,
@@ -54,6 +57,7 @@ let timeLimitIntervalId = null;
 let timeLimitDeadlineMs = null;
 let timeLimitRemainingSec = null;
 let timeLimitCoverActive = false;
+let roomTurnCoverActive = false;
 let lastTurnKey = null;
 let initialSkills = createInitialSkillState();
 let dictionaryReady = false;
@@ -62,6 +66,7 @@ let roomHeartbeatId = null;
 let roomClient = null;
 let roomSession = resolveSessionFromLocation(window.location);
 let roomState = createInitialRoomState(roomSession);
+let lastRoomPromptKey = null;
 
 const COMPUTER_OPTIONS = {
   normal: {
@@ -198,6 +203,23 @@ function normalizeInitialSkills(input){
   return normalized;
 }
 
+function getLocalRoomPlayerIndex(){
+  if (roomSession.isHost) return 0;
+  if (roomSession.isGuest) return 1;
+  return null;
+}
+
+function isRoomAuthoritativeClient(){
+  return roomSession.isRoomPlay && roomSession.isHost;
+}
+
+function isLocalPlayersTurn(){
+  if (!roomSession.isRoomPlay) return true;
+  if (!g || roomState.phase !== "playing") return false;
+  const localIndex = getLocalRoomPlayerIndex();
+  return localIndex != null && g.active === localIndex;
+}
+
 function isRoomGameplayActive(){
   return roomSession.isRoomPlay && roomState.phase === "playing";
 }
@@ -205,6 +227,99 @@ function isRoomGameplayActive(){
 function updateRoomState(event){
   roomState = reduceRoomEvent(roomState, event, roomSession);
   renderRoomUi();
+}
+
+function buildSnapshotAction(reason){
+  return {
+    reason,
+    snapshot: serializeGameState(g),
+    activePlayer: g?.active ?? null,
+    turnNo: g?.turnNo ?? null,
+  };
+}
+
+function broadcastGameSnapshot(reason){
+  if (!isRoomAuthoritativeClient() || !roomClient || !g) return;
+  emitRoomGameAction(GAME_ACTION_TYPES.SYNC_SNAPSHOT, buildSnapshotAction(reason));
+}
+
+function applyIncomingSnapshot(snapshot, reason = "sync"){
+  if (!snapshot || !dictSet || !dictWords) return;
+  g = hydrateGameState(snapshot, dictSet, dictWords, embedWords);
+  pointerActiveId = null;
+  lastTurnKey = null;
+  stopTimeLimitCountdown();
+  timeLimitRemainingSec = null;
+  locked = roomSession.isRoomPlay && !isLocalPlayersTurn();
+  renderNow();
+  maybeOpenRoomSkillPrompt();
+  if (reason === "remote_turn"){
+    setFeedback(ui, "Turn updated", "Room state synchronized.");
+  }
+}
+
+function maybeOpenRoomSkillPrompt(){
+  if (!roomSession.isRoomPlay || !g || !g.skillSelect?.pending) return;
+  const localIndex = getLocalRoomPlayerIndex();
+  if (localIndex == null || g.skillSelect.chooser !== localIndex) return;
+  const offerIds = Array.isArray(g.skillSelect.offers) ? g.skillSelect.offers.map((offer) => offer.id).join(",") : "";
+  const promptKey = `${g.turnNo}:${g.skillSelect.chooser}:${offerIds}`;
+  if (lastRoomPromptKey === promptKey) return;
+  lastRoomPromptKey = promptKey;
+  if (!Array.isArray(g.skillSelect.offers) || g.skillSelect.offers.length === 0) return;
+  locked = true;
+  showSkillModal(ui, g, g.skillSelect.offers);
+}
+
+async function applyRemoteIntentAction(action){
+  if (!isRoomAuthoritativeClient() || !g) return;
+  const payload = action?.payload || {};
+
+  if (action.type === GAME_ACTION_TYPES.CONFIRM_WORD){
+    if (!setSelectionPath(g, payload.path || [])) return;
+    const result = confirmSwipe(g);
+    renderNow();
+    await handleEvaluationResult(result, {
+      skipBroadcast: true,
+      suppressRemoteFeedback: true,
+      suppressPrompts: true,
+    });
+    broadcastGameSnapshot("confirm_word");
+    return;
+  }
+
+  if (action.type === GAME_ACTION_TYPES.USE_SKILL){
+    if (payload.kind === "upgrade_skill"){
+      upgradeSkill(g, payload.skillId);
+      locked = false;
+      renderNow();
+      broadcastGameSnapshot("upgrade_skill");
+      return;
+    }
+    if (payload.kind === "hint"){
+      applyHint(g, payload.allocations || {});
+      locked = false;
+      renderNow();
+      broadcastGameSnapshot("hint");
+      return;
+    }
+    if (payload.kind === "shuffle_board"){
+      shuffleBoard(g);
+      locked = false;
+      renderNow();
+      broadcastGameSnapshot("shuffle_board");
+    }
+    return;
+  }
+
+  if (action.type === GAME_ACTION_TYPES.END_TURN && payload.reason === "timeout"){
+    const result = timeoutTurn(g);
+    renderNow();
+    if (result.ended && g.skillSelect?.autoAdvance && Array.isArray(g.skillSelect.offers) && g.skillSelect.offers.length === 0){
+      getSkillOffers(g);
+    }
+    broadcastGameSnapshot("timeout");
+  }
 }
 
 function getRoomPlayersForUi(){
@@ -351,6 +466,20 @@ function connectRoomSession(){
       if (eventName === SERVER_ROOM_EVENTS.GAME_STARTED){
         startRoomMatch(payload);
       }
+      if (eventName === SERVER_ROOM_EVENTS.GAME_ACTION){
+        const action = payload?.action || null;
+        if (!action) return;
+        if (action.type === GAME_ACTION_TYPES.SYNC_SNAPSHOT && action.payload?.snapshot){
+          applyIncomingSnapshot(action.payload.snapshot, "remote_turn");
+          return;
+        }
+        if (isRoomAuthoritativeClient()){
+          void applyRemoteIntentAction(action);
+        }
+      }
+      if (eventName === SERVER_ROOM_EVENTS.SYNC_STATE && payload?.lastAction?.type === GAME_ACTION_TYPES.SYNC_SNAPSHOT && payload.lastAction?.payload?.snapshot){
+        applyIncomingSnapshot(payload.lastAction.payload.snapshot, "remote_turn");
+      }
     });
   }
 
@@ -392,8 +521,14 @@ function startRoomMatch(payload = {}){
     startedAt: payload.startedAt || Date.now(),
     connectionStatus: CONNECTION_STATUS.IN_ROOM,
   };
-  onNewMatch();
-  setFeedback(ui, "Room match started", "Room server start received. Gameplay sync hooks are prepared, but full synchronization is still pending.");
+  if (isRoomAuthoritativeClient()){
+    onNewMatch({ source: "room-start" });
+    broadcastGameSnapshot("game_started");
+  } else {
+    locked = true;
+    renderRoomUi();
+    setFeedback(ui, "Room match starting", "Waiting for the host snapshot.");
+  }
   renderRoomUi();
 }
 
@@ -410,7 +545,7 @@ function emitRoomGameAction(type, payload = {}){
   });
 }
 
-function isLocked(){ return locked || timeLimitCoverActive || !g || g.gameOver; }
+function isLocked(){ return locked || timeLimitCoverActive || roomTurnCoverActive || !g || g.gameOver; }
 
 ui = bindUI({
   onNewMatch,
@@ -440,16 +575,28 @@ renderRoomUi();
 
 onChooseSkill(ui, (skillId) => {
   if (!g || g.gameOver) return;
+  if (roomSession.isRoomPlay && !isRoomAuthoritativeClient()){
+    locked = true;
+    emitRoomGameAction(GAME_ACTION_TYPES.USE_SKILL, { kind: "upgrade_skill", skillId });
+    setFeedback(ui, "Waiting", "Submitting skill choice to the host...");
+    return;
+  }
   upgradeSkill(g, skillId);
-  emitRoomGameAction(GAME_ACTION_TYPES.USE_SKILL, { kind: "upgrade_skill", skillId });
   locked = false;
   renderNow();
   setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
+  broadcastGameSnapshot("upgrade_skill");
   if (g.gameOver) showEndModal(ui, g);
 });
 
 onApplyHint(ui, (allocations) => {
   if (!g || g.gameOver) return;
+  if (roomSession.isRoomPlay && !isRoomAuthoritativeClient()){
+    locked = true;
+    emitRoomGameAction(GAME_ACTION_TYPES.USE_SKILL, { kind: "hint", allocations });
+    setFeedback(ui, "Waiting", "Submitting hint request to the host...");
+    return;
+  }
   const result = applyHint(g, allocations);
   locked = false;
 
@@ -472,7 +619,7 @@ onApplyHint(ui, (allocations) => {
 
   renderNow();
   setFeedback(ui, "Hint revealed", "Highlighted tiles form a valid word.");
-  emitRoomGameAction(GAME_ACTION_TYPES.USE_SKILL, { kind: "hint", allocations });
+  broadcastGameSnapshot("hint");
 });
 
 onCancelHint(ui, () => {
@@ -620,12 +767,18 @@ onSpectatorRematch(ui, () => {
 
 onConfirmShuffle(ui, () => {
   if (!g || g.gameOver) return;
+  if (roomSession.isRoomPlay && !isRoomAuthoritativeClient()){
+    locked = true;
+    emitRoomGameAction(GAME_ACTION_TYPES.USE_SKILL, { kind: "shuffle_board" });
+    setFeedback(ui, "Waiting", "Submitting board shuffle to the host...");
+    return;
+  }
   const ok = shuffleBoard(g);
   locked = false;
   renderNow();
   if (ok){
     setFeedback(ui, "Board shuffled", "Tiles randomized. Embedded words removed.");
-    emitRoomGameAction(GAME_ACTION_TYPES.SYNC_SNAPSHOT, { reason: "shuffle_board" });
+    broadcastGameSnapshot("shuffle_board");
   }
 });
 
@@ -686,7 +839,7 @@ async function loadDictionary(){
   }
 }
 
-function onNewMatch(){
+function onNewMatch(options = {}){
   if (roomSession.canFallbackToLocal && !localFallbackConfirmed){
     setFeedback(ui, "Launch blocked", "Confirm the local fallback before starting a match.");
     renderRoomUi();
@@ -732,10 +885,9 @@ function onNewMatch(){
   setGridCoverVisible(false);
   renderNow();
   setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
-  emitRoomGameAction(GAME_ACTION_TYPES.GAME_START, {
-    roomCode: roomSession.roomCode,
-    mock: roomSession.isRoomPlay,
-  });
+  if (isRoomAuthoritativeClient() && options.source !== "snapshot"){
+    broadcastGameSnapshot("new_match");
+  }
 }
 
 function buildMatchInitialSkills(){
@@ -795,16 +947,48 @@ function updateTimeLimitDisplay(){
   ui.timeLimitDisplay.classList.toggle("blue", g && g.active === 1);
 }
 
-function setGridCoverVisible(visible){
-  timeLimitCoverActive = !!visible;
+function renderGridCover(visible, { title = "Ready", playerIndex = (g && g.active), showButton = true } = {}){
   if (!ui || !ui.gridCover) return;
   ui.gridCover.classList.toggle("hidden", !visible);
   if (!visible) return;
-  ui.gridCover.classList.toggle("red", g && g.active === 0);
-  ui.gridCover.classList.toggle("blue", g && g.active === 1);
+  ui.gridCover.classList.toggle("red", playerIndex === 0);
+  ui.gridCover.classList.toggle("blue", playerIndex === 1);
   if (ui.gridCoverTitle){
-    ui.gridCoverTitle.textContent = (g && g.active === 0) ? "Player 1 Ready" : "Player 2 Ready";
+    ui.gridCoverTitle.textContent = title;
   }
+  if (ui.startTurnBtn){
+    ui.startTurnBtn.classList.toggle("hidden", !showButton);
+  }
+}
+
+function syncGridCover(){
+  const localIndex = getLocalRoomPlayerIndex();
+  const showOpponentCover = roomSession.isRoomPlay
+    && roomState.phase === "playing"
+    && g
+    && localIndex != null
+    && g.active !== localIndex;
+
+  roomTurnCoverActive = showOpponentCover;
+  if (showOpponentCover){
+    renderGridCover(true, {
+      title: "Opponent Turn",
+      playerIndex: g.active,
+      showButton: false,
+    });
+    return;
+  }
+
+  renderGridCover(timeLimitCoverActive, {
+    title: (g && g.active === 0) ? "Player 1 Ready" : "Player 2 Ready",
+    playerIndex: g && g.active,
+    showButton: timeLimitCoverActive,
+  });
+}
+
+function setGridCoverVisible(visible){
+  timeLimitCoverActive = !!visible;
+  syncGridCover();
 }
 
 function stopTimeLimitCountdown(){
@@ -856,13 +1040,19 @@ function startTimeLimitCountdown(){
 
 async function handleTimeLimitExpired(){
   if (!g || g.gameOver || (g.skillSelect && g.skillSelect.pending)) return;
+  if (roomSession.isRoomPlay && !isRoomAuthoritativeClient()){
+    locked = true;
+    emitRoomGameAction(GAME_ACTION_TYPES.END_TURN, { reason: "timeout" });
+    setFeedback(ui, "Waiting", "Reporting timeout to the host...");
+    return;
+  }
   const result = timeoutTurn(g);
-  emitRoomGameAction(GAME_ACTION_TYPES.END_TURN, { reason: "timeout" });
   renderNow();
   setFeedback(ui, "TIME UP", "Time expired. Attempt skipped and counted as a failure.");
   if (result.ended){
     await openSkillSelectIfNeeded();
   }
+  broadcastGameSnapshot("timeout");
 }
 
 function syncTimeLimitState(){
@@ -956,7 +1146,7 @@ function onPointerCancel(e){
   setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
 }
 
-async function openSkillSelectIfNeeded(){
+async function openSkillSelectIfNeeded(options = {}){
   if (!g || g.gameOver) return;
 
   const offers = getSkillOffers(g);
@@ -964,6 +1154,12 @@ async function openSkillSelectIfNeeded(){
     locked = false;
     renderNow();
     setFeedback(ui, "Ready", "All skills maxed. No selection this turn.");
+    return;
+  }
+
+  if (options.silent){
+    locked = false;
+    renderNow();
     return;
   }
 
@@ -1099,6 +1295,18 @@ function onRoomStart(){
 async function onConfirm(){
   if (isLocked()) return;
   if (!g || g.gameOver) return;
+  if (roomSession.isRoomPlay && !isRoomAuthoritativeClient()){
+    if (!g.pendingConfirm){
+      setFeedback(ui, "No word locked", "Release a valid path before confirming.");
+      return;
+    }
+    locked = true;
+    emitRoomGameAction(GAME_ACTION_TYPES.CONFIRM_WORD, {
+      path: Array.isArray(g.selection) ? g.selection.slice() : [],
+    });
+    setFeedback(ui, "Waiting", "Submitting your word to the host...");
+    return;
+  }
 
   const result = confirmSwipe(g);
   renderNow();
@@ -1112,13 +1320,15 @@ async function onConfirm(){
   await handleEvaluationResult(result);
 }
 
-async function handleEvaluationResult(result){
+async function handleEvaluationResult(result, options = {}){
   if (result.type === "FAIL_INVALID" || result.type === "FAIL_DUPLICATE"){
-    emitRoomGameAction(GAME_ACTION_TYPES.CONFIRM_WORD, {
-      outcome: "fail",
-      reason: result.reason || "INVALID",
-      word: g?.selectionWord || null,
-    });
+    if (!options.suppressRemoteFeedback){
+      emitRoomGameAction(GAME_ACTION_TYPES.CONFIRM_WORD, {
+        outcome: "fail",
+        reason: result.reason || "INVALID",
+        word: g?.selectionWord || null,
+      });
+    }
     const reasonText =
       result.reason === "DUPLICATE" ? "Duplicate (match-wide)" :
       "Not in dictionary";
@@ -1132,18 +1342,23 @@ async function handleEvaluationResult(result){
       return;
     }
     if (result.ended){
-      await openSkillSelectIfNeeded();
+      await openSkillSelectIfNeeded({ silent: !!options.suppressPrompts });
+    }
+    if (!options.skipBroadcast){
+      broadcastGameSnapshot("confirm_fail");
     }
     return;
   }
 
   if (result.type === "SUCCESS"){
-    emitRoomGameAction(GAME_ACTION_TYPES.CONFIRM_WORD, {
-      outcome: "success",
-      word: result.word || g?.selectionWord || null,
-      points: result.finalWordPoints ?? null,
-      extraSwipe: !!result.extraSwipe,
-    });
+    if (!options.suppressRemoteFeedback){
+      emitRoomGameAction(GAME_ACTION_TYPES.CONFIRM_WORD, {
+        outcome: "success",
+        word: result.word || g?.selectionWord || null,
+        points: result.finalWordPoints ?? null,
+        extraSwipe: !!result.extraSwipe,
+      });
+    }
     if (result.extraSwipe){
       const remaining = Number.isFinite(result.extraSwipeLeft) ? result.extraSwipeLeft : 0;
       const suffix = (remaining > 1) ? ` Extra swipes left: ${remaining}.` : "";
@@ -1158,7 +1373,10 @@ async function handleEvaluationResult(result){
       return;
     }
     if (result.ended){
-      await openSkillSelectIfNeeded();
+      await openSkillSelectIfNeeded({ silent: !!options.suppressPrompts });
+    }
+    if (!options.skipBroadcast){
+      broadcastGameSnapshot("confirm_success");
     }
   }
 }
@@ -1179,10 +1397,14 @@ function syncAutoState(){
 
 function renderNow(){
   if (!g) return;
+  if (!g.skillSelect?.pending){
+    lastRoomPromptKey = null;
+  }
   syncAutoState();
   renderAll(ui, g);
   syncTimeLimitState();
   syncTimeLimitModalDefaults();
+  syncGridCover();
   setConfirmState(ui, g.pendingConfirm, isLocked());
   renderRoomUi();
   maybeScheduleComputerTurn();

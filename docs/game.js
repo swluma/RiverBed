@@ -814,6 +814,31 @@ export function releaseSwipe(g){
   return { type:"PENDING", len, word: g.selectionWord };
 }
 
+export function setSelectionPath(g, path){
+  if (!g || g.gameOver) return false;
+  if (!Array.isArray(path) || path.length === 0){
+    clearSelection(g);
+    g.pendingConfirm = false;
+    return false;
+  }
+
+  clearSelection(g);
+  for (const rawIdx of path){
+    const idx = Number(rawIdx);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= SIZE * SIZE) return false;
+    if (!canSelectTile(g, idx)) return false;
+    if (g.selectionSet.has(idx)) return false;
+    const last = g.selection[g.selection.length - 1];
+    if (g.selection.length > 0 && !isAdjacent(last, idx)) return false;
+    g.selection.push(idx);
+    g.selectionSet.add(idx);
+    g.selectionWord += g.board[idx];
+  }
+
+  g.pendingConfirm = g.selection.length >= MIN_WORD_LEN;
+  return g.pendingConfirm;
+}
+
 export function confirmSwipe(g){
   if (g.gameOver) return { type:"NOOP" };
   if (!g.pendingConfirm) return { type:"NO_PENDING" };
@@ -885,6 +910,166 @@ export function timeoutTurn(g){
   g.extraChanceLeft = 0;
   const result = handleFailure(g, { reason:"TIMEOUT", word:null });
   return { type:"TIMEOUT", ...result };
+}
+
+function cloneJsonSafe(value){
+  return JSON.parse(JSON.stringify(value));
+}
+
+function serializePlayer(player){
+  return {
+    id: player.id,
+    name: player.name,
+    color: player.color,
+    score: player.score,
+    combo: player.combo,
+    decayStepPct: player.decayStepPct,
+    decaySteps: player.decaySteps,
+    lastWordTiles: Array.from(player.lastWordTiles || []),
+    skills: { ...player.skills },
+    fountainIdx: player.fountainIdx,
+    pendingGoldTrigger: !!player.pendingGoldTrigger,
+    pendingWhiteCount: player.pendingWhiteCount,
+    lastFailedTiles: Array.from(player.lastFailedTiles || []),
+    imposeCancelOnOpponentNextTurn: player.imposeCancelOnOpponentNextTurn,
+    hasFoundWordThisTurn: !!player.hasFoundWordThisTurn,
+    safetyNetUsed: !!player.safetyNetUsed,
+    failedSwipeThisTurn: !!player.failedSwipeThisTurn,
+    lastTurnFoundWord: !!player.lastTurnFoundWord,
+    spellFinder: {
+      word: player.spellFinder?.word || null,
+      path: Array.isArray(player.spellFinder?.path) ? player.spellFinder.path.slice() : [],
+      tiles: Array.from(player.spellFinder?.tiles || []),
+      tileLimitThisTurn: player.spellFinder?.tileLimitThisTurn ?? null,
+    },
+  };
+}
+
+function hydratePlayer(raw, index){
+  const player = makePlayer(index);
+  player.name = raw?.name || player.name;
+  player.color = raw?.color || player.color;
+  player.score = Number(raw?.score) || 0;
+  player.combo = Number(raw?.combo) || 0;
+  player.decayStepPct = Number(raw?.decayStepPct) || 0;
+  player.decaySteps = Number(raw?.decaySteps) || 0;
+  player.lastWordTiles = new Set(raw?.lastWordTiles || []);
+  player.skills = { ...player.skills, ...(raw?.skills || {}) };
+  player.fountainIdx = Number.isInteger(raw?.fountainIdx) ? raw.fountainIdx : null;
+  player.pendingGoldTrigger = !!raw?.pendingGoldTrigger;
+  player.pendingWhiteCount = Number(raw?.pendingWhiteCount) || 0;
+  player.lastFailedTiles = new Set(raw?.lastFailedTiles || []);
+  player.imposeCancelOnOpponentNextTurn = Number(raw?.imposeCancelOnOpponentNextTurn) || 0;
+  player.hasFoundWordThisTurn = !!raw?.hasFoundWordThisTurn;
+  player.safetyNetUsed = !!raw?.safetyNetUsed;
+  player.failedSwipeThisTurn = !!raw?.failedSwipeThisTurn;
+  player.lastTurnFoundWord = !!raw?.lastTurnFoundWord;
+  player.spellFinder = {
+    word: raw?.spellFinder?.word || null,
+    path: Array.isArray(raw?.spellFinder?.path) ? raw.spellFinder.path.slice() : [],
+    tiles: new Set(raw?.spellFinder?.tiles || []),
+    tileLimitThisTurn: raw?.spellFinder?.tileLimitThisTurn ?? null,
+  };
+  return player;
+}
+
+export function serializeGameState(g){
+  if (!g) return null;
+  return {
+    board: Array.isArray(g.board) ? g.board.slice() : [],
+    embeddedWords: Array.isArray(g.embeddedWords) ? g.embeddedWords.slice() : [],
+    foundWords: Array.from(g.foundWords || []),
+    log: cloneJsonSafe(g.log || []),
+    pointLog: cloneJsonSafe(g.pointLog || []),
+    turnLog: cloneJsonSafe(g.turnLog || []),
+    turnStartScores: Array.isArray(g.turnStartScores) ? g.turnStartScores.slice() : [0, 0],
+    lastTurnTotalsKey: g.lastTurnTotalsKey ?? null,
+    turnNo: Number(g.turnNo) || 1,
+    active: Number(g.active) || 0,
+    attempts: Number(g.attempts) || 0,
+    extraChanceLeft: Number(g.extraChanceLeft) || 0,
+    extraSwipeLeft: Number(g.extraSwipeLeft) || 0,
+    extraSwipeActive: !!g.extraSwipeActive,
+    gameOver: !!g.gameOver,
+    winScore: Number(g.winScore) || WIN_SCORE,
+    timeLimits: Array.isArray(g.timeLimits) ? g.timeLimits.slice() : [0, 0],
+    skillSelect: {
+      pending: !!g.skillSelect?.pending,
+      chooser: g.skillSelect?.chooser ?? null,
+      nextActive: g.skillSelect?.nextActive ?? null,
+      offers: Array.isArray(g.skillSelect?.offers) ? g.skillSelect.offers.map((offer) => offer.id) : [],
+      autoAdvance: !!g.skillSelect?.autoAdvance,
+    },
+    gold: Array.from(g.gold || []),
+    white: Array.from(g.white || []),
+    gray: Array.from(g.gray || []),
+    purple: Array.from(g.purple || []),
+    hint: {
+      usedThisTurn: !!g.hint?.usedThisTurn,
+      tiles: Array.from(g.hint?.tiles || []),
+      word: g.hint?.word || null,
+    },
+    players: Array.isArray(g.players) ? g.players.map(serializePlayer) : [],
+    selection: Array.isArray(g.selection) ? g.selection.slice() : [],
+    selectionWord: g.selectionWord || "",
+    pendingConfirm: !!g.pendingConfirm,
+  };
+}
+
+export function hydrateGameState(snapshot, dictSet, dictWords, embedWords){
+  const players = Array.isArray(snapshot?.players) ? snapshot.players : [];
+  const selection = Array.isArray(snapshot?.selection) ? snapshot.selection.slice() : [];
+  const g = {
+    dictSet,
+    dictWords,
+    commonWords: Array.isArray(embedWords) && embedWords.length > 0 ? embedWords : dictWords,
+    board: Array.isArray(snapshot?.board) ? snapshot.board.slice() : [],
+    embeddedWords: Array.isArray(snapshot?.embeddedWords) ? snapshot.embeddedWords.slice() : [],
+    foundWords: new Set(snapshot?.foundWords || []),
+    log: cloneJsonSafe(snapshot?.log || []),
+    pointLog: cloneJsonSafe(snapshot?.pointLog || []),
+    turnLog: cloneJsonSafe(snapshot?.turnLog || []),
+    turnStartScores: Array.isArray(snapshot?.turnStartScores) ? snapshot.turnStartScores.slice() : [0, 0],
+    lastTurnTotalsKey: snapshot?.lastTurnTotalsKey ?? null,
+    turnNo: Number(snapshot?.turnNo) || 1,
+    active: Number(snapshot?.active) || 0,
+    attempts: Number(snapshot?.attempts) || 0,
+    extraChanceLeft: Number(snapshot?.extraChanceLeft) || 0,
+    extraSwipeLeft: Number(snapshot?.extraSwipeLeft) || 0,
+    extraSwipeActive: !!snapshot?.extraSwipeActive,
+    gameOver: !!snapshot?.gameOver,
+    winScore: Number(snapshot?.winScore) || WIN_SCORE,
+    timeLimits: Array.isArray(snapshot?.timeLimits) ? snapshot.timeLimits.slice() : [0, 0],
+    skillSelect: {
+      pending: !!snapshot?.skillSelect?.pending,
+      chooser: snapshot?.skillSelect?.chooser ?? null,
+      nextActive: snapshot?.skillSelect?.nextActive ?? null,
+      offers: Array.isArray(snapshot?.skillSelect?.offers)
+        ? snapshot.skillSelect.offers.map((id) => SKILLS[id]).filter(Boolean)
+        : [],
+      autoAdvance: !!snapshot?.skillSelect?.autoAdvance,
+    },
+    gold: new Set(snapshot?.gold || []),
+    white: new Set(snapshot?.white || []),
+    gray: new Set(snapshot?.gray || []),
+    purple: new Set(snapshot?.purple || []),
+    hint: {
+      usedThisTurn: !!snapshot?.hint?.usedThisTurn,
+      tiles: new Set(snapshot?.hint?.tiles || []),
+      word: snapshot?.hint?.word || null,
+    },
+    players: [hydratePlayer(players[0], 0), hydratePlayer(players[1], 1)],
+    selection,
+    selectionSet: new Set(selection),
+    selectionWord: snapshot?.selectionWord || "",
+    pendingConfirm: !!snapshot?.pendingConfirm,
+    autoMode: null,
+    autoPlayers: { 0: null, 1: null },
+    spectatorState: { active: false, paused: false, interrupted: false },
+  };
+
+  updateDecaySteps(g);
+  return g;
 }
 
 function handleFailure(g, {reason, word}){
