@@ -261,6 +261,7 @@ function applyIncomingSnapshot(snapshot, reason = "sync", feedback = null){
   if (feedback?.title){
     setFeedback(ui, feedback.title, feedback.sub || "");
   }
+  syncGameOverPresentation();
   syncReadyFeedbackOnTurnChange();
 }
 
@@ -288,6 +289,16 @@ function syncReadyFeedbackOnTurnChange(){
     setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
   }
   wasLocalTurnPlayable = localTurnPlayable;
+}
+
+function syncGameOverPresentation(){
+  if (!g || !ui?.endModal) return;
+  if (g.gameOver){
+    showEndModal(ui, g);
+    locked = true;
+    return;
+  }
+  ui.endModal.classList.add("hidden");
 }
 
 async function applyRemoteIntentAction(action){
@@ -352,13 +363,15 @@ function getRoomPlayersForUi(){
 function renderRoomUi(){
   const viewModel = getRoomViewModel(roomSession, roomState);
   const roomControlsLocked = roomSession.isRoomPlay;
+  const roomGuestLocked = roomSession.isRoomPlay && !isRoomAuthoritativeClient();
   if (ui?.vsComputerBtn) ui.vsComputerBtn.disabled = roomControlsLocked;
   if (ui?.spectatorBtn) ui.spectatorBtn.disabled = roomControlsLocked;
   if (ui?.testSkillsBtn) ui.testSkillsBtn.disabled = roomControlsLocked;
+  if (ui?.restartBtn) ui.restartBtn.disabled = roomGuestLocked;
   if (ui?.newMatchBtn){
     const waitingForFallback = roomSession.canFallbackToLocal && !localFallbackConfirmed;
     const waitingForRoomStart = roomSession.isRoomPlay && roomState.phase !== "playing";
-    ui.newMatchBtn.disabled = !dictionaryReady || waitingForFallback || waitingForRoomStart;
+    ui.newMatchBtn.disabled = !dictionaryReady || waitingForFallback || waitingForRoomStart || roomGuestLocked;
   }
   const note = roomSession.isRoomPlay
     ? (roomState.phase === "playing"
@@ -672,6 +685,11 @@ onApplyWinScore(ui, ({ mode, value }) => {
   targetWinScore = next;
   if (ui.winScoreValue) ui.winScoreValue.textContent = String(targetWinScore);
 
+  if (roomSession.isRoomPlay && !isRoomAuthoritativeClient()){
+    setFeedback(ui, "Host controls settings", "Win score changes must be applied by the host.");
+    return;
+  }
+
   if (mode === "new"){
     onNewMatch();
     return;
@@ -688,6 +706,9 @@ onApplyWinScore(ui, ({ mode, value }) => {
     locked = false;
     setFeedback(ui, "Target updated", `First to ${targetWinScore} points wins. Resume play.`);
   }
+  if (isRoomAuthoritativeClient()){
+    broadcastGameSnapshot("win_score_updated");
+  }
 });
 
 onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
@@ -697,6 +718,11 @@ onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
     return;
   }
   const [p1Sec, p2Sec] = parsed;
+
+  if (roomSession.isRoomPlay && !isRoomAuthoritativeClient()){
+    setFeedback(ui, "Host controls settings", "Time limit changes must be applied by the host.");
+    return;
+  }
 
   timeLimitSettings = [p1Sec, p2Sec];
   if (g) g.timeLimits = [p1Sec, p2Sec];
@@ -711,6 +737,9 @@ onApplyTimeLimit(ui, ({ mode, p1, p2 }) => {
   lastTurnKey = null;
   renderNow();
   setFeedback(ui, "Time limit updated", "Settings applied. Resume play.");
+  if (isRoomAuthoritativeClient()){
+    broadcastGameSnapshot("time_limit_updated");
+  }
 });
 
 onApplyVsComputer(ui, ({ strength, skillPreference } = {}) => {
@@ -863,6 +892,10 @@ async function loadDictionary(){
 }
 
 function onNewMatch(options = {}){
+  if (roomSession.isRoomPlay && !isRoomAuthoritativeClient() && options.source !== "snapshot"){
+    setFeedback(ui, "Host controls match flow", "Only the host can start a new room match.");
+    return;
+  }
   if (roomSession.canFallbackToLocal && !localFallbackConfirmed){
     setFeedback(ui, "Launch blocked", "Confirm the local fallback before starting a match.");
     renderRoomUi();
