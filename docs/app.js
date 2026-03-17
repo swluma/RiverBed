@@ -67,6 +67,7 @@ let roomClient = null;
 let roomSession = resolveSessionFromLocation(window.location);
 let roomState = createInitialRoomState(roomSession);
 let lastRoomPromptKey = null;
+let wasLocalTurnPlayable = false;
 
 const COMPUTER_OPTIONS = {
   normal: {
@@ -235,6 +236,10 @@ function buildSnapshotAction(reason){
     snapshot: serializeGameState(g),
     activePlayer: g?.active ?? null,
     turnNo: g?.turnNo ?? null,
+    feedback: {
+      title: ui?.fbTitle?.textContent || "",
+      sub: ui?.fbSub?.textContent || "",
+    },
   };
 }
 
@@ -243,7 +248,7 @@ function broadcastGameSnapshot(reason){
   emitRoomGameAction(GAME_ACTION_TYPES.SYNC_SNAPSHOT, buildSnapshotAction(reason));
 }
 
-function applyIncomingSnapshot(snapshot, reason = "sync"){
+function applyIncomingSnapshot(snapshot, reason = "sync", feedback = null){
   if (!snapshot || !dictSet || !dictWords) return;
   g = hydrateGameState(snapshot, dictSet, dictWords, embedWords);
   pointerActiveId = null;
@@ -253,9 +258,10 @@ function applyIncomingSnapshot(snapshot, reason = "sync"){
   locked = roomSession.isRoomPlay && !isLocalPlayersTurn();
   renderNow();
   maybeOpenRoomSkillPrompt();
-  if (reason === "remote_turn"){
-    setFeedback(ui, "Turn updated", "Room state synchronized.");
+  if (feedback?.title){
+    setFeedback(ui, feedback.title, feedback.sub || "");
   }
+  syncReadyFeedbackOnTurnChange();
 }
 
 function maybeOpenRoomSkillPrompt(){
@@ -269,6 +275,19 @@ function maybeOpenRoomSkillPrompt(){
   if (!Array.isArray(g.skillSelect.offers) || g.skillSelect.offers.length === 0) return;
   locked = true;
   showSkillModal(ui, g, g.skillSelect.offers);
+}
+
+function syncReadyFeedbackOnTurnChange(){
+  if (!roomSession.isRoomPlay || !g || g.gameOver){
+    wasLocalTurnPlayable = false;
+    return;
+  }
+
+  const localTurnPlayable = isLocalPlayersTurn() && !g.skillSelect?.pending;
+  if (localTurnPlayable && !wasLocalTurnPlayable){
+    setFeedback(ui, "Ready", "Swipe to form a word. Release to lock it in, then confirm.");
+  }
+  wasLocalTurnPlayable = localTurnPlayable;
 }
 
 async function applyRemoteIntentAction(action){
@@ -470,7 +489,7 @@ function connectRoomSession(){
         const action = payload?.action || null;
         if (!action) return;
         if (action.type === GAME_ACTION_TYPES.SYNC_SNAPSHOT && action.payload?.snapshot){
-          applyIncomingSnapshot(action.payload.snapshot, "remote_turn");
+          applyIncomingSnapshot(action.payload.snapshot, "remote_turn", action.payload.feedback || null);
           return;
         }
         if (isRoomAuthoritativeClient()){
@@ -478,7 +497,11 @@ function connectRoomSession(){
         }
       }
       if (eventName === SERVER_ROOM_EVENTS.SYNC_STATE && payload?.lastAction?.type === GAME_ACTION_TYPES.SYNC_SNAPSHOT && payload.lastAction?.payload?.snapshot){
-        applyIncomingSnapshot(payload.lastAction.payload.snapshot, "remote_turn");
+        applyIncomingSnapshot(
+          payload.lastAction.payload.snapshot,
+          "remote_turn",
+          payload.lastAction.payload.feedback || null
+        );
       }
     });
   }
@@ -1407,6 +1430,7 @@ function renderNow(){
   syncGridCover();
   setConfirmState(ui, g.pendingConfirm, isLocked());
   renderRoomUi();
+  syncReadyFeedbackOnTurnChange();
   maybeScheduleComputerTurn();
 }
 
