@@ -414,7 +414,7 @@ function renderRoomUi(){
   }
   const note = roomSession.isRoomPlay
     ? (roomState.phase === "playing"
-      ? "Room play active. WebSocket room transport is connected, but deterministic gameplay sync is still a TODO."
+      ? "Room play active. WebSocket room transport is connected."
       : `Room bootstrap active. Waiting flow is using ${resolveRoomServerUrl()}.`)
     : (roomSession.canFallbackToLocal
       ? "Hub parameters were invalid. Review the error and continue locally if needed."
