@@ -8,7 +8,7 @@ export function createInitialRoomState(session){
     hostId: null,
     players: [],
     playerCount: 0,
-    transportName: "mock-broadcast",
+    transportName: "websocket",
     joined: false,
     startedAt: null,
     lastError: null,

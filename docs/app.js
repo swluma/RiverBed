@@ -36,7 +36,7 @@ import {
   createGameAction,
 } from "./multiplayer/protocol.js";
 import { createInitialRoomState, getRoomViewModel, reduceRoomEvent } from "./multiplayer/roomState.js";
-import { createMockRoomTransport } from "./multiplayer/mockTransport.js";
+import { createWebSocketRoomTransport, resolveRoomServerUrl } from "./multiplayer/wsTransport.js";
 import { createRoomClient } from "./multiplayer/roomClient.js";
 
 let dictSet = null;
@@ -228,8 +228,8 @@ function renderRoomUi(){
   }
   const note = roomSession.isRoomPlay
     ? (roomState.phase === "playing"
-      ? "Room play active. Mock transport starts both clients, but full gameplay sync is still a TODO."
-      : "Room bootstrap active. Waiting flow is connected through the multiplayer layer.")
+      ? "Room play active. WebSocket room transport is connected, but deterministic gameplay sync is still a TODO."
+      : `Room bootstrap active. Waiting flow is using ${resolveRoomServerUrl()}.`)
     : (roomSession.canFallbackToLocal
       ? "Hub parameters were invalid. Review the error and continue locally if needed."
       : "Local single-device play.");
@@ -311,10 +311,8 @@ function stopRoomHeartbeat(){
 
 function connectRoomSession(){
   if (!roomSession.isRoomPlay || !roomSession.isValid || roomClient) return;
-  const transport = createMockRoomTransport({
-    clientId: roomSession.playerId,
-    gameId: roomSession.gameId,
-    maxPlayers: roomSession.maxPlayers,
+  const transport = createWebSocketRoomTransport({
+    url: resolveRoomServerUrl(),
   });
   roomClient = createRoomClient({ session: roomSession, transport });
   const roomEvents = [
@@ -395,7 +393,7 @@ function startRoomMatch(payload = {}){
     connectionStatus: CONNECTION_STATUS.IN_ROOM,
   };
   onNewMatch();
-  setFeedback(ui, "Room match started", "Mock room start received. Gameplay sync hooks are prepared, but full synchronization is still pending.");
+  setFeedback(ui, "Room match started", "Room server start received. Gameplay sync hooks are prepared, but full synchronization is still pending.");
   renderRoomUi();
 }
 
