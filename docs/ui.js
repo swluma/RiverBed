@@ -72,6 +72,7 @@ export function bindUI(handlers){
     winScoreValue: document.getElementById("winScoreValue"),
     modePill: document.getElementById("modePill"),
     modeValue: document.getElementById("modeValue"),
+    roomInfoStack: document.querySelector(".roomInfoStack"),
     roomStatusPanel: document.getElementById("roomStatusPanel"),
     roomSourceBadge: document.getElementById("roomSourceBadge"),
     roomModeBadge: document.getElementById("roomModeBadge"),
@@ -849,6 +850,9 @@ export function setConfirmState(el, pending, locked){
 export function renderRoomStatus(el, session, roomState, viewModel, options = {}){
   if (!el.roomStatusPanel) return;
   const show = !!(session?.hasHubParams || session?.isRoomPlay || options.forceVisible);
+  if (el.roomInfoStack){
+    el.roomInfoStack.classList.toggle("hidden", !show && (!el.roomWaitingPanel || el.roomWaitingPanel.classList.contains("hidden")));
+  }
   el.roomStatusPanel.classList.toggle("hidden", !show);
   if (!show) return;
 
@@ -869,6 +873,9 @@ export function renderRoomStatus(el, session, roomState, viewModel, options = {}
 export function renderRoomWaiting(el, model){
   if (!el.roomWaitingPanel) return;
   const visible = !!model?.visible;
+  if (el.roomInfoStack){
+    el.roomInfoStack.classList.toggle("hidden", !visible && (!el.roomStatusPanel || el.roomStatusPanel.classList.contains("hidden")));
+  }
   el.roomWaitingPanel.classList.toggle("hidden", !visible);
   if (!visible) return;
 
