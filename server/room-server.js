@@ -111,6 +111,30 @@ function sendError(ws, code, message, recoverable = true){
   send(ws, SERVER_ROOM_EVENTS.ERROR, { code, message, recoverable });
 }
 
+function findDisconnectedPlayerByName(room, playerName, { host }){
+  const normalizedName = String(playerName || "").trim().toLowerCase();
+  if (!normalizedName) return null;
+  for (const player of room.players.values()){
+    const roleMatches = host ? player.id === room.hostId : player.id !== room.hostId;
+    if (!roleMatches || player.connected !== false) continue;
+    if (String(player.name || "").trim().toLowerCase() === normalizedName){
+      return player;
+    }
+  }
+  return null;
+}
+
+function rekeyRoomPlayer(room, player, nextPlayerId){
+  if (!player || player.id === nextPlayerId) return player;
+  room.players.delete(player.id);
+  if (room.hostId === player.id){
+    room.hostId = nextPlayerId;
+  }
+  player.id = nextPlayerId;
+  room.players.set(nextPlayerId, player);
+  return player;
+}
+
 function closeRoom(room, message){
   const players = Array.from(room.players.values());
   rooms.delete(room.roomCode);
@@ -184,8 +208,12 @@ function handleJoinRoom(ws, payload){
   let room = rooms.get(roomCode);
   if (mode === "host"){
     if (room && room.hostId !== playerId){
-      sendError(ws, "ROOM_EXISTS", "This room code is already in use.");
-      return;
+      const returningHost = findDisconnectedPlayerByName(room, playerName, { host: true });
+      if (!returningHost){
+        sendError(ws, "ROOM_EXISTS", "This room code is already in use.");
+        return;
+      }
+      rekeyRoomPlayer(room, returningHost, playerId);
     }
     if (!room){
       room = {
@@ -199,6 +227,7 @@ function handleJoinRoom(ws, payload){
         startedAt: null,
         players: new Map(),
         lastAction: null,
+        lastSnapshotAction: null,
       };
       rooms.set(roomCode, room);
     }
@@ -210,6 +239,12 @@ function handleJoinRoom(ws, payload){
     if (room.gameId !== gameId){
       sendError(ws, "WRONG_GAME", "This room is registered for a different game.", false);
       return;
+    }
+    const returningGuest = room.players.has(playerId)
+      ? null
+      : findDisconnectedPlayerByName(room, playerName, { host: false });
+    if (returningGuest){
+      rekeyRoomPlayer(room, returningGuest, playerId);
     }
     const connectedCount = Array.from(room.players.values()).filter((player) => player.connected !== false).length;
     if (!room.players.has(playerId) && connectedCount >= MAX_PLAYERS){
@@ -354,7 +389,7 @@ function handleSyncRequest(ws, payload){
   send(ws, SERVER_ROOM_EVENTS.SYNC_STATE, {
     roomCode,
     room: roomSnapshot(room),
-    lastAction: room.lastAction,
+    lastAction: room.lastSnapshotAction || room.lastAction,
   });
 }
 
@@ -377,6 +412,9 @@ function handleGameAction(ws, payload){
   }
 
   room.lastAction = payload?.action || null;
+  if (room.lastAction?.type === "sync_snapshot"){
+    room.lastSnapshotAction = room.lastAction;
+  }
   room.updatedAt = now();
   broadcast(room, SERVER_ROOM_EVENTS.GAME_ACTION, {
     roomCode,

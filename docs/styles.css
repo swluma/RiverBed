@@ -359,11 +359,11 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
     opacity:0;
     transform:translateX(-50%) translateY(-100%);
   }
-  34%{
+  33.333%{
     opacity:1;
     transform:translateX(-50%) translateY(0);
   }
-  66%{
+  66.666%{
     opacity:1;
     transform:translateX(-50%) translateY(0);
   }
