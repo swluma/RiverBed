@@ -393,14 +393,24 @@ async function applyRemoteIntentAction(action){
 
 function getRoomPlayersForUi(){
   return (roomState.players || []).map((player) => ({
+    id: player.id,
     name: player.name,
     ready: !!player.ready,
     role: player.id === roomState.hostId ? "Host" : "Guest",
+    connected: player.connected !== false,
+    canToggleReady: roomSession.isGuest && player.id === roomSession.playerId && player.id !== roomState.hostId,
   }));
+}
+
+function getRoomPresenceNotification(players){
+  const missing = players.filter((player) => player.connected === false);
+  if (missing.length === 0) return "";
+  return missing.map((player) => `${player.role || "Player"} ${player.name || "Player"} left the room.`).join(" ");
 }
 
 function renderRoomUi(){
   const viewModel = getRoomViewModel(roomSession, roomState);
+  const roomPlayers = getRoomPlayersForUi();
   const roomControlsLocked = roomSession.isRoomPlay;
   const roomGuestLocked = roomSession.isRoomPlay && !isRoomAuthoritativeClient();
   if (ui?.vsComputerBtn) ui.vsComputerBtn.disabled = roomControlsLocked;
@@ -430,13 +440,13 @@ function renderRoomUi(){
     title: "Room Session",
     body: "",
     roomCode: roomSession.roomCode,
-    players: getRoomPlayersForUi(),
+    players: roomPlayers,
+    notification: getRoomPresenceNotification(roomPlayers),
     errors: [],
     showCopy: !!roomSession.roomCode,
     showRetry: false,
     showBackHub: !!roomSession.hubUrl,
     showReload: true,
-    showContinueLocal: false,
     showReady: false,
     readyDisabled: false,
     showStart: false,
@@ -448,15 +458,11 @@ function renderRoomUi(){
     waitingModel.title = "Invalid room launch";
     waitingModel.body = "The hub parameters could not start a room session safely.";
     waitingModel.errors = roomSession.validationErrors.slice();
-    waitingModel.showContinueLocal = true;
     waitingModel.showRetry = false;
   } else if (roomSession.isRoomPlay && roomState.phase !== "playing"){
     waitingModel.visible = true;
     waitingModel.errors = roomState.lastError?.message ? [roomState.lastError.message] : [];
     waitingModel.showRetry = roomState.connectionStatus === CONNECTION_STATUS.ERROR;
-    waitingModel.showContinueLocal = roomState.connectionStatus === CONNECTION_STATUS.ERROR;
-    waitingModel.showReady = roomSession.isGuest && roomState.joined;
-    waitingModel.readyDisabled = !!viewModel.self?.ready;
     waitingModel.showStart = roomSession.isHost && roomState.joined;
     waitingModel.startDisabled = !viewModel.canStart;
 
@@ -471,6 +477,10 @@ function renderRoomUi(){
         ? "Waiting for the host to start the match."
         : "Connecting to the room and requesting the current state.";
     }
+  } else if (roomSession.isRoomPlay){
+    waitingModel.visible = true;
+    waitingModel.title = "Room";
+    waitingModel.body = "Room play is active.";
   }
 
   renderRoomWaiting(ui, waitingModel);
@@ -1375,12 +1385,12 @@ async function onCopyRoomCode(){
   }
 }
 
-function onRoomReady(){
+function onRoomReady(ready = true){
   if (!roomClient || !roomSession.isRoomPlay) return;
   roomClient.send(CLIENT_ROOM_EVENTS.PLAYER_READY, {
     roomCode: roomSession.roomCode,
     playerId: roomSession.playerId,
-    ready: true,
+    ready: !!ready,
   });
 }
 

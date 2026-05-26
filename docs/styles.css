@@ -71,6 +71,23 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   border-bottom:1px solid rgba(255,255,255,0.10);
 }
 
+.roomModalPanel{
+  position:relative;
+  width:min(640px, calc(100vw - 28px));
+  max-height:calc(100vh - 36px);
+  overflow:auto;
+  padding:16px;
+  border-radius:18px;
+  border-bottom:1px solid rgba(255,255,255,0.10);
+}
+
+.roomModalClose{
+  position:absolute;
+  top:14px;
+  right:14px;
+  z-index:1;
+}
+
 .roomStatusPanel{
   display:grid;
   gap:10px;
@@ -159,6 +176,17 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   background:rgba(0,0,0,0.14);
 }
 
+.roomWaitingCodeText{
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+
+.roomWaitingCode .v{
+  user-select:text;
+  overflow-wrap:anywhere;
+}
+
 .roomWaitingPlayers{
   display:grid;
   gap:8px;
@@ -179,6 +207,19 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   background:rgba(255,255,255,0.04);
 }
 
+.roomWaitingPlayer.offline{
+  border:1px solid rgba(255,75,75,0.24);
+  background:rgba(255,75,75,0.08);
+}
+
+.roomWaitingPlayerStatus{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
 .roomWaitingPlayerMeta{
   display:grid;
   gap:2px;
@@ -195,6 +236,15 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 
 .roomWaitingPlayerReady{
   font-size:12px;
+  font-weight:800;
+}
+
+.roomNotification{
+  padding:10px 12px;
+  border:1px solid rgba(240,197,74,0.32);
+  border-radius:12px;
+  background:rgba(240,197,74,0.10);
+  color:#ffe7a3;
   font-weight:800;
 }
 
@@ -230,6 +280,35 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
 
 .opponentSuccessToast.show{
   animation:opponentSuccessToast 3000ms ease-in-out 0s 1 forwards;
+}
+
+.roomPresenceToast{
+  position:fixed;
+  left:50%;
+  top:0;
+  transform:translateX(-50%) translateY(-100%);
+  z-index:80;
+  pointer-events:none;
+  opacity:0;
+}
+
+.roomPresenceToast.show{
+  animation:roomPresenceToast 3000ms ease-in-out 0s 1 forwards;
+}
+
+.roomPresenceToastInner{
+  min-width:min(420px, calc(100vw - 32px));
+  max-width:min(560px, calc(100vw - 32px));
+  margin-top:12px;
+  padding:14px 18px;
+  border-radius:16px;
+  border:1px solid rgba(240,197,74,0.32);
+  background:rgba(26,24,16,0.94);
+  color:#ffe7a3;
+  box-shadow:0 18px 44px rgba(0,0,0,0.42);
+  backdrop-filter:blur(10px);
+  font-weight:900;
+  text-align:center;
 }
 
 .opponentSuccessToastInner{
@@ -272,6 +351,25 @@ button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
   100%{
     opacity:0;
     transform:translateX(-50%) translateY(12px);
+  }
+}
+
+@keyframes roomPresenceToast{
+  0%{
+    opacity:0;
+    transform:translateX(-50%) translateY(-100%);
+  }
+  34%{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+  66%{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+  100%{
+    opacity:0;
+    transform:translateX(-50%) translateY(-100%);
   }
 }
 

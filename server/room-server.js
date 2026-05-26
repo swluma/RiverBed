@@ -82,6 +82,7 @@ function roomSnapshot(room){
       name: player.name,
       ready: !!player.ready,
       isHost: player.id === room.hostId,
+      connected: player.connected !== false,
       lastSeenAt: player.lastSeenAt,
       joinedAt: player.joinedAt,
     })),
@@ -90,7 +91,7 @@ function roomSnapshot(room){
 
 function syncRoomPhase(room){
   if (room.phase === ROOM_PHASES.PLAYING) return;
-  const players = Array.from(room.players.values());
+  const players = Array.from(room.players.values()).filter((player) => player.connected !== false);
   if (players.length < MAX_PLAYERS){
     room.phase = ROOM_PHASES.WAITING;
   } else if (players.every((player) => player.ready)){
@@ -126,6 +127,10 @@ function closeRoom(room, message){
 function attachPlayerSocket(ws, room, player){
   sockets.set(ws, { roomCode: room.roomCode, playerId: player.id });
   player.ws = ws;
+  player.connected = true;
+  if (player.id === room.hostId){
+    room.hostSocket = ws;
+  }
 }
 
 function detachSocket(ws){
@@ -138,10 +143,11 @@ function detachSocket(ws){
   const leavingPlayer = room.players.get(session.playerId);
   if (!leavingPlayer) return;
 
-  room.players.delete(session.playerId);
-  if (room.hostId === session.playerId){
-    closeRoom(room, "The host disconnected and the room was closed.");
-    return;
+  leavingPlayer.connected = false;
+  leavingPlayer.ws = null;
+  leavingPlayer.lastSeenAt = now();
+  if (room.hostId !== session.playerId){
+    leavingPlayer.ready = false;
   }
 
   room.updatedAt = now();
@@ -149,6 +155,8 @@ function detachSocket(ws){
   broadcast(room, SERVER_ROOM_EVENTS.PLAYER_LEFT, {
     roomCode: room.roomCode,
     playerId: session.playerId,
+    playerName: leavingPlayer.name,
+    isHost: room.hostId === session.playerId,
   });
   emitRoomState(room);
 }
@@ -203,7 +211,8 @@ function handleJoinRoom(ws, payload){
       sendError(ws, "WRONG_GAME", "This room is registered for a different game.", false);
       return;
     }
-    if (!room.players.has(playerId) && room.players.size >= MAX_PLAYERS){
+    const connectedCount = Array.from(room.players.values()).filter((player) => player.connected !== false).length;
+    if (!room.players.has(playerId) && connectedCount >= MAX_PLAYERS){
       sendError(ws, "ROOM_FULL", "This room is already full.");
       return;
     }
@@ -216,13 +225,17 @@ function handleJoinRoom(ws, payload){
     ready: mode === "host",
     joinedAt: now(),
     lastSeenAt: now(),
+    connected: true,
     ws,
   };
   player.name = playerName;
   player.lastSeenAt = now();
   if (!existing){
     player.ready = mode === "host";
+  } else if (mode !== "host"){
+    player.ready = false;
   }
+  player.connected = true;
   room.players.set(playerId, player);
   attachPlayerSocket(ws, room, player);
   syncRoomPhase(room);
@@ -253,16 +266,22 @@ function handleLeaveRoom(ws, payload){
   if (!room) return;
   if (!room.players.has(playerId)) return;
 
-  room.players.delete(playerId);
+  const leavingPlayer = room.players.get(playerId);
+  leavingPlayer.connected = false;
+  leavingPlayer.ws = null;
+  leavingPlayer.lastSeenAt = now();
+  if (room.hostId !== playerId){
+    leavingPlayer.ready = false;
+  }
   sockets.delete(ws);
 
-  if (room.hostId === playerId){
-    closeRoom(room, "The host left and the room was closed.");
-    return;
-  }
-
   syncRoomPhase(room);
-  broadcast(room, SERVER_ROOM_EVENTS.PLAYER_LEFT, { roomCode, playerId });
+  broadcast(room, SERVER_ROOM_EVENTS.PLAYER_LEFT, {
+    roomCode,
+    playerId,
+    playerName: leavingPlayer.name,
+    isHost: room.hostId === playerId,
+  });
   emitRoomState(room);
 }
 
@@ -301,11 +320,12 @@ function handleStartGame(ws, payload){
     sendError(ws, "NOT_HOST", "Only the host can start the match.");
     return;
   }
-  if (room.players.size !== MAX_PLAYERS){
+  const connectedPlayers = Array.from(room.players.values()).filter((player) => player.connected !== false);
+  if (connectedPlayers.length !== MAX_PLAYERS){
     sendError(ws, "PLAYER_COUNT", "Two players are required before starting.");
     return;
   }
-  if (!Array.from(room.players.values()).every((player) => player.ready)){
+  if (!connectedPlayers.every((player) => player.ready)){
     sendError(ws, "NOT_READY", "All players must be ready before starting.");
     return;
   }

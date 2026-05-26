@@ -6,6 +6,8 @@ import {
 } from "./game.js";
 
 let topRightMenusInitialized = false;
+let roomModalAutoOpened = false;
+let lastRoomPresenceToast = "";
 
 function initTopRightMenus(){
   if (topRightMenusInitialized) return;
@@ -72,6 +74,9 @@ export function bindUI(handlers){
     winScoreValue: document.getElementById("winScoreValue"),
     modePill: document.getElementById("modePill"),
     modeValue: document.getElementById("modeValue"),
+    roomOpenBtn: document.getElementById("roomOpenBtn"),
+    roomModal: document.getElementById("roomModal"),
+    roomCloseBtn: document.getElementById("roomCloseBtn"),
     roomInfoStack: document.querySelector(".roomInfoStack"),
     roomStatusPanel: document.getElementById("roomStatusPanel"),
     roomSourceBadge: document.getElementById("roomSourceBadge"),
@@ -89,12 +94,12 @@ export function bindUI(handlers){
     roomWaitingCodeValue: document.getElementById("roomWaitingCodeValue"),
     roomWaitingPlayersWrap: document.getElementById("roomWaitingPlayersWrap"),
     roomWaitingPlayersList: document.getElementById("roomWaitingPlayersList"),
+    roomNotification: document.getElementById("roomNotification"),
     roomWaitingErrors: document.getElementById("roomWaitingErrors"),
     copyRoomCodeBtn: document.getElementById("copyRoomCodeBtn"),
     roomRetryBtn: document.getElementById("roomRetryBtn"),
     roomBackHubBtn: document.getElementById("roomBackHubBtn"),
     roomReloadBtn: document.getElementById("roomReloadBtn"),
-    roomContinueLocalBtn: document.getElementById("roomContinueLocalBtn"),
     roomReadyBtn: document.getElementById("roomReadyBtn"),
     roomStartBtn: document.getElementById("roomStartBtn"),
 
@@ -144,6 +149,8 @@ export function bindUI(handlers){
     opponentSuccessToast: document.getElementById("opponentSuccessToast"),
     opponentSuccessToastTitle: document.getElementById("opponentSuccessToastTitle"),
     opponentSuccessToastBody: document.getElementById("opponentSuccessToastBody"),
+    roomPresenceToast: document.getElementById("roomPresenceToast"),
+    roomPresenceToastBody: document.getElementById("roomPresenceToastBody"),
 
     legendModal: document.getElementById("legendModal"),
     closeLegendBtn: document.getElementById("closeLegendBtn"),
@@ -689,6 +696,17 @@ const emitVsComputer = () => {
 
   initTopRightMenus();
 
+  if (el.roomOpenBtn && el.roomModal){
+    el.roomOpenBtn.addEventListener("click", () => show(el.roomModal));
+  }
+  if (el.roomCloseBtn && el.roomModal){
+    el.roomCloseBtn.addEventListener("click", () => hide(el.roomModal));
+  }
+  if (el.roomModal){
+    el.roomModal.addEventListener("click", (e) => {
+      if (e.target === el.roomModal) hide(el.roomModal);
+    });
+  }
   if (el.copyRoomCodeBtn && handlers.onCopyRoomCode){
     el.copyRoomCodeBtn.addEventListener("click", handlers.onCopyRoomCode);
   }
@@ -701,11 +719,15 @@ const emitVsComputer = () => {
   if (el.roomReloadBtn && handlers.onReloadPage){
     el.roomReloadBtn.addEventListener("click", handlers.onReloadPage);
   }
-  if (el.roomContinueLocalBtn && handlers.onContinueLocal){
-    el.roomContinueLocalBtn.addEventListener("click", handlers.onContinueLocal);
-  }
   if (el.roomReadyBtn && handlers.onRoomReady){
     el.roomReadyBtn.addEventListener("click", handlers.onRoomReady);
+  }
+  if (el.roomWaitingPlayersList && handlers.onRoomReady){
+    el.roomWaitingPlayersList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-room-ready]");
+      if (!button) return;
+      handlers.onRoomReady(button.dataset.roomReady === "true");
+    });
   }
   if (el.roomStartBtn && handlers.onRoomStart){
     el.roomStartBtn.addEventListener("click", handlers.onRoomStart);
@@ -853,10 +875,14 @@ export function setConfirmState(el, pending, locked){
 export function renderRoomStatus(el, session, roomState, viewModel, options = {}){
   if (!el.roomStatusPanel) return;
   const show = !!(session?.hasHubParams || session?.isRoomPlay || options.forceVisible);
-  if (el.roomInfoStack){
-    el.roomInfoStack.classList.toggle("hidden", !show && (!el.roomWaitingPanel || el.roomWaitingPanel.classList.contains("hidden")));
+  if (el.roomOpenBtn){
+    el.roomOpenBtn.classList.toggle("hidden", !show);
   }
   el.roomStatusPanel.classList.toggle("hidden", !show);
+  if (el.roomModal && !show){
+    el.roomModal.classList.add("hidden");
+    roomModalAutoOpened = false;
+  }
   if (!show) return;
 
   if (el.roomSourceBadge) el.roomSourceBadge.textContent = session.source;
@@ -876,10 +902,11 @@ export function renderRoomStatus(el, session, roomState, viewModel, options = {}
 export function renderRoomWaiting(el, model){
   if (!el.roomWaitingPanel) return;
   const visible = !!model?.visible;
-  if (el.roomInfoStack){
-    el.roomInfoStack.classList.toggle("hidden", !visible && (!el.roomStatusPanel || el.roomStatusPanel.classList.contains("hidden")));
-  }
   el.roomWaitingPanel.classList.toggle("hidden", !visible);
+  if (el.roomModal && visible && !roomModalAutoOpened){
+    roomModalAutoOpened = true;
+    el.roomModal.classList.remove("hidden");
+  }
   if (!visible) return;
 
   if (el.roomWaitingTitle) el.roomWaitingTitle.textContent = model.title || "Room";
@@ -900,14 +927,29 @@ export function renderRoomWaiting(el, model){
   }
   if (el.roomWaitingPlayersList){
     el.roomWaitingPlayersList.innerHTML = players.map((player) => `
-      <div class="roomWaitingPlayer">
+      <div class="roomWaitingPlayer ${player.connected === false ? "offline" : ""}">
         <div class="roomWaitingPlayerMeta">
           <div class="roomWaitingPlayerName">${escapeHtml(player.name || "Player")}</div>
-          <div class="roomWaitingPlayerSub">${escapeHtml(player.role || "")}</div>
+          <div class="roomWaitingPlayerSub">${escapeHtml(player.role || "")}${player.connected === false ? " - Left" : ""}</div>
         </div>
-        <div class="roomWaitingPlayerReady">${player.ready ? "Ready" : "Waiting"}</div>
+        <div class="roomWaitingPlayerStatus">
+          <div class="roomWaitingPlayerReady">${player.ready ? "Ready" : "Not ready"}</div>
+          ${player.canToggleReady ? `<button class="ghost small" type="button" data-room-ready="${player.ready ? "false" : "true"}">${player.ready ? "Not ready" : "Ready"}</button>` : ""}
+        </div>
       </div>
     `).join("");
+  }
+
+  const notification = model.notification || "";
+  if (el.roomNotification){
+    el.roomNotification.classList.toggle("hidden", !notification);
+    el.roomNotification.textContent = notification;
+  }
+  if (notification && notification !== lastRoomPresenceToast){
+    lastRoomPresenceToast = notification;
+    showRoomPresenceToast(el, notification);
+  } else if (!notification){
+    lastRoomPresenceToast = "";
   }
 
   const errors = Array.isArray(model.errors) ? model.errors : [];
@@ -920,8 +962,7 @@ export function renderRoomWaiting(el, model){
     ["roomRetryBtn", model.showRetry, !!model.retryDisabled],
     ["roomBackHubBtn", model.showBackHub, false],
     ["roomReloadBtn", model.showReload, false],
-    ["roomContinueLocalBtn", model.showContinueLocal, false],
-    ["roomReadyBtn", model.showReady, !!model.readyDisabled],
+    ["roomReadyBtn", false, true],
     ["roomStartBtn", model.showStart, !!model.startDisabled],
   ];
 
@@ -1183,6 +1224,19 @@ export function showOpponentSuccessToast(el, title, body){
   el.opponentSuccessToast._hideTimer = globalThis.setTimeout?.(() => {
     el.opponentSuccessToast.classList.remove("show");
     el.opponentSuccessToast.classList.add("hidden");
+  }, 3000);
+}
+
+export function showRoomPresenceToast(el, message){
+  if (!el?.roomPresenceToast) return;
+  if (el.roomPresenceToastBody) el.roomPresenceToastBody.textContent = message || "A room member left.";
+  el.roomPresenceToast.classList.remove("hidden", "show");
+  void el.roomPresenceToast.offsetWidth;
+  el.roomPresenceToast.classList.add("show");
+  globalThis.clearTimeout?.(el.roomPresenceToast._hideTimer);
+  el.roomPresenceToast._hideTimer = globalThis.setTimeout?.(() => {
+    el.roomPresenceToast.classList.remove("show");
+    el.roomPresenceToast.classList.add("hidden");
   }, 3000);
 }
 

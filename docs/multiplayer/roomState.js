@@ -21,6 +21,7 @@ export function createInitialRoomState(session){
 
 function withRoomSnapshot(state, room){
   const players = Array.isArray(room?.players) ? room.players.slice() : [];
+  const connectedPlayers = players.filter((player) => player.connected !== false);
   const phase = room?.phase || state.phase;
   return {
     ...state,
@@ -28,7 +29,7 @@ function withRoomSnapshot(state, room){
     phase,
     hostId: room?.hostId || null,
     players,
-    playerCount: players.length,
+    playerCount: connectedPlayers.length,
     startedAt: room?.startedAt || state.startedAt,
     joined: true,
     roomClosed: false,
@@ -131,15 +132,16 @@ export function reduceRoomEvent(state, event, session){
 
 export function getRoomViewModel(session, roomState){
   const players = Array.isArray(roomState.players) ? roomState.players : [];
+  const connectedPlayers = players.filter((player) => player.connected !== false);
   const self = players.find((player) => player.id === session.playerId) || null;
-  const everyoneReady = players.length > 0 && players.every((player) => !!player.ready);
-  const canStart = session.isHost && players.length === session.maxPlayers && everyoneReady;
+  const everyoneReady = connectedPlayers.length > 0 && connectedPlayers.every((player) => !!player.ready);
+  const canStart = session.isHost && connectedPlayers.length === session.maxPlayers && everyoneReady;
   return {
     self,
     everyoneReady,
     canStart,
-    playerCountLabel: `${players.length}/${session.maxPlayers}`,
-    opponentConnected: players.length > 1,
+    playerCountLabel: `${connectedPlayers.length}/${session.maxPlayers}`,
+    opponentConnected: connectedPlayers.length > 1,
     statusLabel: roomState.connectionStatus,
   };
 }

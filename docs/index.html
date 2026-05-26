@@ -40,6 +40,7 @@
     <div class="top-right">
       <div class="top-right-row">
         <button id="hintBtn" class="ghost">Hint (-3 Lv)</button>
+        <button id="roomOpenBtn" class="ghost hidden" type="button">Room</button>
 
         <div class="menuGroup">
           <button class="ghost menuTrigger" type="button" aria-haspopup="true" aria-expanded="false">Guide</button>
@@ -66,9 +67,9 @@
     </div>
   </header>
 
-  <main class="layout">
-    <section class="side card" id="p1Panel">
-      <section class="roomInfoStack">
+  <div class="modalOverlay hidden" id="roomModal">
+    <section class="roomInfoStack roomModalPanel card" role="dialog" aria-modal="true" aria-labelledby="roomWaitingTitle">
+      <button class="ghost small roomModalClose" id="roomCloseBtn" type="button" aria-label="Close room panel">Close</button>
         <section class="roomStatusPanel hidden" id="roomStatusPanel" aria-live="polite">
           <div class="roomStatusMain">
             <div class="roomStatusTitle">Room Session</div>
@@ -93,28 +94,33 @@
               <div class="roomWaitingTitle" id="roomWaitingTitle">Room setup</div>
               <div class="roomWaitingBody" id="roomWaitingBody">Preparing session.</div>
             </div>
-            <button class="ghost small hidden" id="copyRoomCodeBtn" type="button">Copy code</button>
           </div>
           <div class="roomWaitingCode hidden" id="roomWaitingCodeWrap">
-            <span class="k">Room code</span>
-            <span class="v" id="roomWaitingCodeValue">-</span>
+            <div class="roomWaitingCodeText">
+              <span class="k">Room code</span>
+              <span class="v" id="roomWaitingCodeValue">-</span>
+            </div>
+            <button class="ghost small hidden" id="copyRoomCodeBtn" type="button">Copy</button>
           </div>
           <div class="roomWaitingPlayers hidden" id="roomWaitingPlayersWrap">
             <div class="roomWaitingPlayersTitle">Players</div>
             <div class="roomWaitingPlayersList" id="roomWaitingPlayersList"></div>
           </div>
+          <div class="roomNotification hidden" id="roomNotification" aria-live="polite"></div>
           <div class="roomWaitingErrors hidden" id="roomWaitingErrors"></div>
           <div class="roomWaitingActions" id="roomWaitingActions">
             <button class="ghost hidden" id="roomRetryBtn" type="button">Retry</button>
             <button class="ghost hidden" id="roomBackHubBtn" type="button">Back to Hub</button>
             <button class="ghost hidden" id="roomReloadBtn" type="button">Reload</button>
-            <button class="ghost hidden" id="roomContinueLocalBtn" type="button">Continue in Local Mode</button>
             <button class="ghost hidden" id="roomReadyBtn" type="button">Ready</button>
             <button class="primary hidden" id="roomStartBtn" type="button">Start Match</button>
           </div>
         </section>
       </section>
+  </div>
 
+  <main class="layout">
+    <section class="side card" id="p1Panel">
       <div class="panelHead red">
         <div class="panelTitle">Player 1</div>
         <div class="panelSub">Theme: <b class="redText">Red</b></div>
@@ -819,6 +825,9 @@
       <div class="opponentSuccessToastTitle" id="opponentSuccessToastTitle">Opponent scored</div>
       <div class="opponentSuccessToastBody" id="opponentSuccessToastBody">A word was found.</div>
     </div>
+  </div>
+  <div class="roomPresenceToast hidden" id="roomPresenceToast" aria-live="polite">
+    <div class="roomPresenceToastInner" id="roomPresenceToastBody">A room member left.</div>
   </div>
 
   <script type="module" src="./app.js"></script>
