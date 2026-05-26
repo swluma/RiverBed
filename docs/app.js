@@ -266,6 +266,11 @@ function isRoomGameplayActive(){
 function updateRoomState(event){
   roomState = reduceRoomEvent(roomState, event, roomSession);
   renderRoomUi();
+  if (g){
+    syncGridCover();
+    setConfirmState(ui, g.pendingConfirm, isLocked());
+    syncReadyFeedbackOnTurnChange();
+  }
 }
 
 function buildSnapshotAction(reason){
@@ -540,6 +545,14 @@ function stopRoomHeartbeat(){
   }
 }
 
+function requestRoomSync(){
+  if (!roomClient || !roomSession.isRoomPlay) return;
+  roomClient.send(CLIENT_ROOM_EVENTS.SYNC_REQUEST, {
+    roomCode: roomSession.roomCode,
+    playerId: roomSession.playerId,
+  });
+}
+
 function connectRoomSession(){
   if (!roomSession.isRoomPlay || !roomSession.isValid || roomClient) return;
   const transport = createWebSocketRoomTransport({
@@ -566,10 +579,7 @@ function connectRoomSession(){
     roomClient.on(eventName, (payload) => {
       updateRoomState({ type: eventName, payload });
       if (eventName === SERVER_ROOM_EVENTS.ROOM_JOINED){
-        roomClient.send(CLIENT_ROOM_EVENTS.SYNC_REQUEST, {
-          roomCode: roomSession.roomCode,
-          playerId: roomSession.playerId,
-        });
+        requestRoomSync();
         if (roomSession.isHost){
           roomClient.send(CLIENT_ROOM_EVENTS.PLAYER_READY, {
             roomCode: roomSession.roomCode,
@@ -962,7 +972,10 @@ async function loadDictionary(){
     setDictStatus(ui, "ok", `Dictionary OK (${set.size.toLocaleString()} words)`);
     ui.newMatchBtn.disabled = false;
     locked = false;
-    flushPendingRoomSnapshot();
+    const resumed = flushPendingRoomSnapshot();
+    if (!resumed && roomSession.isRoomPlay && roomState.phase === "playing" && !g){
+      requestRoomSync();
+    }
     startResolvedBootstrap();
   } catch(err){
     console.error(err);
