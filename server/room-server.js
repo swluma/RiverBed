@@ -111,12 +111,13 @@ function sendError(ws, code, message, recoverable = true){
   send(ws, SERVER_ROOM_EVENTS.ERROR, { code, message, recoverable });
 }
 
-function findDisconnectedPlayerByName(room, playerName, { host }){
+function findReconnectablePlayerByName(room, playerName, { host }){
   const normalizedName = String(playerName || "").trim().toLowerCase();
   if (!normalizedName) return null;
   for (const player of room.players.values()){
     const roleMatches = host ? player.id === room.hostId : player.id !== room.hostId;
-    if (!roleMatches || player.connected !== false) continue;
+    const canReconnect = player.connected === false || room.phase === ROOM_PHASES.PLAYING;
+    if (!roleMatches || !canReconnect) continue;
     if (String(player.name || "").trim().toLowerCase() === normalizedName){
       return player;
     }
@@ -124,8 +125,20 @@ function findDisconnectedPlayerByName(room, playerName, { host }){
   return null;
 }
 
+function detachPlayerSocket(player){
+  if (!player?.ws) return;
+  const oldSocket = player.ws;
+  sockets.delete(oldSocket);
+  try{
+    oldSocket.close();
+  } catch {}
+  player.ws = null;
+  player.connected = false;
+}
+
 function rekeyRoomPlayer(room, player, nextPlayerId){
   if (!player || player.id === nextPlayerId) return player;
+  detachPlayerSocket(player);
   room.players.delete(player.id);
   if (room.hostId === player.id){
     room.hostId = nextPlayerId;
@@ -149,6 +162,9 @@ function closeRoom(room, message){
 }
 
 function attachPlayerSocket(ws, room, player){
+  if (player.ws && player.ws !== ws){
+    detachPlayerSocket(player);
+  }
   sockets.set(ws, { roomCode: room.roomCode, playerId: player.id });
   player.ws = ws;
   player.connected = true;
@@ -208,7 +224,7 @@ function handleJoinRoom(ws, payload){
   let room = rooms.get(roomCode);
   if (mode === "host"){
     if (room && room.hostId !== playerId){
-      const returningHost = findDisconnectedPlayerByName(room, playerName, { host: true });
+      const returningHost = findReconnectablePlayerByName(room, playerName, { host: true });
       if (!returningHost){
         sendError(ws, "ROOM_EXISTS", "This room code is already in use.");
         return;
@@ -242,7 +258,7 @@ function handleJoinRoom(ws, payload){
     }
     const returningGuest = room.players.has(playerId)
       ? null
-      : findDisconnectedPlayerByName(room, playerName, { host: false });
+      : findReconnectablePlayerByName(room, playerName, { host: false });
     if (returningGuest){
       rekeyRoomPlayer(room, returningGuest, playerId);
     }

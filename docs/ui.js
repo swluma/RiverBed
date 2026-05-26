@@ -938,7 +938,7 @@ export function renderRoomWaiting(el, model){
           <div class="roomWaitingPlayerSub">${escapeHtml(player.role || "")}${player.connected === false ? " - Left" : ""}</div>
         </div>
         <div class="roomWaitingPlayerStatus">
-          ${player.showReadyButton ? `<button class="ghost small roomWaitingPlayerReady" type="button" data-room-ready="${player.ready ? "false" : "true"}" ${player.canToggleReady ? "" : "disabled"}>${player.ready ? "✅ ready" : "❌ not ready"}</button>` : ""}
+          ${player.showReadyButton ? `<button class="ghost small roomWaitingPlayerReady" type="button" data-room-ready="${player.ready ? "false" : "true"}" ${player.canToggleReady ? "" : "disabled"}>${player.ready ? "&#x2705; ready" : "&#x274C; not ready"}</button>` : ""}
         </div>
       </div>
     `).join("");
@@ -949,10 +949,9 @@ export function renderRoomWaiting(el, model){
     el.roomNotification.classList.toggle("hidden", !notification);
     el.roomNotification.textContent = notification;
   }
-  if (notification && notification !== lastRoomPresenceToast){
+  if (notification){
     lastRoomPresenceToast = notification;
-    showRoomPresenceToast(el, notification);
-  } else if (!notification){
+  } else {
     lastRoomPresenceToast = "";
   }
 

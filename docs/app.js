@@ -16,7 +16,7 @@ import {
 import {
   bindUI, setDictStatus, renderAll,
   setConfirmState,
-  setFeedback, animateAttemptsFail, shakeFeedback, showOpponentSuccessToast,
+  setFeedback, animateAttemptsFail, shakeFeedback, showOpponentSuccessToast, showRoomPresenceToast,
   showSkillModal, onChooseSkill,
   showHintModal, onApplyHint, onCancelHint,
   showEndModal, onApplyWinScore, onApplyTimeLimit,
@@ -452,6 +452,12 @@ function getRoomPresenceNotification(players){
   return missing.map((player) => `${player.role || "Player"} ${player.name || "Player"} left the room.`).join(" ");
 }
 
+function getRoomLeaveMessage(payload = {}){
+  const role = payload.isHost ? "Host" : "Guest";
+  const name = payload.playerName || "Player";
+  return `${role} ${name} left the room.`;
+}
+
 function renderRoomUi(){
   const viewModel = getRoomViewModel(roomSession, roomState);
   const roomPlayers = getRoomPlayersForUi();
@@ -588,6 +594,9 @@ function connectRoomSession(){
           });
         }
         startRoomHeartbeat();
+      }
+      if (eventName === SERVER_ROOM_EVENTS.PLAYER_LEFT){
+        showRoomPresenceToast(ui, getRoomLeaveMessage(payload));
       }
       if (eventName === SERVER_ROOM_EVENTS.GAME_STARTED){
         closeRoomModal(ui);
