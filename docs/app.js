@@ -68,6 +68,7 @@ let roomSession = resolveSessionFromLocation(window.location);
 let roomState = createInitialRoomState(roomSession);
 let lastRoomPromptKey = null;
 let wasLocalTurnPlayable = false;
+let pendingRoomSnapshot = null;
 
 const COMPUTER_OPTIONS = {
   normal: {
@@ -230,6 +231,12 @@ function getRoomPlayerNames(){
   };
 }
 
+function isRoomHostConnected(){
+  if (!roomSession.isRoomPlay) return true;
+  const hostPlayer = (roomState.players || []).find((player) => player.id === roomState.hostId);
+  return !hostPlayer || hostPlayer.connected !== false;
+}
+
 function maybeShowOpponentSuccessPopup(payload = {}){
   const localIndex = getLocalRoomPlayerIndex();
   const actorIndex = Number.isInteger(payload.actorIndex) ? payload.actorIndex : null;
@@ -246,13 +253,14 @@ function isRoomAuthoritativeClient(){
 
 function isLocalPlayersTurn(){
   if (!roomSession.isRoomPlay) return true;
+  if (!isRoomHostConnected()) return false;
   if (!g || roomState.phase !== "playing") return false;
   const localIndex = getLocalRoomPlayerIndex();
   return localIndex != null && g.active === localIndex;
 }
 
 function isRoomGameplayActive(){
-  return roomSession.isRoomPlay && roomState.phase === "playing";
+  return roomSession.isRoomPlay && roomState.phase === "playing" && isRoomHostConnected();
 }
 
 function updateRoomState(event){
@@ -283,7 +291,12 @@ function broadcastGameSnapshot(reason, extra = {}){
 }
 
 function applyIncomingSnapshot(snapshot, reason = "sync", feedback = null, popup = null){
-  if (!snapshot || !dictSet || !dictWords) return;
+  if (!snapshot) return false;
+  if (!dictSet || !dictWords){
+    pendingRoomSnapshot = { snapshot, reason, feedback, popup };
+    return false;
+  }
+  pendingRoomSnapshot = null;
   g = hydrateGameState(snapshot, dictSet, dictWords, embedWords);
   pointerActiveId = null;
   lastTurnKey = null;
@@ -300,6 +313,23 @@ function applyIncomingSnapshot(snapshot, reason = "sync", feedback = null, popup
   }
   syncGameOverPresentation();
   syncReadyFeedbackOnTurnChange();
+  return true;
+}
+
+function applyRoomSnapshotAction(action, reason = "remote_turn"){
+  if (action?.type !== GAME_ACTION_TYPES.SYNC_SNAPSHOT || !action.payload?.snapshot) return false;
+  return applyIncomingSnapshot(
+    action.payload.snapshot,
+    reason,
+    action.payload.feedback || null,
+    action.payload.popup || null
+  );
+}
+
+function flushPendingRoomSnapshot(){
+  if (!pendingRoomSnapshot || !dictSet || !dictWords) return false;
+  const pending = pendingRoomSnapshot;
+  return applyIncomingSnapshot(pending.snapshot, pending.reason, pending.feedback, pending.popup);
 }
 
 function maybeOpenRoomSkillPrompt(){
@@ -556,26 +586,15 @@ function connectRoomSession(){
       if (eventName === SERVER_ROOM_EVENTS.GAME_ACTION){
         const action = payload?.action || null;
         if (!action) return;
-        if (action.type === GAME_ACTION_TYPES.SYNC_SNAPSHOT && action.payload?.snapshot){
-          applyIncomingSnapshot(
-            action.payload.snapshot,
-            "remote_turn",
-            action.payload.feedback || null,
-            action.payload.popup || null
-          );
+        if (applyRoomSnapshotAction(action, "remote_turn")){
           return;
         }
         if (isRoomAuthoritativeClient()){
           void applyRemoteIntentAction(action);
         }
       }
-      if (eventName === SERVER_ROOM_EVENTS.SYNC_STATE && payload?.lastAction?.type === GAME_ACTION_TYPES.SYNC_SNAPSHOT && payload.lastAction?.payload?.snapshot){
-        applyIncomingSnapshot(
-          payload.lastAction.payload.snapshot,
-          "remote_turn",
-          payload.lastAction.payload.feedback || null,
-          payload.lastAction.payload.popup || null
-        );
+      if (eventName === SERVER_ROOM_EVENTS.SYNC_STATE){
+        applyRoomSnapshotAction(payload?.lastAction, "room_resume");
       }
     });
   }
@@ -943,6 +962,7 @@ async function loadDictionary(){
     setDictStatus(ui, "ok", `Dictionary OK (${set.size.toLocaleString()} words)`);
     ui.newMatchBtn.disabled = false;
     locked = false;
+    flushPendingRoomSnapshot();
     startResolvedBootstrap();
   } catch(err){
     console.error(err);
@@ -1085,6 +1105,15 @@ function syncGridCover(){
     && localIndex != null
     && g.active !== localIndex;
 
+  if (roomSession.isRoomPlay && roomState.phase === "playing" && !isRoomHostConnected()){
+    roomTurnCoverActive = true;
+    renderGridCover(true, {
+      title: "Host disconnected",
+      playerIndex: g && g.active,
+      showButton: false,
+    });
+    return;
+  }
   roomTurnCoverActive = showOpponentCover;
   if (showOpponentCover){
     renderGridCover(true, {
