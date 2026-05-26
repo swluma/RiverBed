@@ -27,7 +27,7 @@ import {
   onSpectatorInterrupt,
   onSpectatorRematch,
   showShuffleModal, showNoWordsModal, onConfirmShuffle, onCancelShuffle,
-  renderRoomStatus, renderRoomWaiting,
+  renderRoomStatus, renderRoomWaiting, closeRoomModal,
   showTestSkillsModal, onApplyTestSkills, onCancelTestSkills
 } from "./ui.js";
 import { resolveSessionFromLocation } from "./multiplayer/session.js";
@@ -213,13 +213,21 @@ function getLocalRoomPlayerIndex(){
 function getPlayerNameByIndex(playerIndex){
   if (playerIndex === 0){
     const hostPlayer = (roomState.players || []).find((player) => player.id === roomState.hostId);
-    return hostPlayer?.name || "Host";
+    return hostPlayer?.name || "Player 1";
   }
   if (playerIndex === 1){
     const guestPlayer = (roomState.players || []).find((player) => player.id !== roomState.hostId);
-    return guestPlayer?.name || "Guest";
+    return guestPlayer?.name || "Player 2";
   }
   return "Opponent";
+}
+
+function getRoomPlayerNames(){
+  if (!roomSession.isRoomPlay) return null;
+  return {
+    0: getPlayerNameByIndex(0),
+    1: getPlayerNameByIndex(1),
+  };
 }
 
 function maybeShowOpponentSuccessPopup(payload = {}){
@@ -542,6 +550,7 @@ function connectRoomSession(){
         startRoomHeartbeat();
       }
       if (eventName === SERVER_ROOM_EVENTS.GAME_STARTED){
+        closeRoomModal(ui);
         startRoomMatch(payload);
       }
       if (eventName === SERVER_ROOM_EVENTS.GAME_ACTION){
@@ -1087,7 +1096,7 @@ function syncGridCover(){
   }
 
   renderGridCover(timeLimitCoverActive, {
-    title: (g && g.active === 0) ? "Player 1 Ready" : "Player 2 Ready",
+    title: g ? `${getPlayerNameByIndex(g.active)} Ready` : "Ready",
     playerIndex: g && g.active,
     showButton: timeLimitCoverActive,
   });
@@ -1502,6 +1511,7 @@ async function handleEvaluationResult(result, options = {}){
 
 function syncAutoState(){
   if (!g) return;
+  g.roomPlayerNames = getRoomPlayerNames();
   g.autoMode = autoMode;
   g.autoPlayers = {
     0: autoPlayers[0],

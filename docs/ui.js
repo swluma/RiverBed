@@ -133,6 +133,7 @@ export function bindUI(handlers){
     p2Bonus: document.getElementById("p2Bonus"),
     p1Skills: document.getElementById("p1Skills"),
     p2Skills: document.getElementById("p2Skills"),
+    p1Title: document.getElementById("p1Title"),
     p2Title: document.getElementById("p2Title"),
     player2Role: document.getElementById("player2Role"),
     // Dynamic skill reference (created if missing)
@@ -741,10 +742,16 @@ export function renderAll(el, g){
   // Header
   el.turnNo.textContent = String(g.turnNo);
   const autoPlayers = g.autoPlayers || {};
+  const roomNames = g.roomPlayerNames || null;
+  const displayName = (playerIndex) => {
+    const roomName = roomNames?.[playerIndex];
+    if (roomName) return roomName;
+    return playerIndex === 0 ? "Player 1" : "Player 2";
+  };
   const activeAuto = autoPlayers[g.active];
   const activeLabel = activeAuto
     ? `Computer (${g.active === 0 ? "Red" : "Blue"})`
-    : (g.active === 0 ? "Player 1 (Red)" : "Player 2 (Blue)");
+    : `${displayName(g.active)} (${g.active === 0 ? "Red" : "Blue"})`;
   el.activePlayer.textContent = activeLabel;
   const activePill = el.activePlayer.closest(".pill");
   if (activePill){
@@ -753,11 +760,14 @@ export function renderAll(el, g){
   }
   el.attemptsLeft.textContent = String(getAttemptsLeftDisplay(g));
   if (el.winScoreValue) el.winScoreValue.textContent = String(g.winScore);
+  if (el.p1Title){
+    el.p1Title.textContent = displayName(0);
+  }
   if (el.p2Title){
     const p2Auto = autoPlayers[1];
     el.p2Title.textContent = p2Auto
       ? `Computer (${p2Auto.label || "Blue"})`
-      : "Player 2";
+      : displayName(1);
   }
   if (el.modePill){
     const modeText = (() => {
@@ -804,7 +814,7 @@ export function renderAll(el, g){
     const p2Auto = autoPlayers[1];
     el.player2Role.textContent = p2Auto
       ? `Computer (${p2Auto.label || "Normal"})`
-      : "Local opponent";
+      : (roomNames ? "Room opponent" : "Opponent");
   }
 
   const spectatorActive = g.autoMode === "spectator";
@@ -928,7 +938,7 @@ export function renderRoomWaiting(el, model){
           <div class="roomWaitingPlayerSub">${escapeHtml(player.role || "")}${player.connected === false ? " - Left" : ""}</div>
         </div>
         <div class="roomWaitingPlayerStatus">
-          ${player.showReadyButton ? `<button class="ghost small roomWaitingPlayerReady" type="button" data-room-ready="${player.ready ? "false" : "true"}" ${player.canToggleReady ? "" : "disabled"}>${player.ready ? "Ready" : "Not ready"}</button>` : ""}
+          ${player.showReadyButton ? `<button class="ghost small roomWaitingPlayerReady" type="button" data-room-ready="${player.ready ? "false" : "true"}" ${player.canToggleReady ? "" : "disabled"}>${player.ready ? "✅ ready" : "❌ not ready"}</button>` : ""}
         </div>
       </div>
     `).join("");
@@ -964,6 +974,10 @@ export function renderRoomWaiting(el, model){
     button.classList.toggle("hidden", !showButton);
     button.disabled = !!disabled;
   }
+}
+
+export function closeRoomModal(el){
+  if (el?.roomModal) hide(el.roomModal);
 }
 
 function renderSkills(p){
@@ -1250,8 +1264,8 @@ export async function animateAttemptsFail(el, g){
 
 export function showSkillModal(el, g, offers){
   el.skillOffers.innerHTML = "";
-  el.skillModalTitle.textContent =
-    (g.active === 0) ? "Player 1: Choose a skill to upgrade" : "Player 2: Choose a skill to upgrade";
+  const activeName = g.roomPlayerNames?.[g.active] || (g.active === 0 ? "Player 1" : "Player 2");
+  el.skillModalTitle.textContent = `${activeName}: Choose a skill to upgrade`;
   el.skillModalHint.textContent = "One option per category (if available). Choose exactly one.";
 
   for (const offer of offers){
@@ -1516,14 +1530,16 @@ export function showNoWordsModal(el){
 export function showEndModal(el, g){
   const p1 = g.players[0].score;
   const p2 = g.players[1].score;
+  const p1Name = g.roomPlayerNames?.[0] || "Player 1";
+  const p2Name = g.roomPlayerNames?.[1] || "Player 2";
 
-  let winner = "Player 1";
-  if (p2 > p1) winner = "Player 2";
+  let winner = p1Name;
+  if (p2 > p1) winner = p2Name;
   if (p1 === p2) winner = "Tie";
 
   el.endTitle.textContent = (winner === "Tie") ? "Game Over: Tie" : `Game Over: ${winner} wins!`;
-  el.endP1.textContent = `Player 1: ${p1}`;
-  el.endP2.textContent = `Player 2: ${p2}`;
+  el.endP1.textContent = `${p1Name}: ${p1}`;
+  el.endP2.textContent = `${p2Name}: ${p2}`;
 
   show(el.endModal);
 }
