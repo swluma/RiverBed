@@ -97,8 +97,6 @@ export function bindUI(handlers){
     roomNotification: document.getElementById("roomNotification"),
     roomWaitingErrors: document.getElementById("roomWaitingErrors"),
     copyRoomCodeBtn: document.getElementById("copyRoomCodeBtn"),
-    roomRetryBtn: document.getElementById("roomRetryBtn"),
-    roomBackHubBtn: document.getElementById("roomBackHubBtn"),
     roomReloadBtn: document.getElementById("roomReloadBtn"),
     roomReadyBtn: document.getElementById("roomReadyBtn"),
     roomStartBtn: document.getElementById("roomStartBtn"),
@@ -710,12 +708,6 @@ const emitVsComputer = () => {
   if (el.copyRoomCodeBtn && handlers.onCopyRoomCode){
     el.copyRoomCodeBtn.addEventListener("click", handlers.onCopyRoomCode);
   }
-  if (el.roomRetryBtn && handlers.onRetryRoom){
-    el.roomRetryBtn.addEventListener("click", handlers.onRetryRoom);
-  }
-  if (el.roomBackHubBtn && handlers.onBackToHub){
-    el.roomBackHubBtn.addEventListener("click", handlers.onBackToHub);
-  }
   if (el.roomReloadBtn && handlers.onReloadPage){
     el.roomReloadBtn.addEventListener("click", handlers.onReloadPage);
   }
@@ -730,7 +722,10 @@ const emitVsComputer = () => {
     });
   }
   if (el.roomStartBtn && handlers.onRoomStart){
-    el.roomStartBtn.addEventListener("click", handlers.onRoomStart);
+    el.roomStartBtn.addEventListener("click", () => {
+      if (el.roomModal) hide(el.roomModal);
+      handlers.onRoomStart();
+    });
   }
 
   return el;
@@ -933,8 +928,7 @@ export function renderRoomWaiting(el, model){
           <div class="roomWaitingPlayerSub">${escapeHtml(player.role || "")}${player.connected === false ? " - Left" : ""}</div>
         </div>
         <div class="roomWaitingPlayerStatus">
-          <div class="roomWaitingPlayerReady">${player.ready ? "Ready" : "Not ready"}</div>
-          ${player.canToggleReady ? `<button class="ghost small" type="button" data-room-ready="${player.ready ? "false" : "true"}">${player.ready ? "Not ready" : "Ready"}</button>` : ""}
+          ${player.showReadyButton ? `<button class="ghost small roomWaitingPlayerReady" type="button" data-room-ready="${player.ready ? "false" : "true"}" ${player.canToggleReady ? "" : "disabled"}>${player.ready ? "Ready" : "Not ready"}</button>` : ""}
         </div>
       </div>
     `).join("");
@@ -959,8 +953,6 @@ export function renderRoomWaiting(el, model){
   }
 
   const buttonConfig = [
-    ["roomRetryBtn", model.showRetry, !!model.retryDisabled],
-    ["roomBackHubBtn", model.showBackHub, false],
     ["roomReloadBtn", model.showReload, false],
     ["roomReadyBtn", false, true],
     ["roomStartBtn", model.showStart, !!model.startDisabled],

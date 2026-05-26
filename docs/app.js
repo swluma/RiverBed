@@ -398,6 +398,7 @@ function getRoomPlayersForUi(){
     ready: !!player.ready,
     role: player.id === roomState.hostId ? "Host" : "Guest",
     connected: player.connected !== false,
+    showReadyButton: player.id !== roomState.hostId,
     canToggleReady: roomSession.isGuest && player.id === roomSession.playerId && player.id !== roomState.hostId,
   }));
 }
@@ -444,8 +445,6 @@ function renderRoomUi(){
     notification: getRoomPresenceNotification(roomPlayers),
     errors: [],
     showCopy: !!roomSession.roomCode,
-    showRetry: false,
-    showBackHub: !!roomSession.hubUrl,
     showReload: true,
     showReady: false,
     readyDisabled: false,
@@ -458,11 +457,9 @@ function renderRoomUi(){
     waitingModel.title = "Invalid room launch";
     waitingModel.body = "The hub parameters could not start a room session safely.";
     waitingModel.errors = roomSession.validationErrors.slice();
-    waitingModel.showRetry = false;
   } else if (roomSession.isRoomPlay && roomState.phase !== "playing"){
     waitingModel.visible = true;
     waitingModel.errors = roomState.lastError?.message ? [roomState.lastError.message] : [];
-    waitingModel.showRetry = roomState.connectionStatus === CONNECTION_STATUS.ERROR;
     waitingModel.showStart = roomSession.isHost && roomState.joined;
     waitingModel.startDisabled = !viewModel.canStart;
 
@@ -649,7 +646,6 @@ ui = bindUI({
   onStartTurn,
   onShuffle,
   onOpenTestSkills,
-  onRetryRoom,
   onBackToHub,
   onReloadPage,
   onContinueLocal,
@@ -1335,17 +1331,6 @@ function onOpenTestSkills(){
   if (!ui) return;
   locked = true;
   showTestSkillsModal(ui, initialSkills);
-}
-
-function onRetryRoom(){
-  if (roomClient){
-    stopRoomHeartbeat();
-    roomClient.disconnect();
-    roomClient = null;
-  }
-  roomState = createInitialRoomState(roomSession);
-  renderRoomUi();
-  connectRoomSession();
 }
 
 function onBackToHub(){
